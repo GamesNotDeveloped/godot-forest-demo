@@ -1,0 +1,24 @@
+[gd_scene load_steps=5 format=3 uid="uid://nwns401imjdw"]
+
+[ext_resource type="Script" path="res://addons/uniplayer/extras/actors/lasergun/UP_Weapon_Lasergun.gd" id="1_50nmh"]
+[ext_resource type="PackedScene" uid="uid://eardeeng5v17" path="res://addons/uniplayer/extras/objects/lasergun/apocalyptic_hand-gun/scene.gltf" id="2_6k7lj"]
+[ext_resource type="AudioStream" uid="uid://dp3jkg2yy5s5" path="res://addons/uniplayer/extras/actors/lasergun/pop.wav" id="3_rod2b"]
+[ext_resource type="Script" path="res://addons/uniplayer/extras/UP_AudioSlicePlayer.gd" id="4_rwclv"]
+
+[node name="lasergun" type="Node3D"]
+script = ExtResource("1_50nmh")
+
+[node name="scene" parent="." instance=ExtResource("2_6k7lj")]
+transform = Transform3D(3.78409e-08, 6.4424e-12, -0.5, -0.0349218, 0.498779, -2.63652e-09, 0.498779, 0.0349218, 3.7749e-08, 0.197927, -0.220386, -0.178328)
+
+[node name="BallStart" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.216338, -0.198394, -1.21679)
+
+[node name="Shoot" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("3_rod2b")
+volume_db = -2.0
+max_polyphony = 6
+script = ExtResource("4_rwclv")
+slices = PackedVector2Array(0.15, 0.28, 0.57, 0.71, 1.06, 1.16, 1.33, 1.42, 1.67, 1.75)
+pitch_range = Vector2(0.935, 1.17)
+next_slice = 2

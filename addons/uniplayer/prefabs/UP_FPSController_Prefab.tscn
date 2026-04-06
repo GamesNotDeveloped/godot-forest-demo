@@ -1,0 +1,88 @@
+[gd_scene load_steps=15 format=3 uid="uid://7uya15kvp665"]
+
+[ext_resource type="Script" uid="uid://d2m0tiubu0k2q" path="res://addons/uniplayer/prefabs/UP_FPSController_Prefab.gd" id="1_0mtdh"]
+[ext_resource type="Script" uid="uid://csif53066s00g" path="res://addons/uniplayer/tools/UP_RotationHelper.gd" id="2_6e447"]
+[ext_resource type="Script" uid="uid://garv14f0d27t" path="res://addons/uniplayer/abilities/UP_HeadRotation.gd" id="3_af58r"]
+[ext_resource type="Script" uid="uid://daeujyhvcph11" path="res://addons/uniplayer/abilities/UP_Bobbing.gd" id="4_w5rjj"]
+[ext_resource type="Script" uid="uid://b7j85eaktgptd" path="res://addons/uniplayer/abilities/UP_Walk.gd" id="5_kj5qs"]
+[ext_resource type="Script" uid="uid://bmeppwow0v32m" path="res://addons/uniplayer/behaviours/UP_Kill_Y.gd" id="6_jpewa"]
+[ext_resource type="Script" uid="uid://cwcy8o7dvnbog" path="res://addons/uniplayer/abilities/UP_Zoom.gd" id="6_tqhxf"]
+[ext_resource type="Script" uid="uid://b080f6fw1f4v5" path="res://addons/uniplayer/behaviours/UP_Health.gd" id="8_acasa"]
+[ext_resource type="Script" uid="uid://40l35iaik06h" path="res://addons/uniplayer/behaviours/UP_Killable.gd" id="8_wt8it"]
+[ext_resource type="Script" uid="uid://cmadctifbpics" path="res://addons/uniplayer/abilities/UP_DetectFloorChange.gd" id="10_e7gir"]
+[ext_resource type="Script" uid="uid://1rk1k01opcrq" path="res://addons/uniplayer/abilities/UP_Collect.gd" id="11_88q34"]
+[ext_resource type="Script" uid="uid://cawmxmlwry10d" path="res://addons/uniplayer/abilities/UP_Interaction.gd" id="11_a4805"]
+[ext_resource type="Script" uid="uid://sd4mv5oxcaa1" path="res://addons/uniplayer/abilities/UP_ItemHolder.gd" id="12_1o0q1"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1i86l"]
+radius = 0.38
+height = 1.68
+
+[node name="UP_FPSController_Prefab" type="CharacterBody3D"]
+wall_min_slide_angle = 0.0698132
+floor_max_angle = 1.0472
+script = ExtResource("1_0mtdh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.854512, 0)
+shape = SubResource("CapsuleShape3D_1i86l")
+
+[node name="RotationHelper" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.40188, 0)
+script = ExtResource("2_6e447")
+
+[node name="Camera" type="Camera3D" parent="RotationHelper"]
+current = true
+fov = 64.5
+size = 1.94
+far = 1000.0
+
+[node name="HeadRotation" type="Node" parent="."]
+script = ExtResource("3_af58r")
+rotation_helper_path = NodePath("../RotationHelper")
+
+[node name="Bobbing" type="Node" parent="."]
+script = ExtResource("4_w5rjj")
+rotation_helper_path = NodePath("../RotationHelper")
+camera_path = NodePath("../RotationHelper/Camera")
+
+[node name="Walking" type="Node" parent="."]
+script = ExtResource("5_kj5qs")
+rotation_helper_path = NodePath("../RotationHelper")
+bobbing_path = NodePath("../Bobbing")
+
+[node name="Zooming" type="Node" parent="."]
+script = ExtResource("6_tqhxf")
+camera_path = NodePath("../RotationHelper/Camera")
+killable_behaviour_path = NodePath("../Killable")
+
+[node name="Kill_Y" type="Node" parent="."]
+script = ExtResource("6_jpewa")
+killable_behaviour_path = NodePath("../Killable")
+
+[node name="Killable" type="Node" parent="."]
+script = ExtResource("8_wt8it")
+respawn_type = 1
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("8_acasa")
+killable_path = NodePath("../Killable")
+
+[node name="DetectFloorChange" type="Node" parent="."]
+script = ExtResource("10_e7gir")
+
+[node name="Interaction" type="Node" parent="."]
+script = ExtResource("11_a4805")
+collision_mask = 4
+camera_path = NodePath("../RotationHelper/Camera")
+
+[node name="ItemHolder" type="Node" parent="."]
+script = ExtResource("12_1o0q1")
+camera_path = NodePath("../RotationHelper/Camera")
+
+[node name="Collect" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.654601, 0)
+script = ExtResource("11_88q34")
+
+[connection signal="item_collected" from="." to="." method="_on_item_collected"]
+[connection signal="crouch" from="Walking" to="." method="_on_walking_crouch"]

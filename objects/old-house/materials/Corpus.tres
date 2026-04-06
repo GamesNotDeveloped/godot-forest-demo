@@ -1,0 +1,13 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://folkpkr74ic6"]
+
+[ext_resource type="Texture2D" uid="uid://c88ay6m75sh5f" path="res://objects/old-house/textures/Corpus_baseColor.jpeg" id="1_3locd"]
+[ext_resource type="Texture2D" uid="uid://xlc67rstj623" path="res://objects/old-house/textures/Corpus_normal.png" id="3_uubvt"]
+
+[resource]
+resource_name = "Corpus"
+albedo_color = Color(0.9453125, 0.9453125, 0.9453125, 1)
+albedo_texture = ExtResource("1_3locd")
+metallic_specular = 0.06
+normal_enabled = true
+normal_scale = 0.5
+normal_texture = ExtResource("3_uubvt")

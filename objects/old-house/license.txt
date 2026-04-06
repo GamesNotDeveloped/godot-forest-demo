@@ -1,0 +1,11 @@
+Model Information:
+* title:	Old house
+* source:	https://sketchfab.com/3d-models/old-house-94af1270d0be4faabf61e3d0dbd875b4
+* author:	Ashkod (https://sketchfab.com/askod192)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Old house" (https://sketchfab.com/3d-models/old-house-94af1270d0be4faabf61e3d0dbd875b4) by Ashkod (https://sketchfab.com/askod192) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

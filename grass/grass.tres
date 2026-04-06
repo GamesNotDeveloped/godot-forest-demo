@@ -1,0 +1,33 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://c7uwsax7ffiwo"]
+
+[ext_resource type="Shader" uid="uid://bi3o8elbtqoni" path="res://grass/shaders/grass.gdshader" id="1_kpe6g"]
+[ext_resource type="Texture2D" uid="uid://c4ggdp0kg5wjk" path="res://grass/grassbushcc008.png" id="2_7oejf"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_kpe6g")
+shader_parameter/albedo = Color(0.75390625, 0.75390625, 0.75390625, 1)
+shader_parameter/texture_albedo = ExtResource("2_7oejf")
+shader_parameter/texture_frames = Vector2(1, 1)
+shader_parameter/light_mode = 1
+shader_parameter/alpha_scissor_threshold = 0.672
+shader_parameter/normal_scale = 1.0
+shader_parameter/metallic = 0.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/roughness = 1.0
+shader_parameter/roughness_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.0
+shader_parameter/backlight = Color(0.70703125, 0.70703125, 0.70703125, 1)
+shader_parameter/scale_h = 1.0
+shader_parameter/scale_w = 1.0
+shader_parameter/scale_var = -0.2399999639
+shader_parameter/grass_strength = 0.34400001634
+shader_parameter/optimization_by_distance = true
+shader_parameter/optimization_level = 7.0
+shader_parameter/optimization_dist_min = 10.0
+shader_parameter/optimization_dist_max = 50.0
+shader_parameter/grass_size_y = 1.0
+shader_parameter/interactive_mode = true
+shader_parameter/interactive_level_xz = 3.0
+shader_parameter/interactive_level_y = 0.3
+metadata/SimpleGrassTexturedMaterial = "2.1.0"

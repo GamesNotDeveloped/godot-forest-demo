@@ -1,0 +1,18 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://b0ittnye5242n"]
+
+[ext_resource type="Texture2D" uid="uid://cl08aseit5c77" path="res://objects/old-well/textures/Wood2_baseColor.png" id="1_lgva6"]
+[ext_resource type="Texture2D" uid="uid://15lc8mkyxdts" path="res://objects/old-well/textures/Wood2_metallicRoughness.png" id="2_1rwlk"]
+[ext_resource type="Texture2D" uid="uid://c4iu3e8t36knq" path="res://objects/old-well/textures/Wood2_normal.png" id="3_7n60f"]
+
+[resource]
+resource_name = "Wood2"
+cull_mode = 2
+albedo_color = Color(0.70703125, 0.6333246, 0.53855896, 1)
+albedo_texture = ExtResource("1_lgva6")
+metallic_specular = 0.34
+metallic_texture = ExtResource("2_1rwlk")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_1rwlk")
+roughness_texture_channel = 1
+normal_enabled = true
+normal_texture = ExtResource("3_7n60f")

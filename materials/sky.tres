@@ -1,0 +1,6 @@
+[gd_resource type="Sky" format=3 uid="uid://c2k13c6hxy46b"]
+
+[ext_resource type="Material" uid="uid://b67yuvwxfenkx" path="res://scenery/materials/M_layered_cloud_sky.tres" id="1_hu07j"]
+
+[resource]
+sky_material = ExtResource("1_hu07j")

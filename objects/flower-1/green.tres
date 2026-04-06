@@ -1,0 +1,21 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://ba73h56afyf3m"]
+
+[ext_resource type="Shader" uid="uid://8h5xptvdfxjm" path="res://materials/tree_wind.gdshader" id="1_wind"]
+
+[resource]
+resource_name = "green"
+shader = ExtResource("1_wind")
+shader_parameter/use_albedo_texture = false
+shader_parameter/albedo_color = Color(0.27899846, 0.33203125, 0.15304565, 1)
+shader_parameter/roughness = 0.95
+shader_parameter/metallic_specular = 0.3
+shader_parameter/alpha_scissor_threshold = 0.0
+shader_parameter/backlight_color = Color(0.08, 0.1, 0.05, 1)
+shader_parameter/sss_strength = 0.0
+shader_parameter/wind_speed = 0.95
+shader_parameter/wind_strength = 0.35
+shader_parameter/trunk_strength = 0.015
+shader_parameter/branch_frequency = 0.62
+shader_parameter/detail_frequency = 2.2
+shader_parameter/height_start = 0.0
+shader_parameter/height_end = 1.4

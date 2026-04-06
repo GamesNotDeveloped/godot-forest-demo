@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://ro0aq5ma87ev"]
+
+[ext_resource type="PackedScene" uid="uid://dlflvewnodc5o" path="res://objects/birch-tree-1/scene.gltf" id="1_mvhpw"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_mvhpw"]
+height = 2.0449219
+radius = 0.23730469
+
+[node name="BirchTree1" unique_id=1427507363 instance=ExtResource("1_mvhpw")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." index="1" unique_id=288192512]
+transform = Transform3D(0.9741261, -0.22600529, 0, 0.22600529, 0.9741261, 0, 0, 0, 1, -0.22920032, 0.94079936, 0)
+shape = SubResource("CylinderShape3D_mvhpw")

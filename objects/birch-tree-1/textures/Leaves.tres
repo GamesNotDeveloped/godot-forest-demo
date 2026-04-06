@@ -1,0 +1,28 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://sith3cf03ay7"]
+
+[ext_resource type="Texture2D" uid="uid://bylgmlbxxvm4u" path="res://objects/birch-tree-1/textures/Leaves_diffuse.png" id="1_ur5wd"]
+[ext_resource type="Shader" uid="uid://8h5xptvdfxjm" path="res://materials/tree_wind.gdshader" id="1_wind"]
+
+[resource]
+resource_name = "Leaves"
+render_priority = 0
+shader = ExtResource("1_wind")
+shader_parameter/albedo_texture = ExtResource("1_ur5wd")
+shader_parameter/use_albedo_texture = true
+shader_parameter/albedo_color = Color(0.7734375, 0.65504265, 0.4290161, 1)
+shader_parameter/use_normal_texture = false
+shader_parameter/normal_scale = 1.0
+shader_parameter/use_roughness_texture = false
+shader_parameter/roughness = 0.82
+shader_parameter/roughness_texture_channel = 1
+shader_parameter/metallic_specular = 0.5
+shader_parameter/alpha_scissor_threshold = 0.514000024415
+shader_parameter/backlight_color = Color(0.7421875, 0.7421875, 0.7421875, 1)
+shader_parameter/sss_strength = 0.5230000248425
+shader_parameter/wind_speed = 0.7330000348175
+shader_parameter/wind_strength = 0.7450000353875
+shader_parameter/trunk_strength = 0.106000005035
+shader_parameter/branch_frequency = 0.36700001673398
+shader_parameter/detail_frequency = 2.17700010270898
+shader_parameter/height_start = -1.5409995981974998
+shader_parameter/height_end = 7.499000831202501

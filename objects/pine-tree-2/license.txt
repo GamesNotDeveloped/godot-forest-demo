@@ -1,0 +1,11 @@
+Model Information:
+* title:	Pine tree low-poly
+* source:	https://sketchfab.com/3d-models/pine-tree-low-poly-e72f2c31aac544e58b667c13ec718daf
+* author:	Ricardo Sanchez (https://sketchfab.com/380660711785)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Pine tree low-poly" (https://sketchfab.com/3d-models/pine-tree-low-poly-e72f2c31aac544e58b667c13ec718daf) by Ricardo Sanchez (https://sketchfab.com/380660711785) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

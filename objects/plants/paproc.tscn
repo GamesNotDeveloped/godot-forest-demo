@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dg7d0q3ew7q7o"]
+
+[ext_resource type="ArrayMesh" uid="uid://6bx5m4w6xqt2" path="res://objects/plants/paproc.mesh" id="1_mesh"]
+[ext_resource type="Material" uid="uid://cg8l6b8127xmq" path="res://objects/plants/Plant_148_Leaves_Mat.tres" id="2_mat"]
+
+[node name="Paproc" type="Node3D" unique_id=1120061222]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=662775470]
+material_override = ExtResource("2_mat")
+mesh = ExtResource("1_mesh")

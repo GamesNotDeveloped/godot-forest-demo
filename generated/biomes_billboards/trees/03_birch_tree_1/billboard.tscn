@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://cs8d46y6eed4s"]
+
+[ext_resource type="Material" uid="uid://cw7h0ptc1xryg" path="res://generated/biomes_billboards/trees/03_birch_tree_1/billboard_material.tres" id="1_ffwi6"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_ffwi6"]
+material = ExtResource("1_ffwi6")
+size = Vector2(5.088983, 7.4481144)
+
+[node name="Birch Tree 1Billboard" type="Node3D" unique_id=959889973]
+
+[node name="Billboard" type="MeshInstance3D" parent="." unique_id=1640164752]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.7240572, 0)
+mesh = SubResource("QuadMesh_ffwi6")

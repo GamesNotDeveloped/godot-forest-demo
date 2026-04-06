@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bphvt24qscmvj"]
+
+[ext_resource type="Texture2D" uid="uid://dd4qomyosm47e" path="res://objects/old-house/textures/Input_baseColor.jpeg" id="1_wadv4"]
+[ext_resource type="Texture2D" uid="uid://nkd1kkmck2ir" path="res://objects/old-house/textures/Input_metallicRoughness.png" id="2_wy66e"]
+[ext_resource type="Texture2D" uid="uid://cvbt7lmbwkli3" path="res://objects/old-house/textures/Input_normal.png" id="3_3bni0"]
+
+[resource]
+resource_name = "Input"
+albedo_color = Color(0.8359375, 0.808794, 0.77389526, 1)
+albedo_texture = ExtResource("1_wadv4")
+metallic_specular = 0.18
+metallic_texture = ExtResource("2_wy66e")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_wy66e")
+roughness_texture_channel = 1
+normal_enabled = true
+normal_texture = ExtResource("3_3bni0")

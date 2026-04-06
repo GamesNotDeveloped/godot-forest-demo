@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3 uid="uid://ceywbnsu5x3vf"]
+
+[ext_resource type="Texture2D" uid="uid://bvp5lgcybpln6" path="res://addons/uniplayer/extras/objects/lasergun/apocalyptic_hand-gun/textures/Material_47_baseColor.png" id="1_qyipq"]
+[ext_resource type="Texture2D" uid="uid://btejay6r7047u" path="res://addons/uniplayer/extras/objects/lasergun/apocalyptic_hand-gun/textures/Material_47_normal.png" id="2_3t3vj"]
+
+[resource]
+resource_name = "Material_47"
+transparency = 2
+alpha_scissor_threshold = 0.82
+alpha_antialiasing_mode = 0
+cull_mode = 2
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_qyipq")
+roughness = 0.6
+normal_enabled = true
+normal_texture = ExtResource("2_3t3vj")

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Old Well from Soviet Village
+* source:	https://sketchfab.com/3d-models/old-well-from-soviet-village-c6497c1c7ba04daba45f6d43fcf3a88b
+* author:	Danila Ivankov (https://sketchfab.com/ivankov.danila)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Old Well from Soviet Village" (https://sketchfab.com/3d-models/old-well-from-soviet-village-c6497c1c7ba04daba45f6d43fcf3a88b) by Danila Ivankov (https://sketchfab.com/ivankov.danila) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

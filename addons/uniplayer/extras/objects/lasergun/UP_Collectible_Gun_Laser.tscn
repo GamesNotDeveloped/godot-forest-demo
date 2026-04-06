@@ -1,0 +1,14 @@
+[gd_scene load_steps=5 format=3 uid="uid://ckj82hwnvxtpg"]
+
+[ext_resource type="Script" path="res://addons/uniplayer/extras/objects/UP_Gun.gd" id="1_3uvvh"]
+[ext_resource type="PackedScene" uid="uid://b5bqb3tmd4724" path="res://addons/uniplayer/extras/objects/UP_CollectibleItem.tscn" id="1_txpt5"]
+[ext_resource type="PackedScene" uid="uid://eardeeng5v17" path="res://addons/uniplayer/extras/objects/lasergun/apocalyptic_hand-gun/scene.gltf" id="2_avn4e"]
+[ext_resource type="PackedScene" uid="uid://nwns401imjdw" path="res://addons/uniplayer/extras/actors/lasergun/UP_Weapon_Lasergun.tscn" id="3_sf1e2"]
+
+[node name="UP_Collectible_Gun_Laser" instance=ExtResource("1_txpt5")]
+script = ExtResource("1_3uvvh")
+gun = ExtResource("3_sf1e2")
+sound_name = "gun"
+
+[node name="scene" parent="." index="1" instance=ExtResource("2_avn4e")]
+transform = Transform3D(0.395, 0, 0, 0, 0.395, 0, 0, 0, 0.395, 0.375583, 0.513258, 0)

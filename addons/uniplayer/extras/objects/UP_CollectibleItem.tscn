@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://b5bqb3tmd4724"]
+
+[ext_resource type="Script" path="res://addons/uniplayer/extras/objects/UP_CollectibleItem.gd" id="1_2lvxk"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_d8shm"]
+size = Vector3(0.777253, 0.809639, 1)
+
+[node name="Item" type="StaticBody3D"]
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("1_2lvxk")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.429648, 0)
+shape = SubResource("BoxShape3D_d8shm")

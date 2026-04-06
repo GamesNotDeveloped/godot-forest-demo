@@ -1,0 +1,273 @@
+[gd_scene format=3 uid="uid://dwmdxxavjugan"]
+
+[ext_resource type="Script" uid="uid://eb0v7nc1t8o3" path="res://addons/gnd_biomes/Biomes.gd" id="1_8b86h"]
+[ext_resource type="Script" uid="uid://bmv225qduery8" path="res://levels/test_biomes.gd" id="1_flr7s"]
+[ext_resource type="Environment" uid="uid://cjj0bb572ivil" path="res://materials/environment.tres" id="2_0f0wj"]
+[ext_resource type="Script" uid="uid://c7po5kdfyl86e" path="res://addons/gnd_biomes/BiomeScatterEntry.gd" id="2_471tc"]
+[ext_resource type="Script" uid="uid://pw1ljvn4g7cy" path="res://scenery/SunShaftsCompositorEffect.gd" id="2_mh1bx"]
+[ext_resource type="Script" uid="uid://bs433ey6i3c11" path="res://scenery/TerrainPatch3D.gd" id="2_terrain"]
+[ext_resource type="PackedScene" uid="uid://bkepaelbv6c50" path="res://generated/biomes_billboards/trees/00_pine-tree-1/billboard.tscn" id="3_oakni"]
+[ext_resource type="PackedScene" uid="uid://b0arh1uwyilru" path="res://objects/pine-tree-1.tscn" id="3_qc3ns"]
+[ext_resource type="PackedScene" uid="uid://b4c8s22viordq" path="res://objects/pine-tree-2.tscn" id="5_qsh2c"]
+[ext_resource type="Texture2D" uid="uid://b7qpk2tctbu0x" path="res://levels/biomes_mask.png" id="6_2omi8"]
+[ext_resource type="PackedScene" uid="uid://b6d80typr1lwv" path="res://generated/biomes_billboards/trees/02_pine-tree-2/billboard.tscn" id="7_hx8ph"]
+[ext_resource type="PackedScene" uid="uid://dg7d0q3ew7q7o" path="res://objects/plants/paproc.tscn" id="7_paprocscene"]
+[ext_resource type="Script" uid="uid://c0tpjiw2klhkn" path="res://addons/gnd_biomes/AutoBiomesFog.gd" id="7_wj6dr"]
+[ext_resource type="PackedScene" uid="uid://cdjtntpf7gt6t" path="res://generated/biomes_billboards/trees/01_scene/billboard.tscn" id="7_ym8rc"]
+[ext_resource type="PackedScene" uid="uid://bhtip2magw5d2" path="res://objects/pine-tree-3/scene.gltf" id="8_mh1bx"]
+[ext_resource type="ArrayMesh" uid="uid://d4gwdbg276nmj" path="res://objects/plants/plant99.mesh" id="8_y1vgc"]
+[ext_resource type="PackedScene" uid="uid://ro0aq5ma87ev" path="res://objects/birch_tree_1.tscn" id="10_djwcy"]
+[ext_resource type="PackedScene" uid="uid://cs8d46y6eed4s" path="res://generated/biomes_billboards/trees/03_birch_tree_1/billboard.tscn" id="10_imthj"]
+[ext_resource type="PackedScene" uid="uid://b7sdar6o6ro6t" path="res://generated/biomes_billboards/plants/00_paproc/billboard.tscn" id="14_va16g"]
+[ext_resource type="PackedScene" uid="uid://c6roi7ykvj2vb" path="res://generated/biomes_billboards/plants/01_plant99/billboard.tscn" id="16_oyhxp"]
+[ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="17_1ndc1"]
+[ext_resource type="PackedScene" uid="uid://7uya15kvp665" path="res://addons/uniplayer/prefabs/UP_FPSController_Prefab.tscn" id="17_hx8ph"]
+[ext_resource type="Material" uid="uid://c7uwsax7ffiwo" path="res://grass/grass.tres" id="18_5irjx"]
+[ext_resource type="Script" uid="uid://b21dp6stblt2g" path="res://addons/uniplayer/tools/UP_MouseCapture.gd" id="18_hx8ph"]
+[ext_resource type="ArrayMesh" uid="uid://cextepyc4ggc7" path="res://grass/grass.mesh" id="18_mh1bx"]
+[ext_resource type="PackedScene" uid="uid://bgayoi0kr6cpb" path="res://objects/flower-1.tscn" id="18_va16g"]
+[ext_resource type="PackedScene" uid="uid://cyh3thpygday5" path="res://objects/flower-2.1.tscn" id="19_cwx7y"]
+[ext_resource type="Script" uid="uid://f1y375yaqgu6" path="res://scenery/SunShaftsController.gd" id="19_shafts"]
+[ext_resource type="PackedScene" uid="uid://dutdm74b0brla" path="res://generated/biomes_billboards/plants2/00_flower-1/billboard.tscn" id="20_2xaht"]
+[ext_resource type="PackedScene" uid="uid://wevxi0ut6m5p" path="res://objects/flower-2.2.tscn" id="20_80swb"]
+[ext_resource type="Texture2D" uid="uid://68h8xse5rqd3" path="res://levels/flowers_mask.png" id="21_80swb"]
+[ext_resource type="Material" uid="uid://b563p0dw1mx6t" path="res://textures/Ground020_1K-JPG/M_ground.tres" id="25_0f0wj"]
+[ext_resource type="PackedScene" uid="uid://cb8t3x6gvytl7" path="res://objects/old_house.tscn" id="34_0f0wj"]
+[ext_resource type="AudioStream" uid="uid://cho50y1ngfmfy" path="res://music/sigmamusicart-tension-tension-music-503993.mp3" id="34_flr7s"]
+[ext_resource type="PackedScene" uid="uid://ctwu0ey7hgcm1" path="res://objects/old-well.tscn" id="34_pbujr"]
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_ffumx"]
+auto_exposure_enabled = true
+auto_exposure_scale = 0.33
+auto_exposure_speed = 3.0
+auto_exposure_min_sensitivity = 91.33
+auto_exposure_max_sensitivity = 506.5
+
+[sub_resource type="CompositorEffect" id="CompositorEffect_mh1bx"]
+resource_local_to_scene = false
+resource_name = ""
+enabled = true
+effect_callback_type = 4
+needs_motion_vectors = false
+needs_normal_roughness = false
+script = ExtResource("2_mh1bx")
+sun_screen_uv = Vector2(12.10697, -24.299051)
+shaft_color = Color(0.71875, 0.63786393, 0.37902832, 1)
+density = 0.485
+bright_threshold = 0.182
+weight = 0.0355
+decay = 0.93
+exposure = 1.59
+max_radius = 1.377
+
+[sub_resource type="Compositor" id="Compositor_ym8rc"]
+compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_mh1bx")])
+
+[sub_resource type="Resource" id="Resource_ei7n8"]
+script = ExtResource("2_471tc")
+mesh_scene = ExtResource("3_qc3ns")
+billboard_scene = ExtResource("3_oakni")
+probability = 0.1
+billboard_lod_distance = 40.0
+scale_min = Vector3(0.4, 0.4, 0.4)
+scale_max = Vector3(1.2, 1.4, 1.2)
+
+[sub_resource type="Resource" id="Resource_qsh2c"]
+script = ExtResource("2_471tc")
+mesh_scene = ExtResource("8_mh1bx")
+billboard_scene = ExtResource("7_ym8rc")
+probability = 0.2
+billboard_lod_distance = 40.0
+
+[sub_resource type="Resource" id="Resource_2omi8"]
+script = ExtResource("2_471tc")
+mesh_scene = ExtResource("5_qsh2c")
+billboard_scene = ExtResource("7_hx8ph")
+probability = 0.1
+billboard_lod_distance = 40.0
+
+[sub_resource type="Resource" id="Resource_imthj"]
+script = ExtResource("2_471tc")
+mesh_scene = ExtResource("10_djwcy")
+billboard_scene = ExtResource("10_imthj")
+probability = 0.05
+billboard_lod_distance = 20.0
+metadata/_custom_type_script = "uid://c7po5kdfyl86e"
+
+[sub_resource type="Resource" id="Resource_y1vgc"]
+script = ExtResource("2_471tc")
+mesh_scene = ExtResource("7_paprocscene")
+billboard_scene = ExtResource("14_va16g")
+probability = 0.6
+billboard_lod_distance = 20.0
+scale_min = Vector3(0.4, 0.4, 0.4)
+scale_max = Vector3(0.8, 0.8, 0.8)
+metadata/_custom_type_script = "uid://c7po5kdfyl86e"
+
+[sub_resource type="Resource" id="Resource_ekfpt"]
+script = ExtResource("2_471tc")
+mesh = ExtResource("8_y1vgc")
+billboard_scene = ExtResource("16_oyhxp")
+probability = 0.5
+billboard_lod_distance = 20.0
+scale_min = Vector3(0.84, 0.5, 0.9)
+scale_max = Vector3(1.725, 2, 2.195)
+metadata/_custom_type_script = "uid://c7po5kdfyl86e"
+
+[sub_resource type="Resource" id="Resource_2xaht"]
+script = ExtResource("2_471tc")
+mesh_scene = ExtResource("19_cwx7y")
+probability = 0.2
+metadata/_custom_type_script = "uid://c7po5kdfyl86e"
+
+[sub_resource type="Resource" id="Resource_pbujr"]
+script = ExtResource("2_471tc")
+mesh_scene = ExtResource("20_80swb")
+probability = 0.25
+metadata/_custom_type_script = "uid://c7po5kdfyl86e"
+
+[sub_resource type="Resource" id="Resource_cwx7y"]
+script = ExtResource("2_471tc")
+mesh_scene = ExtResource("18_va16g")
+billboard_scene = ExtResource("20_2xaht")
+billboard_lod_distance = 20.0
+metadata/_custom_type_script = "uid://c7po5kdfyl86e"
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
+noise_type = 3
+
+[node name="TestBiomes" type="Node3D" unique_id=1245326294]
+script = ExtResource("1_flr7s")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
+transform = Transform3D(-0.09382802, 0.82773817, -0.5532142, -0.35695884, 0.49075216, 0.79482245, 0.929396, 0.27205127, 0.24942213, 0, 0.5193932, -0.2882359)
+light_color = Color(1, 0.93054914, 0.84765625, 1)
+light_energy = 1.409
+light_indirect_energy = 0.925
+light_volumetric_fog_energy = 6.176
+light_angular_distance = 2.5
+shadow_enabled = true
+directional_shadow_mode = 1
+directional_shadow_max_distance = 200.0
+sky_mode = 1
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=18636673]
+environment = ExtResource("2_0f0wj")
+camera_attributes = SubResource("CameraAttributesPractical_ffumx")
+compositor = SubResource("Compositor_ym8rc")
+
+[node name="Trees" type="Node3D" parent="." unique_id=1585352953]
+script = ExtResource("1_8b86h")
+entries = Array[ExtResource("2_471tc")]([SubResource("Resource_ei7n8"), SubResource("Resource_qsh2c"), SubResource("Resource_2omi8"), SubResource("Resource_imthj")])
+seed = 7
+area_size = Vector2(100, 100)
+average_spacing = 1.9
+density_lod_enabled = true
+density_lod_start_distance = 30.0
+density_lod_end_distance = 50.0
+density_lod_min_fraction = 0.1
+mask_enabled = true
+mask_texture = ExtResource("6_2omi8")
+mask_inverse = true
+
+[node name="Plants" type="Node3D" parent="." unique_id=1989571234]
+script = ExtResource("1_8b86h")
+entries = Array[ExtResource("2_471tc")]([SubResource("Resource_y1vgc"), SubResource("Resource_ekfpt"), SubResource("Resource_2xaht"), SubResource("Resource_pbujr")])
+seed = 5
+area_size = Vector2(100, 100)
+average_spacing = 2.4
+max_instances = 7000
+shadow_casting = 0
+density_lod_enabled = true
+density_lod_start_distance = 10.0
+density_lod_end_distance = 20.0
+density_lod_min_fraction = 0.1
+mask_enabled = true
+mask_texture = ExtResource("6_2omi8")
+mask_inverse = true
+metadata/_custom_type_script = "uid://eb0v7nc1t8o3"
+
+[node name="Plants2" type="Node3D" parent="." unique_id=371615382]
+script = ExtResource("1_8b86h")
+entries = Array[ExtResource("2_471tc")]([SubResource("Resource_cwx7y")])
+seed = 10
+area_size = Vector2(100, 100)
+average_spacing = 1.0
+max_instances = 500
+shadow_casting = 0
+density_lod_start_distance = 10.0
+density_lod_end_distance = 20.0
+density_lod_min_fraction = 0.1
+generate_chunk_colliders = false
+mask_enabled = true
+mask_texture = ExtResource("21_80swb")
+mask_threshold = 0.34
+mask_affects_density = false
+metadata/_custom_type_script = "uid://eb0v7nc1t8o3"
+
+[node name="Terrain" type="Node3D" parent="." unique_id=371551466]
+script = ExtResource("2_terrain")
+subdivisions_x = 160
+subdivisions_z = 160
+height_scale = 18.93
+uv_scale = 2.0
+terrain_material = ExtResource("25_0f0wj")
+noise = SubResource("FastNoiseLite_terrain")
+grass_enabled = true
+grass_mesh = ExtResource("18_mh1bx")
+grass_material = ExtResource("18_5irjx")
+grass_mask_enabled = true
+grass_mask_texture = ExtResource("6_2omi8")
+grass_mask_area_size = Vector2(100, 100)
+grass_mask_channel = 1
+grass_mask_threshold = 0.03
+grass_mask_inverse = true
+grass_radius = 15.0
+grass_spacing = 0.2
+grass_max_instances = 10000
+grass_height_offset = -0.16999999999999993
+grass_rebuild_distance = 2.26
+grass_scale_min = 0.56
+grass_scale_max = 0.88
+
+[node name="AutoBiomesFog" type="Node" parent="." unique_id=158901427]
+script = ExtResource("7_wj6dr")
+biomes_path = NodePath("../Trees")
+world_environment_path = NodePath("../WorldEnvironment")
+sample_target_path = NodePath("../UP_FPSController_Prefab")
+radius = 1.2
+min_fog_density = 0.005
+max_density = 0.0149999999999999
+tween_duration = 1.5
+
+[node name="SunShaftsController" type="Node" parent="." unique_id=492184110]
+script = ExtResource("19_shafts")
+world_environment_path = NodePath("../WorldEnvironment")
+directional_light_path = NodePath("../DirectionalLight3D")
+distance = 3000.0
+
+[node name="CanvasLayer" parent="." unique_id=1602580574 instance=ExtResource("17_1ndc1")]
+
+[node name="UP_FPSController_Prefab" parent="." unique_id=654069376 instance=ExtResource("17_hx8ph")]
+transform = Transform3D(-0.15708953, 0, -0.98758435, 0, 0.99999994, 0, 0.98758435, 0, -0.15708953, -40.331, 1.6011527, -9.52136)
+speed_factor = 0.7
+hurry_factor = 0.1
+footstep_time_factor = 1.1
+bob_strength_factor = 0.3
+nervous = 0.3
+player_scale = 0.65
+
+[node name="MouseCapture" type="Node" parent="." unique_id=440965075]
+script = ExtResource("18_hx8ph")
+metadata/_custom_type_script = "uid://b21dp6stblt2g"
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=860038656]
+stream = ExtResource("34_flr7s")
+autoplay = true
+bus = &"Music"
+
+[node name="OldWell" parent="." unique_id=2097428027 instance=ExtResource("34_pbujr")]
+transform = Transform3D(-0.99200934, 0.014164062, 0.12536675, 1.8626451e-09, 0.9936781, -0.11226674, -0.12616435, -0.11136966, -0.9857379, 0.8522511, 0.4803073, 4.899059)
+
+[node name="OldHouse" parent="." unique_id=1458074419 instance=ExtResource("34_0f0wj")]
+transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9984727, 0.052694708, 0, -0.05270197, 0.99861026, 1.8520274, -0.15231672, -0.6090337)

@@ -1,0 +1,26 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://cg8l6b8127xmq"]
+
+[ext_resource type="Shader" uid="uid://8h5xptvdfxjm" path="res://materials/tree_wind.gdshader" id="1_wind"]
+[ext_resource type="Texture2D" uid="uid://cyiyg085xo8y4" path="res://objects/plants/paproc-albedo-texture.res" id="2_lodcx"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_wind")
+shader_parameter/albedo_texture = ExtResource("2_lodcx")
+shader_parameter/albedo_color = Color(0.42578125, 0.384201, 0.3509369, 1)
+shader_parameter/use_normal_texture = false
+shader_parameter/normal_scale = 1.0
+shader_parameter/use_roughness_texture = false
+shader_parameter/roughness = 0.92
+shader_parameter/roughness_texture_channel = 1
+shader_parameter/metallic_specular = 0.226000010735
+shader_parameter/alpha_scissor_threshold = 0.5490000260775
+shader_parameter/backlight_color = Color(0.278431, 0.341176, 0.282353, 1)
+shader_parameter/sss_strength = 0.38400001824
+shader_parameter/wind_speed = 0.48400002299
+shader_parameter/wind_strength = 0.00800000038
+shader_parameter/trunk_strength = 0.8270000392825
+shader_parameter/branch_frequency = 0.09800000395648
+shader_parameter/detail_frequency = 0.21300000941898
+shader_parameter/height_start = 0.7170005090575007
+shader_parameter/height_end = 1.1

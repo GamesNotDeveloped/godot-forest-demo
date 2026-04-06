@@ -1,0 +1,27 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://8hqd7p3fteav"]
+
+[ext_resource type="Texture2D" uid="uid://dikttkjj5lvdy" path="res://objects/pine-tree-3/textures/Tree_tex_baseColor.png" id="1_ni4co"]
+[ext_resource type="Shader" uid="uid://8h5xptvdfxjm" path="res://materials/tree_wind.gdshader" id="1_wind"]
+
+[resource]
+resource_name = "Tree_tex"
+render_priority = 0
+shader = ExtResource("1_wind")
+shader_parameter/albedo_texture = ExtResource("1_ni4co")
+shader_parameter/albedo_color = Color(0.65234375, 0.65234375, 0.65234375, 1)
+shader_parameter/use_normal_texture = false
+shader_parameter/normal_scale = 1.0
+shader_parameter/use_roughness_texture = false
+shader_parameter/roughness = 0.9
+shader_parameter/roughness_texture_channel = 1
+shader_parameter/metallic_specular = 0.0
+shader_parameter/alpha_scissor_threshold = 0.496
+shader_parameter/backlight_color = Color(0.4140625, 0.4140625, 0.4140625, 1)
+shader_parameter/sss_strength = 0.19
+shader_parameter/wind_speed = 0.9290000441275
+shader_parameter/wind_strength = 0.01200000057
+shader_parameter/trunk_strength = 0.7770000369075
+shader_parameter/branch_frequency = 0.22
+shader_parameter/detail_frequency = 0.95
+shader_parameter/height_start = 0.2
+shader_parameter/height_end = 4.5

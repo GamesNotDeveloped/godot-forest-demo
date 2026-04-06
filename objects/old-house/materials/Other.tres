@@ -1,0 +1,18 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dha4t7ogl0jmq"]
+
+[ext_resource type="Texture2D" uid="uid://bwcabjc7xqhyd" path="res://objects/old-house/textures/Other_baseColor.jpeg" id="1_ockr6"]
+[ext_resource type="Texture2D" uid="uid://03opiruieory" path="res://objects/old-house/textures/Other_metallicRoughness.png" id="2_wehuo"]
+[ext_resource type="Texture2D" uid="uid://cspxswvoj7y67" path="res://objects/old-house/textures/Other_normal.png" id="3_vkvej"]
+
+[resource]
+resource_name = "Other"
+albedo_color = Color(0.6171875, 0.61312705, 0.60754395, 1)
+albedo_texture = ExtResource("1_ockr6")
+metallic = 1.0
+metallic_specular = 0.17
+metallic_texture = ExtResource("2_wehuo")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_wehuo")
+roughness_texture_channel = 1
+normal_enabled = true
+normal_texture = ExtResource("3_vkvej")

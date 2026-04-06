@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://cnrgi3ny57km5"]
+
+[ext_resource type="PackedScene" uid="uid://bq5elbfhnhdxl" path="res://objects/pine-tree-4/scene.gltf" id="1_by1g6"]
+
+[node name="PineTree4" unique_id=312809949 instance=ExtResource("1_by1g6")]

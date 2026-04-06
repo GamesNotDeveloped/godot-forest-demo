@@ -1,0 +1,18 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://hdt24w31gc41"]
+
+[ext_resource type="Texture2D" uid="uid://bwcc2kfywotdh" path="res://objects/old-well/textures/ConcreteNMetal_baseColor.png" id="1_kskeh"]
+[ext_resource type="Texture2D" uid="uid://bu1gck444tjjy" path="res://objects/old-well/textures/ConcreteNMetal_metallicRoughness.png" id="2_ux2oc"]
+[ext_resource type="Texture2D" uid="uid://cngyj15rvwft5" path="res://objects/old-well/textures/ConcreteNMetal_normal.png" id="3_ff0wv"]
+
+[resource]
+resource_name = "ConcreteNMetal"
+cull_mode = 2
+albedo_color = Color(0.625, 0.625, 0.625, 1)
+albedo_texture = ExtResource("1_kskeh")
+metallic = 1.0
+metallic_texture = ExtResource("2_ux2oc")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_ux2oc")
+roughness_texture_channel = 1
+normal_enabled = true
+normal_texture = ExtResource("3_ff0wv")

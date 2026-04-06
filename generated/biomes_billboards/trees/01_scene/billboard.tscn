@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://cdjtntpf7gt6t"]
+
+[ext_resource type="Material" uid="uid://cmurcrg5rxk4o" path="res://generated/biomes_billboards/trees/01_scene/billboard_material.tres" id="1_ow47x"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_cu5r2"]
+material = ExtResource("1_ow47x")
+size = Vector2(2.7609813, 3.5543666)
+
+[node name="SceneBillboard" type="Node3D" unique_id=1302665520]
+
+[node name="Billboard" type="MeshInstance3D" parent="." unique_id=924168738]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7771833, 0)
+mesh = SubResource("QuadMesh_cu5r2")

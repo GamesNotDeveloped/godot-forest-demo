@@ -1,0 +1,32 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://temna4o5gh5b"]
+
+[ext_resource type="Texture2D" uid="uid://dbfdui5x3pn0i" path="res://objects/pine-tree-1/textures/Tree_0Mat_baseColor.png" id="1_16pkk"]
+[ext_resource type="Shader" uid="uid://8h5xptvdfxjm" path="res://materials/tree_wind.gdshader" id="1_wind"]
+[ext_resource type="Texture2D" uid="uid://c081llkntssrk" path="res://objects/pine-tree-1/textures/Tree_0Mat_metallicRoughness.png" id="2_gj4jx"]
+[ext_resource type="Texture2D" uid="uid://cw0k6g0d7nduh" path="res://objects/pine-tree-1/textures/Tree_0Mat_normal.png" id="3_7yg71"]
+
+[resource]
+resource_name = "Tree_0Mat"
+render_priority = 0
+shader = ExtResource("1_wind")
+shader_parameter/albedo_texture = ExtResource("1_16pkk")
+shader_parameter/use_albedo_texture = true
+shader_parameter/albedo_color = Color(0.875, 0.875, 0.875, 1)
+shader_parameter/use_normal_texture = true
+shader_parameter/normal_texture = ExtResource("3_7yg71")
+shader_parameter/normal_scale = 1.0
+shader_parameter/use_roughness_texture = true
+shader_parameter/roughness_texture = ExtResource("2_gj4jx")
+shader_parameter/roughness = 1.0
+shader_parameter/roughness_texture_channel = 1
+shader_parameter/metallic_specular = 0.33
+shader_parameter/alpha_scissor_threshold = 0.0
+shader_parameter/backlight_color = Color(0.609375, 0.609375, 0.609375, 1)
+shader_parameter/sss_strength = 0.0
+shader_parameter/wind_speed = 0.0
+shader_parameter/wind_strength = 0.0
+shader_parameter/trunk_strength = 0.008
+shader_parameter/branch_frequency = 0.24
+shader_parameter/detail_frequency = 1.78200008394648
+shader_parameter/height_start = 0.4
+shader_parameter/height_end = 4.0

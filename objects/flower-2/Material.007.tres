@@ -1,0 +1,32 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://b44b5xsxiu14y"]
+
+[ext_resource type="Texture2D" uid="uid://caej1g4tx7b6e" path="res://objects/flower-2/textures/Material.007_baseColor.png" id="1_etk0a"]
+[ext_resource type="Shader" uid="uid://8h5xptvdfxjm" path="res://materials/tree_wind.gdshader" id="1_wind"]
+[ext_resource type="Texture2D" uid="uid://bcvcy1df6o3y7" path="res://objects/flower-2/textures/Material.007_metallicRoughness.png" id="2_dq3kp"]
+[ext_resource type="Texture2D" uid="uid://blqwub84gr02d" path="res://objects/flower-2/textures/Material.007_normal.png" id="3_r3eh7"]
+
+[resource]
+resource_name = "Material.007"
+render_priority = 0
+shader = ExtResource("1_wind")
+shader_parameter/albedo_texture = ExtResource("1_etk0a")
+shader_parameter/use_albedo_texture = true
+shader_parameter/albedo_color = Color(0.59375, 0.575858, 0.46850586, 1)
+shader_parameter/use_normal_texture = true
+shader_parameter/normal_texture = ExtResource("3_r3eh7")
+shader_parameter/normal_scale = 1.0
+shader_parameter/use_roughness_texture = true
+shader_parameter/roughness_texture = ExtResource("2_dq3kp")
+shader_parameter/roughness = 0.85
+shader_parameter/roughness_texture_channel = 1
+shader_parameter/metallic_specular = 0.18
+shader_parameter/alpha_scissor_threshold = 0.5
+shader_parameter/backlight_color = Color(0.45, 0.45, 0.45, 1)
+shader_parameter/sss_strength = 0.0
+shader_parameter/wind_speed = 1.8270000867825
+shader_parameter/wind_strength = 0.0890000042275
+shader_parameter/trunk_strength = 0.0
+shader_parameter/branch_frequency = 1.62900007667898
+shader_parameter/detail_frequency = 2.49600011786148
+shader_parameter/height_start = 0.22900048587749922
+shader_parameter/height_end = 0.3270004905324999

@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://bkepaelbv6c50"]
+
+[ext_resource type="Material" uid="uid://wjf2c53laipa" path="res://generated/biomes_billboards/trees/00_pine-tree-1/billboard_material.tres" id="1_741pe"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_741pe"]
+material = ExtResource("1_741pe")
+size = Vector2(2.1250222, 5.2886786)
+
+[node name="Pine Tree 1Billboard" type="Node3D" unique_id=2019269986]
+
+[node name="Billboard" type="MeshInstance3D" parent="." unique_id=1968750582]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6443393, 0)
+mesh = SubResource("QuadMesh_741pe")

@@ -1,0 +1,28 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dk6wbeu35ha7x"]
+
+[ext_resource type="Texture2D" uid="uid://cfhwjlo4vdbmq" path="res://objects/pine-tree-2/textures/Pine_s_1_Material_baseColor.png" id="1_dfxmi"]
+[ext_resource type="Shader" uid="uid://8h5xptvdfxjm" path="res://materials/tree_wind.gdshader" id="1_wind"]
+
+[resource]
+resource_name = "Pine_s_1_Material"
+render_priority = 0
+shader = ExtResource("1_wind")
+shader_parameter/albedo_texture = ExtResource("1_dfxmi")
+shader_parameter/use_albedo_texture = true
+shader_parameter/albedo_color = Color(1, 1, 1, 1)
+shader_parameter/use_normal_texture = false
+shader_parameter/normal_scale = 1.0
+shader_parameter/use_roughness_texture = false
+shader_parameter/roughness = 0.91316754
+shader_parameter/roughness_texture_channel = 1
+shader_parameter/metallic_specular = 0.0
+shader_parameter/alpha_scissor_threshold = 0.652
+shader_parameter/backlight_color = Color(0.25390625, 0.25390625, 0.25390625, 1)
+shader_parameter/sss_strength = 0.13
+shader_parameter/wind_speed = 1.35
+shader_parameter/wind_strength = 0.590000028025
+shader_parameter/trunk_strength = 0.0
+shader_parameter/branch_frequency = 0.3
+shader_parameter/detail_frequency = 1.25
+shader_parameter/height_start = -0.3909995435724998
+shader_parameter/height_end = 9.22400091314

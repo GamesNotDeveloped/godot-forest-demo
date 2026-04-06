@@ -1,0 +1,11 @@
+Model Information:
+* title:	Lowpoly Flower Bushes
+* source:	https://sketchfab.com/3d-models/lowpoly-flower-bushes-4b47abf072604a71aaf1bda30847a1af
+* author:	Varvara (https://sketchfab.com/krauchankavarvara)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Lowpoly Flower Bushes" (https://sketchfab.com/3d-models/lowpoly-flower-bushes-4b47abf072604a71aaf1bda30847a1af) by Varvara (https://sketchfab.com/krauchankavarvara) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -1,0 +1,37 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://b67yuvwxfenkx"]
+
+[ext_resource type="Shader" uid="uid://c71fnngbyr7hd" path="res://scenery/shaders/layered_cloud_sky.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" uid="uid://bbp8q3gn520gv" path="res://scenery/materials/cloud_noise_a.tres" id="3_cloud_a"]
+[ext_resource type="Texture2D" uid="uid://bmucus6l3rwem" path="res://scenery/materials/cloud_noise_b.tres" id="4_cloud_b"]
+[ext_resource type="Texture2D" uid="uid://dmekkpblalyii" path="res://textures/autumn_field_puresky_2k.exr" id="4_recso"]
+
+[resource]
+shader = ExtResource("1_shader")
+shader_parameter/panorama_tex = ExtResource("4_recso")
+shader_parameter/cloud_tex_a = ExtResource("3_cloud_a")
+shader_parameter/cloud_tex_b = ExtResource("4_cloud_b")
+shader_parameter/panorama_uv_offset = Vector2(-1.567, 0.11)
+shader_parameter/panorama_energy = 0.4530000215175
+shader_parameter/panorama_zenith_fade_start = 0.72400003439
+shader_parameter/panorama_zenith_fade_end = 0.922000043795
+shader_parameter/zenith_tint = Color(0.586792, 0.65776366, 0.81640625, 1)
+shader_parameter/cloud_scroll_a = Vector2(0.0014, 0.0002)
+shader_parameter/cloud_scroll_b = Vector2(-0.0023, 0.0008)
+shader_parameter/cloud_scale_a = Vector2(0.065, 0.075)
+shader_parameter/cloud_scale_b = Vector2(0.095, 0.19)
+shader_parameter/cloud_density_a = 0.8870000421325
+shader_parameter/cloud_density_b = 0.86400004104
+shader_parameter/cloud_softness = 0.69000003207648
+shader_parameter/cloud_opacity = 0.54000002565
+shader_parameter/cloud_horizon_fade = 0.3490000165775
+shader_parameter/cloud_top_fade = 0.0870000041325
+shader_parameter/cloud_brightness = 1.09200002812
+shader_parameter/cloud_tint = Color(0.986, 0.968, 0.936, 1)
+shader_parameter/cloud_plane_height = 0.09900000307256
+shader_parameter/cloud_plane_curve = 0.2530000120175
+shader_parameter/sun_disk_size = 0.070000003325
+shader_parameter/sun_disk_softness = 0.4210000199975
+shader_parameter/sun_halo_size = 0.07550000358625
+shader_parameter/sun_halo_strength = 1.266000060135
+shader_parameter/sun_cloud_occlusion = 0.77600003686
+shader_parameter/sun_energy_scale = 0.4290000203775

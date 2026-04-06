@@ -1,0 +1,28 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dvos1kcde6xgw"]
+
+[ext_resource type="Texture2D" uid="uid://dkdt18ncek0v" path="res://objects/birch-tree-1/textures/Material.002_diffuse.png" id="1_8ljxb"]
+[ext_resource type="Shader" uid="uid://8h5xptvdfxjm" path="res://materials/tree_wind.gdshader" id="1_wind"]
+
+[resource]
+resource_name = "Material.002"
+render_priority = 0
+shader = ExtResource("1_wind")
+shader_parameter/albedo_texture = ExtResource("1_8ljxb")
+shader_parameter/use_albedo_texture = true
+shader_parameter/albedo_color = Color(0.64453125, 0.64453125, 0.64453125, 1)
+shader_parameter/use_normal_texture = false
+shader_parameter/normal_scale = 1.0
+shader_parameter/use_roughness_texture = false
+shader_parameter/roughness = 0.96
+shader_parameter/roughness_texture_channel = 1
+shader_parameter/metallic_specular = 0.5
+shader_parameter/alpha_scissor_threshold = 0.0
+shader_parameter/backlight_color = Color(0.1796875, 0.1796875, 0.1796875, 1)
+shader_parameter/sss_strength = 0.0
+shader_parameter/wind_speed = 1.0
+shader_parameter/wind_strength = 0.03
+shader_parameter/trunk_strength = 0.006
+shader_parameter/branch_frequency = 0.22
+shader_parameter/detail_frequency = 0.85
+shader_parameter/height_start = 2.3030005843924997
+shader_parameter/height_end = 6.0

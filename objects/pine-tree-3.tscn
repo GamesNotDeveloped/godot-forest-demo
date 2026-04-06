@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://biq16gh23fq2e"]
+
+[ext_resource type="PackedScene" uid="uid://bhtip2magw5d2" path="res://objects/pine-tree-3/scene.gltf" id="1_rkvgr"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_rkvgr"]
+height = 1.8295898
+radius = 0.36523438
+
+[node name="Sketchfab_Scene" unique_id=2014945999 instance=ExtResource("1_rkvgr")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." index="1" unique_id=433229418]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.91394806, 0)
+shape = SubResource("CylinderShape3D_rkvgr")

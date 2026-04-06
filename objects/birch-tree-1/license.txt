@@ -1,0 +1,11 @@
+Model Information:
+* title:	Tree Bake Upload
+* source:	https://sketchfab.com/3d-models/tree-bake-upload-4e78d13152cf4214a256230765f6d6d3
+* author:	restlessmonkey (https://sketchfab.com/restlessmonkey)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Tree Bake Upload" (https://sketchfab.com/3d-models/tree-bake-upload-4e78d13152cf4214a256230765f6d6d3) by restlessmonkey (https://sketchfab.com/restlessmonkey) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
