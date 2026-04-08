@@ -16,6 +16,6 @@ image = SubResource("Image_1igp0")
 resource_name = "flower-1_billboard_material"
 transparency = 1
 cull_mode = 2
-shading_mode = 0
 albedo_texture = SubResource("ImageTexture_17ky0")
+metallic_specular = 0.0
 billboard_mode = 2

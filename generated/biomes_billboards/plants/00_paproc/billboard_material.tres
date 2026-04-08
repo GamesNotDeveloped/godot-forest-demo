@@ -16,6 +16,6 @@ image = SubResource("Image_kr2t5")
 resource_name = "paproc_billboard_material"
 transparency = 1
 cull_mode = 2
-shading_mode = 0
 albedo_texture = SubResource("ImageTexture_qdvyo")
+metallic_specular = 0.0
 billboard_mode = 2

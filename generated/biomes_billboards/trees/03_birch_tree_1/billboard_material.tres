@@ -16,6 +16,6 @@ image = SubResource("Image_qry4k")
 resource_name = "birch_tree_1_billboard_material"
 transparency = 1
 cull_mode = 2
-shading_mode = 0
 albedo_texture = SubResource("ImageTexture_eg7km")
+metallic_specular = 0.0
 billboard_mode = 2

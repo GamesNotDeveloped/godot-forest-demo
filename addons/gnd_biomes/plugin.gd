@@ -536,9 +536,10 @@ func _generate_billboard_for_entry(biomes: Biomes, entry: BiomeScatterEntry, ent
     var material := StandardMaterial3D.new()
     material.resource_name = "%s_billboard_material" % source["name"]
     material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     material.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
     material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    material.roughness = 1.0
+    material.metallic_specular = 0.0
     material.albedo_texture = texture
     material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
     if ResourceSaver.save(material, material_path) != OK:

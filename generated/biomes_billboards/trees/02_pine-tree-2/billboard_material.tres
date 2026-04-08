@@ -16,6 +16,6 @@ image = SubResource("Image_647v0")
 resource_name = "pine-tree-2_billboard_material"
 transparency = 1
 cull_mode = 2
-shading_mode = 0
 albedo_texture = SubResource("ImageTexture_ii00s")
+metallic_specular = 0.0
 billboard_mode = 2

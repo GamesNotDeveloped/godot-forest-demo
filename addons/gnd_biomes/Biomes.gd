@@ -764,7 +764,11 @@ func _mesh_with_instance_materials(mesh_instance: MeshInstance3D, billboard: boo
         var material := active_material
         if billboard and material is BaseMaterial3D:
             var duplicated_material := material.duplicate(true) as BaseMaterial3D
+            if duplicated_material.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
+                duplicated_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
             duplicated_material.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
+            duplicated_material.roughness = 1.0
+            duplicated_material.metallic_specular = 0.0
             material = duplicated_material
         mesh.surface_set_material(surface_index, material)
 
@@ -790,11 +794,17 @@ func _make_billboard_mesh(source_mesh: Mesh) -> Mesh:
         if surface_material == null:
             var created_material := StandardMaterial3D.new()
             created_material.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
+            created_material.roughness = 1.0
+            created_material.metallic_specular = 0.0
             duplicated.surface_set_material(surface_index, created_material)
             continue
         if surface_material is BaseMaterial3D:
             var duplicated_material := surface_material.duplicate(true) as BaseMaterial3D
+            if duplicated_material.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
+                duplicated_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
             duplicated_material.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
+            duplicated_material.roughness = 1.0
+            duplicated_material.metallic_specular = 0.0
             duplicated.surface_set_material(surface_index, duplicated_material)
 
     _billboard_mesh_cache[cache_key] = duplicated

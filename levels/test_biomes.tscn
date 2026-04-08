@@ -115,9 +115,9 @@ noise_type = 3
 script = ExtResource("1_flr7s")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(-0.37983397, 0.095103584, -0.92015296, 0, 0.99470115, 0.10280861, 0.92505467, 0.039050203, -0.3778213, 0, 0.5193932, -0.2882359)
-light_color = Color(1, 0.8173644, 0.68573976, 1)
-light_energy = 1.32
+transform = Transform3D(0.3630861, 0.47970963, -0.79877853, 0, 0.85728335, 0.5148449, 0.93175554, -0.18693304, 0.31126767, 0, 0.5193932, -0.2882359)
+light_color = Color(0.23498535, 0.29047748, 0.34375, 1)
+light_energy = 0.212
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
 light_angular_distance = 3.6
@@ -210,14 +210,14 @@ biomes_path = NodePath("../Trees")
 world_environment_path = NodePath("../WorldEnvironment")
 sample_target_path = NodePath("../UP_FPSController_Prefab")
 radius = 1.2
-min_fog_density = 0.005
-max_density = 0.0149999999999999
+min_fog_density = 0.01
+max_density = 0.107
 tween_duration = 1.5
 
 [node name="Skydome" type="Node" parent="." unique_id=492184110]
 script = ExtResource("19_shafts")
 day_of_year = 154
-time_of_day = 18.382
+time_of_day = 21.422
 latitude = 28.861000000000004
 sun_light_energy = 1.32
 moon_light_color = Color(0.23498535, 0.29047748, 0.34375, 1)
@@ -234,7 +234,7 @@ vol_fog_density_night = 0.107
 vol_fog_sky_affect_night = 0.9
 directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
-moon_phase_debug = 0.2409724573879668
+moon_phase_debug = 0.24526188057342768
 shader_night_horizon_color = Color(0.1538086, 0.18239667, 0.234375, 1)
 shader_night_sky_energy = 0.165
 shader_moon_size = 1.64
