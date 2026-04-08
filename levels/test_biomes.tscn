@@ -115,9 +115,9 @@ noise_type = 3
 script = ExtResource("1_flr7s")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(0.27825943, 0.70001704, -0.65768373, 0, 0.6847263, 0.7288003, 0.960506, -0.20279555, 0.19053155, 0, 0.5193932, -0.2882359)
-light_color = Color(1, 0.93054914, 0.84765625, 1)
-light_energy = 1.28
+transform = Transform3D(-0.32882175, 0.19711292, -0.9235923, 0, 0.9779756, 0.20871937, 0.94439197, 0.06863148, -0.32157964, 0, 0.5193932, -0.2882359)
+light_color = Color(1, 0.93, 0.85, 1)
+light_energy = 1.32
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
 light_angular_distance = 3.6
@@ -216,11 +216,19 @@ tween_duration = 1.5
 
 [node name="Skydome" type="Node" parent="." unique_id=492184110]
 script = ExtResource("19_shafts")
-day_of_year = 134
-time_of_day = 14.927
-latitude = 10.241
+day_of_year = 155
+time_of_day = 17.886
+latitude = 28.861000000000004
+sun_light_energy = 1.32
+moon_light_color = Color(0.23498535, 0.29047748, 0.34375, 1)
+moon_light_energy = 0.98
 directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
+moon_phase_debug = 0.27413647138503183
+shader_night_sky_energy = 0.345
+shader_moon_size = 1.755
+shader_moon_glow_strength = 0.045
+shader_moon_eclipse_size = 0.99
 
 [node name="CanvasLayer" parent="." unique_id=1602580574 instance=ExtResource("17_1ndc1")]
 
