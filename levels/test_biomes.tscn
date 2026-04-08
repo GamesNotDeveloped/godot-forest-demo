@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" uid="uid://eb0v7nc1t8o3" path="res://addons/gnd_biomes/Biomes.gd" id="1_8b86h"]
 [ext_resource type="Script" uid="uid://bmv225qduery8" path="res://levels/test_biomes.gd" id="1_flr7s"]
-[ext_resource type="Environment" uid="uid://cjj0bb572ivil" path="res://materials/environment.tres" id="2_0f0wj"]
 [ext_resource type="Script" uid="uid://c7po5kdfyl86e" path="res://addons/gnd_biomes/BiomeScatterEntry.gd" id="2_471tc"]
 [ext_resource type="Script" uid="uid://pw1ljvn4g7cy" path="res://scenery/SunShaftsCompositorEffect.gd" id="2_mh1bx"]
+[ext_resource type="Environment" uid="uid://nisddm6dgh86" path="res://materials/environment_filmic.tres" id="2_ptoc1"]
 [ext_resource type="Script" uid="uid://bs433ey6i3c11" path="res://scenery/TerrainPatch3D.gd" id="2_terrain"]
 [ext_resource type="PackedScene" uid="uid://bkepaelbv6c50" path="res://generated/biomes_billboards/trees/00_pine-tree-1/billboard.tscn" id="3_oakni"]
 [ext_resource type="PackedScene" uid="uid://b0arh1uwyilru" path="res://objects/pine-tree-1.tscn" id="3_qc3ns"]
@@ -36,13 +36,7 @@
 [ext_resource type="AudioStream" uid="uid://cho50y1ngfmfy" path="res://music/sigmamusicart-tension-tension-music-503993.mp3" id="34_flr7s"]
 [ext_resource type="PackedScene" uid="uid://ctwu0ey7hgcm1" path="res://objects/old-well.tscn" id="34_pbujr"]
 [ext_resource type="Script" uid="uid://dv1xopie6t4q2" path="res://ui/QualityProfilesCanvas.gd" id="35_quality"]
-
-[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_ffumx"]
-auto_exposure_enabled = true
-auto_exposure_scale = 0.28
-auto_exposure_speed = 1.5
-auto_exposure_min_sensitivity = 80.0
-auto_exposure_max_sensitivity = 220.0
+[ext_resource type="CameraAttributesPractical" path="res://materials/camera_attributes_high.tres" id="36_cam_high"]
 
 [sub_resource type="CompositorEffect" id="CompositorEffect_mh1bx"]
 resource_local_to_scene = false
@@ -52,7 +46,7 @@ effect_callback_type = 4
 needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("2_mh1bx")
-sun_screen_uv = Vector2(12.10697, -24.299051)
+sun_screen_uv = Vector2(-30.603859, -75.01706)
 shaft_color = Color(0.71875, 0.63786393, 0.37902832, 1)
 density = 0.485
 bright_threshold = 0.182
@@ -153,8 +147,8 @@ directional_shadow_max_distance = 200.0
 sky_mode = 1
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=18636673]
-environment = ExtResource("2_0f0wj")
-camera_attributes = SubResource("CameraAttributesPractical_ffumx")
+environment = ExtResource("2_ptoc1")
+camera_attributes = ExtResource("36_cam_high")
 compositor = SubResource("Compositor_ym8rc")
 
 [node name="Trees" type="Node3D" parent="." unique_id=1585352953]

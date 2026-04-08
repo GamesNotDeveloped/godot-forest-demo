@@ -1,0 +1,8 @@
+[gd_resource type="CameraAttributesPractical" format=3]
+
+[resource]
+auto_exposure_enabled = true
+auto_exposure_scale = 0.33
+auto_exposure_speed = 3.0
+auto_exposure_min_sensitivity = 91.33
+auto_exposure_max_sensitivity = 506.5

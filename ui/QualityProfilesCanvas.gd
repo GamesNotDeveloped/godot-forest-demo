@@ -68,7 +68,7 @@ func _build_overlay() -> void:
         button.custom_minimum_size = Vector2(88.0, 28.0)
         button.focus_mode = Control.FOCUS_NONE
         button.add_theme_font_size_override("font_size", 14)
-        button.pressed.connect(func() -> void: _select_profile(profile_name))
+        button.pressed.connect(_on_profile_button_pressed.bind(profile_name))
         row.add_child(button)
         _buttons[profile_name] = button
 
@@ -86,6 +86,10 @@ func _select_profile(profile_name: String) -> void:
     if host != null and host.has_method("apply_quality_profile"):
         host.call("apply_quality_profile", profile_name)
     _set_active_profile(profile_name)
+
+
+func _on_profile_button_pressed(profile_name: String) -> void:
+    _select_profile(profile_name)
 
 
 func _set_active_profile(profile_name: String) -> void:

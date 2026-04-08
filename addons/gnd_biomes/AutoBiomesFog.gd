@@ -120,3 +120,33 @@ func _get_effective_max_density() -> float:
     if max_density >= 0.0:
         return max_density
     return _max_fog_density
+
+
+func apply_profile_override(max_density_override: float) -> void:
+    max_density = max_density_override
+    _refresh_environment_cache()
+
+    if _fog_tween != null:
+        _fog_tween.kill()
+        _fog_tween = null
+
+    var environment := _get_environment()
+    if environment == null:
+        return
+
+    if not environment.volumetric_fog_enabled:
+        environment.volumetric_fog_density = 0.0
+        _last_target_density = 0.0
+        return
+
+    var biomes := get_node_or_null(biomes_path) as Biomes
+    var sample_target := get_node_or_null(sample_target_path) as Node3D
+    if biomes == null or sample_target == null:
+        environment.volumetric_fog_density = _get_effective_max_density()
+        _last_target_density = environment.volumetric_fog_density
+        return
+
+    var sample := clampf(biomes.sample_mask_value_at_world_position(sample_target.global_position, radius), 0.0, 1.0)
+    var target_density := lerpf(min_fog_density, _get_effective_max_density(), sample)
+    environment.volumetric_fog_density = target_density
+    _last_target_density = target_density

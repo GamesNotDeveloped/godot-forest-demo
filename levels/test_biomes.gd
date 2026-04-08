@@ -12,23 +12,22 @@ const QUALITY_PROFILES := [
 ]
 
 @onready var _world_environment: WorldEnvironment = $WorldEnvironment
-@onready var _environment: Environment = $WorldEnvironment.environment
-@onready var _camera_attributes: CameraAttributesPractical = $WorldEnvironment.camera_attributes as CameraAttributesPractical
 @onready var _directional_light: DirectionalLight3D = $DirectionalLight3D
 @onready var _terrain: TerrainPatch3D = $Terrain
 @onready var _auto_biomes_fog: AutoBiomesFog = $AutoBiomesFog
 
 var _active_quality_profile := QUALITY_PROFILE_HIGH
 
+var _environment_resources: Dictionary = {}
+var _camera_attribute_resources: Dictionary = {}
 var _terrain_material: StandardMaterial3D
 var _grass_material: ShaderMaterial
 var _tree_leaf_materials: Array[ShaderMaterial] = []
+var _profile_apply_serial := 0
 
 
 func _ready() -> void:
     _cache_material_references()
-    if _environment != null:
-        _environment.volumetric_fog_enabled = true
     apply_quality_profile(_active_quality_profile)
 
 
@@ -41,18 +40,46 @@ func apply_quality_profile(profile_name: String) -> void:
         return
 
     _active_quality_profile = profile_name
+    _profile_apply_serial += 1
 
     var profile: Dictionary = _build_quality_profile(profile_name)
-    _apply_viewport_profile(profile["viewport"] as Dictionary)
-    _apply_environment_profile(profile["environment"] as Dictionary)
-    _apply_camera_profile(profile["camera"] as Dictionary)
-    _apply_light_profile(profile["light"] as Dictionary)
-    _apply_terrain_profile(profile["terrain"] as Dictionary)
-    _apply_material_profile(profile["materials"] as String)
+    _apply_profile_settings(profile)
+    _refresh_debug_menu()
+    _reapply_profile_next_frame(_profile_apply_serial)
+
+
+func _reapply_profile_next_frame(serial: int) -> void:
+    await get_tree().process_frame
+    if serial != _profile_apply_serial:
+        return
+
+    var profile: Dictionary = _build_quality_profile(_active_quality_profile)
+    _apply_profile_settings(profile)
     _refresh_debug_menu()
 
 
+func _apply_profile_settings(profile: Dictionary) -> void:
+    _apply_viewport_profile(profile["viewport"] as Dictionary)
+    _apply_environment_resources(profile["environment_resource"] as String, profile["camera_resource"] as String)
+    _apply_fog_profile(profile["fog_controller_max_density"])
+    _apply_light_profile(profile["light"] as Dictionary)
+    _apply_terrain_profile(profile["terrain"] as Dictionary)
+    _apply_material_profile(profile["materials"] as String)
+
+
 func _cache_material_references() -> void:
+    _environment_resources = {
+        QUALITY_PROFILE_FILMIC: load("res://materials/environment_filmic.tres"),
+        QUALITY_PROFILE_HIGH: load("res://materials/environment_high.tres"),
+        QUALITY_PROFILE_MID: load("res://materials/environment_mid.tres"),
+        QUALITY_PROFILE_LOW: load("res://materials/environment_low.tres"),
+    }
+    _camera_attribute_resources = {
+        QUALITY_PROFILE_FILMIC: load("res://materials/camera_attributes_filmic.tres"),
+        QUALITY_PROFILE_HIGH: load("res://materials/camera_attributes_high.tres"),
+        QUALITY_PROFILE_MID: load("res://materials/camera_attributes_mid.tres"),
+        QUALITY_PROFILE_LOW: load("res://materials/camera_attributes_low.tres"),
+    }
     _terrain_material = _terrain.terrain_material as StandardMaterial3D
     _grass_material = _terrain.grass_material as ShaderMaterial
     _tree_leaf_materials = [
@@ -77,42 +104,9 @@ func _build_quality_profile(profile_name: String) -> Dictionary:
                     "msaa_3d": Viewport.MSAA_DISABLED,
                     "screen_space_aa": Viewport.SCREEN_SPACE_AA_DISABLED,
                 },
-                "camera": {
-                    "auto_exposure_scale": 0.28,
-                    "auto_exposure_speed": 1.5,
-                    "auto_exposure_min_sensitivity": 80.0,
-                    "auto_exposure_max_sensitivity": 220.0,
-                },
-                "environment": {
-                    "ambient_light_energy": 2.55,
-                    "tonemap_exposure": 1.18,
-                    "tonemap_white": 8.6,
-                    "tonemap_agx_contrast": 1.22,
-                    "ssao_enabled": true,
-                    "ssao_light_affect": 0.08,
-                    "ssil_enabled": true,
-                    "sdfgi_enabled": true,
-                    "glow_enabled": true,
-                    "glow_intensity": 1.08,
-                    "glow_bloom": 0.31,
-                    "fog_enabled": true,
-                    "fog_light_color": Color(1.0, 0.95686275, 0.91764706, 1.0),
-                    "fog_sun_scatter": 0.45,
-                    "fog_density": 0.102,
-                    "fog_sky_affect": 0.12,
-                    "fog_depth_curve": 0.42,
-                    "fog_depth_begin": 1.8,
-                    "fog_depth_end": 430.0,
-                    "volumetric_fog_enabled": true,
-                    "volumetric_fog_density": 0.02,
-                    "volumetric_fog_gi_inject": 1.2,
-                    "volumetric_fog_anisotropy": 0.42,
-                    "volumetric_fog_length": 8.0,
-                    "volumetric_fog_ambient_inject": 0.18,
-                    "volumetric_fog_sky_affect": 0.82,
-                    "adjustment_saturation": 0.82,
-                    "fog_controller_max_density": 0.02,
-                },
+                "environment_resource": QUALITY_PROFILE_FILMIC,
+                "camera_resource": QUALITY_PROFILE_FILMIC,
+                "fog_controller_max_density": 0.02,
                 "light": {
                     "light_energy": 1.28,
                     "light_indirect_energy": 1.18,
@@ -136,42 +130,9 @@ func _build_quality_profile(profile_name: String) -> Dictionary:
                     "msaa_3d": Viewport.MSAA_DISABLED,
                     "screen_space_aa": Viewport.SCREEN_SPACE_AA_FXAA,
                 },
-                "camera": {
-                    "auto_exposure_scale": 0.33,
-                    "auto_exposure_speed": 3.0,
-                    "auto_exposure_min_sensitivity": 91.33,
-                    "auto_exposure_max_sensitivity": 506.5,
-                },
-                "environment": {
-                    "ambient_light_energy": 2.35,
-                    "tonemap_exposure": 1.32,
-                    "tonemap_white": 9.64,
-                    "tonemap_agx_contrast": 1.57,
-                    "ssao_enabled": true,
-                    "ssao_light_affect": 0.11,
-                    "ssil_enabled": true,
-                    "sdfgi_enabled": true,
-                    "glow_enabled": true,
-                    "glow_intensity": 0.96,
-                    "glow_bloom": 0.23,
-                    "fog_enabled": true,
-                    "fog_light_color": Color(1.0, 1.0, 1.0, 1.0),
-                    "fog_sun_scatter": 0.34,
-                    "fog_density": 0.0885,
-                    "fog_sky_affect": 0.071,
-                    "fog_depth_curve": 0.32987642,
-                    "fog_depth_begin": 3.4,
-                    "fog_depth_end": 570.3,
-                    "volumetric_fog_enabled": true,
-                    "volumetric_fog_density": 0.015,
-                    "volumetric_fog_gi_inject": 1.1,
-                    "volumetric_fog_anisotropy": 0.35,
-                    "volumetric_fog_length": 6.23,
-                    "volumetric_fog_ambient_inject": 0.11,
-                    "volumetric_fog_sky_affect": 0.768,
-                    "adjustment_saturation": 0.88,
-                    "fog_controller_max_density": 0.015,
-                },
+                "environment_resource": QUALITY_PROFILE_HIGH,
+                "camera_resource": QUALITY_PROFILE_HIGH,
+                "fog_controller_max_density": 0.015,
                 "light": {
                     "light_energy": 1.409,
                     "light_indirect_energy": 0.925,
@@ -195,42 +156,9 @@ func _build_quality_profile(profile_name: String) -> Dictionary:
                     "msaa_3d": Viewport.MSAA_DISABLED,
                     "screen_space_aa": Viewport.SCREEN_SPACE_AA_FXAA,
                 },
-                "camera": {
-                    "auto_exposure_scale": 0.32,
-                    "auto_exposure_speed": 2.3,
-                    "auto_exposure_min_sensitivity": 88.0,
-                    "auto_exposure_max_sensitivity": 360.0,
-                },
-                "environment": {
-                    "ambient_light_energy": 2.3,
-                    "tonemap_exposure": 1.28,
-                    "tonemap_white": 9.2,
-                    "tonemap_agx_contrast": 1.46,
-                    "ssao_enabled": true,
-                    "ssao_light_affect": 0.08,
-                    "ssil_enabled": false,
-                    "sdfgi_enabled": false,
-                    "glow_enabled": true,
-                    "glow_intensity": 0.78,
-                    "glow_bloom": 0.16,
-                    "fog_enabled": true,
-                    "fog_light_color": Color(0.972549, 0.9647059, 0.9529412, 1.0),
-                    "fog_sun_scatter": 0.26,
-                    "fog_density": 0.072,
-                    "fog_sky_affect": 0.06,
-                    "fog_depth_curve": 0.28,
-                    "fog_depth_begin": 5.0,
-                    "fog_depth_end": 500.0,
-                    "volumetric_fog_enabled": true,
-                    "volumetric_fog_density": 0.009,
-                    "volumetric_fog_gi_inject": 0.8,
-                    "volumetric_fog_anisotropy": 0.25,
-                    "volumetric_fog_length": 5.0,
-                    "volumetric_fog_ambient_inject": 0.08,
-                    "volumetric_fog_sky_affect": 0.54,
-                    "adjustment_saturation": 0.87,
-                    "fog_controller_max_density": 0.009,
-                },
+                "environment_resource": QUALITY_PROFILE_MID,
+                "camera_resource": QUALITY_PROFILE_MID,
+                "fog_controller_max_density": 0.011,
                 "light": {
                     "light_energy": 1.34,
                     "light_indirect_energy": 1.02,
@@ -254,42 +182,9 @@ func _build_quality_profile(profile_name: String) -> Dictionary:
                     "msaa_3d": Viewport.MSAA_DISABLED,
                     "screen_space_aa": Viewport.SCREEN_SPACE_AA_FXAA,
                 },
-                "camera": {
-                    "auto_exposure_scale": 0.32,
-                    "auto_exposure_speed": 2.0,
-                    "auto_exposure_min_sensitivity": 85.0,
-                    "auto_exposure_max_sensitivity": 300.0,
-                },
-                "environment": {
-                    "ambient_light_energy": 2.22,
-                    "tonemap_exposure": 1.26,
-                    "tonemap_white": 9.0,
-                    "tonemap_agx_contrast": 1.44,
-                    "ssao_enabled": false,
-                    "ssao_light_affect": 0.0,
-                    "ssil_enabled": false,
-                    "sdfgi_enabled": false,
-                    "glow_enabled": false,
-                    "glow_intensity": 0.0,
-                    "glow_bloom": 0.0,
-                    "fog_enabled": true,
-                    "fog_light_color": Color(0.9529412, 0.94509804, 0.9372549, 1.0),
-                    "fog_sun_scatter": 0.18,
-                    "fog_density": 0.062,
-                    "fog_sky_affect": 0.04,
-                    "fog_depth_curve": 0.23,
-                    "fog_depth_begin": 6.5,
-                    "fog_depth_end": 460.0,
-                    "volumetric_fog_enabled": false,
-                    "volumetric_fog_density": 0.0,
-                    "volumetric_fog_gi_inject": 0.0,
-                    "volumetric_fog_anisotropy": 0.0,
-                    "volumetric_fog_length": 4.0,
-                    "volumetric_fog_ambient_inject": 0.0,
-                    "volumetric_fog_sky_affect": 0.0,
-                    "adjustment_saturation": 0.87,
-                    "fog_controller_max_density": -1.0,
-                },
+                "environment_resource": QUALITY_PROFILE_LOW,
+                "camera_resource": QUALITY_PROFILE_LOW,
+                "fog_controller_max_density": -1.0,
                 "light": {
                     "light_energy": 1.32,
                     "light_indirect_energy": 1.0,
@@ -319,51 +214,21 @@ func _apply_viewport_profile(settings: Dictionary) -> void:
     viewport.screen_space_aa = settings["screen_space_aa"]
 
 
-func _apply_environment_profile(settings: Dictionary) -> void:
-    if _environment == null:
+func _apply_environment_resources(environment_profile: String, camera_profile: String) -> void:
+    if _world_environment == null:
         return
 
-    _environment.ambient_light_energy = settings["ambient_light_energy"]
-    _environment.tonemap_exposure = settings["tonemap_exposure"]
-    _environment.tonemap_white = settings["tonemap_white"]
-    _environment.tonemap_agx_contrast = settings["tonemap_agx_contrast"]
-    _environment.ssao_enabled = settings["ssao_enabled"]
-    _environment.ssao_light_affect = settings["ssao_light_affect"]
-    _environment.ssil_enabled = settings["ssil_enabled"]
-    _environment.sdfgi_enabled = settings["sdfgi_enabled"]
-    _environment.glow_enabled = settings["glow_enabled"]
-    _environment.glow_intensity = settings["glow_intensity"]
-    _environment.glow_bloom = settings["glow_bloom"]
-    _environment.fog_enabled = settings["fog_enabled"]
-    _environment.fog_light_color = settings["fog_light_color"]
-    _environment.fog_sun_scatter = settings["fog_sun_scatter"]
-    _environment.fog_density = settings["fog_density"]
-    _environment.fog_sky_affect = settings["fog_sky_affect"]
-    _environment.fog_depth_curve = settings["fog_depth_curve"]
-    _environment.fog_depth_begin = settings["fog_depth_begin"]
-    _environment.fog_depth_end = settings["fog_depth_end"]
-    _environment.volumetric_fog_enabled = settings["volumetric_fog_enabled"]
-    _environment.volumetric_fog_density = settings["volumetric_fog_density"]
-    _environment.volumetric_fog_gi_inject = settings["volumetric_fog_gi_inject"]
-    _environment.volumetric_fog_anisotropy = settings["volumetric_fog_anisotropy"]
-    _environment.volumetric_fog_length = settings["volumetric_fog_length"]
-    _environment.volumetric_fog_ambient_inject = settings["volumetric_fog_ambient_inject"]
-    _environment.volumetric_fog_sky_affect = settings["volumetric_fog_sky_affect"]
-    _environment.adjustment_saturation = settings["adjustment_saturation"]
+    var environment_resource := _environment_resources.get(environment_profile) as Environment
+    var camera_resource := _camera_attribute_resources.get(camera_profile) as CameraAttributesPractical
+    if environment_resource != null:
+        _world_environment.environment = environment_resource
+    if camera_resource != null:
+        _world_environment.camera_attributes = camera_resource
 
+
+func _apply_fog_profile(max_density: float) -> void:
     if _auto_biomes_fog != null:
-        _auto_biomes_fog.max_density = settings["fog_controller_max_density"]
-        _auto_biomes_fog.call_deferred("_sample_and_apply_fog")
-
-
-func _apply_camera_profile(settings: Dictionary) -> void:
-    if _camera_attributes == null:
-        return
-
-    _camera_attributes.auto_exposure_scale = settings["auto_exposure_scale"]
-    _camera_attributes.auto_exposure_speed = settings["auto_exposure_speed"]
-    _camera_attributes.auto_exposure_min_sensitivity = settings["auto_exposure_min_sensitivity"]
-    _camera_attributes.auto_exposure_max_sensitivity = settings["auto_exposure_max_sensitivity"]
+        _auto_biomes_fog.apply_profile_override(max_density)
 
 
 func _apply_light_profile(settings: Dictionary) -> void:

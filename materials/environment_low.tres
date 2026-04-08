@@ -1,0 +1,41 @@
+[gd_resource type="Environment" format=3 uid="uid://0gabw6jt7o71"]
+
+[ext_resource type="CompressedTexture3D" uid="uid://dtbgscvfrtl8e" path="res://lut/lut3.png" id="1_lut"]
+[ext_resource type="Sky" uid="uid://c2k13c6hxy46b" path="res://materials/sky.tres" id="2_sky"]
+
+[resource]
+background_mode = 2
+background_color = Color(0.81640625, 0.76538086, 0.76538086, 1)
+background_energy_multiplier = 0.73
+sky = ExtResource("2_sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.8745098, 0.83137256, 0.7058824, 1)
+ambient_light_sky_contribution = 0.0
+ambient_light_energy = 0.28
+tonemap_mode = 4
+tonemap_exposure = 1.08
+tonemap_white = 8.5
+tonemap_agx_white = 2.0
+tonemap_agx_contrast = 1.28
+glow_intensity = 0.0
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(1, 0.97402954, 0.85546875, 1)
+fog_light_energy = 1.39
+fog_sun_scatter = 0.22
+fog_density = 0.301
+fog_sky_affect = 0.07
+fog_depth_curve = 0.3284183
+fog_depth_begin = 0.8
+fog_depth_end = 360.0
+volumetric_fog_density = 0.0
+volumetric_fog_albedo = Color(0.761, 0.732, 0.698, 1)
+volumetric_fog_gi_inject = 0.0
+volumetric_fog_anisotropy = 0.0
+volumetric_fog_length = 4.0
+volumetric_fog_detail_spread = 1.2
+volumetric_fog_sky_affect = 0.0
+volumetric_fog_temporal_reprojection_amount = 0.93
+adjustment_enabled = true
+adjustment_saturation = 0.83
+adjustment_color_correction = ExtResource("1_lut")
