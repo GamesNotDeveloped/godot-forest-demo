@@ -6,10 +6,12 @@
 [resource]
 background_mode = 2
 background_color = Color(0.81640625, 0.76538086, 0.76538086, 1)
+background_energy_multiplier = 0.96
 sky = ExtResource("2_sky")
 ambient_light_source = 3
 ambient_light_color = Color(0.91015625, 0.85593796, 0.6932831, 1)
-ambient_light_sky_contribution = 0.3
+ambient_light_sky_contribution = 0.25
+ambient_light_energy = 1.46
 tonemap_mode = 4
 tonemap_exposure = 0.98
 tonemap_white = 8.6
