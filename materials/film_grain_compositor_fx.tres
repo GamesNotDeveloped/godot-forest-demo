@@ -1,0 +1,15 @@
+[gd_resource type="CompositorEffect" script_class="FilmGrainCompositorEffect" format=3 uid="uid://c8f5kmj6wip87"]
+
+[ext_resource type="Script" uid="uid://uaaba1hgq2sw" path="res://scenery/FilmGrainCompositorEffect.gd" id="1_mtyvs"]
+
+[resource]
+resource_local_to_scene = false
+resource_name = ""
+enabled = true
+effect_callback_type = 4
+needs_motion_vectors = false
+needs_normal_roughness = false
+script = ExtResource("1_mtyvs")
+amount = 0.039
+shadow_response = 0.298
+highlight_response = 0.32

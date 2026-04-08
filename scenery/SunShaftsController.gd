@@ -7,6 +7,7 @@ const SUN_SHAFTS_EFFECT_SCRIPT := preload("res://scenery/SunShaftsCompositorEffe
 var _world_environment_path: NodePath
 var _directional_light_path: NodePath
 var _distance := 10000.0
+var _runtime_enabled := true
 
 @export_group("Nodes")
 @export var world_environment_path: NodePath:
@@ -35,19 +36,25 @@ var effect: CompositorEffect
 
 
 func _enter_tree() -> void:
-	_ensure_effect_installed()
+	if _runtime_enabled:
+		_ensure_effect_installed()
 
 
 func _ready() -> void:
-	_ensure_effect_installed()
-	set_process(true)
+	if _runtime_enabled:
+		_ensure_effect_installed()
+	set_process(_runtime_enabled)
 
 
 func _process(_delta: float) -> void:
+	if not _runtime_enabled:
+		return
 	_update_effect()
 
 
 func _ensure_effect_installed() -> void:
+	if not _runtime_enabled:
+		return
 	var world_environment := get_node_or_null(_world_environment_path) as WorldEnvironment
 	if world_environment == null:
 		return
@@ -105,7 +112,20 @@ func _update_effect() -> void:
 
 
 func _refresh_effect() -> void:
+	if not _runtime_enabled:
+		return
 	if not is_inside_tree():
+		return
+	_ensure_effect_installed()
+	_update_effect()
+
+
+func set_runtime_enabled(value: bool) -> void:
+	_runtime_enabled = value
+	set_process(value)
+	if not value:
+		if effect != null:
+			effect.set("sun_visible", false)
 		return
 	_ensure_effect_installed()
 	_update_effect()

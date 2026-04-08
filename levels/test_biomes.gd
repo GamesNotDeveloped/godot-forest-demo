@@ -15,11 +15,13 @@ const QUALITY_PROFILES := [
 @onready var _directional_light: DirectionalLight3D = $DirectionalLight3D
 @onready var _terrain: TerrainPatch3D = $Terrain
 @onready var _auto_biomes_fog: AutoBiomesFog = $AutoBiomesFog
+@onready var _sun_shafts_controller: SunShaftsController = $SunShaftsController
 
 var _active_quality_profile := QUALITY_PROFILE_FILMIC
 
 var _environment_resources: Dictionary = {}
 var _camera_attribute_resources: Dictionary = {}
+var _compositor_resources: Dictionary = {}
 var _terrain_material: StandardMaterial3D
 var _grass_material: ShaderMaterial
 var _tree_leaf_materials: Array[ShaderMaterial] = []
@@ -60,7 +62,12 @@ func _reapply_profile_next_frame(serial: int) -> void:
 
 func _apply_profile_settings(profile: Dictionary) -> void:
     _apply_viewport_profile(profile["viewport"] as Dictionary)
-    _apply_environment_resources(profile["environment_resource"] as String, profile["camera_resource"] as String)
+    _apply_environment_resources(
+        profile["environment_resource"] as String,
+        profile["camera_resource"] as String,
+        profile["compositor_resource"] as String
+    )
+    _apply_sun_shafts_profile(profile["sun_shafts_enabled"])
     _apply_fog_profile(profile["fog_controller_max_density"])
     _apply_light_profile(profile["light"] as Dictionary)
     _apply_terrain_profile(profile["terrain"] as Dictionary)
@@ -79,6 +86,12 @@ func _cache_material_references() -> void:
         QUALITY_PROFILE_HIGH: load("res://materials/camera_attributes_high.tres"),
         QUALITY_PROFILE_MID: load("res://materials/camera_attributes_mid.tres"),
         QUALITY_PROFILE_LOW: load("res://materials/camera_attributes_low.tres"),
+    }
+    _compositor_resources = {
+        QUALITY_PROFILE_FILMIC: load("res://materials/filmic_compositor.tres"),
+        QUALITY_PROFILE_HIGH: load("res://materials/default_compositor.tres"),
+        QUALITY_PROFILE_MID: load("res://materials/default_compositor.tres"),
+        QUALITY_PROFILE_LOW: null,
     }
     _terrain_material = _terrain.terrain_material as StandardMaterial3D
     _grass_material = _terrain.grass_material as ShaderMaterial
@@ -106,6 +119,8 @@ func _build_quality_profile(profile_name: String) -> Dictionary:
                 },
                 "environment_resource": QUALITY_PROFILE_FILMIC,
                 "camera_resource": QUALITY_PROFILE_FILMIC,
+                "compositor_resource": QUALITY_PROFILE_FILMIC,
+                "sun_shafts_enabled": true,
                 "fog_controller_max_density": 0.02,
                 "light": {
                     "light_energy": 1.26,
@@ -132,6 +147,8 @@ func _build_quality_profile(profile_name: String) -> Dictionary:
                 },
                 "environment_resource": QUALITY_PROFILE_HIGH,
                 "camera_resource": QUALITY_PROFILE_HIGH,
+                "compositor_resource": QUALITY_PROFILE_HIGH,
+                "sun_shafts_enabled": true,
                 "fog_controller_max_density": 0.015,
                 "light": {
                     "light_energy": 1.409,
@@ -158,6 +175,8 @@ func _build_quality_profile(profile_name: String) -> Dictionary:
                 },
                 "environment_resource": QUALITY_PROFILE_MID,
                 "camera_resource": QUALITY_PROFILE_MID,
+                "compositor_resource": QUALITY_PROFILE_MID,
+                "sun_shafts_enabled": true,
                 "fog_controller_max_density": 0.011,
                 "light": {
                     "light_energy": 1.34,
@@ -184,6 +203,8 @@ func _build_quality_profile(profile_name: String) -> Dictionary:
                 },
                 "environment_resource": QUALITY_PROFILE_LOW,
                 "camera_resource": QUALITY_PROFILE_LOW,
+                "compositor_resource": QUALITY_PROFILE_LOW,
+                "sun_shafts_enabled": false,
                 "fog_controller_max_density": -1.0,
                 "light": {
                     "light_energy": 1.32,
@@ -214,16 +235,23 @@ func _apply_viewport_profile(settings: Dictionary) -> void:
     viewport.screen_space_aa = settings["screen_space_aa"]
 
 
-func _apply_environment_resources(environment_profile: String, camera_profile: String) -> void:
+func _apply_environment_resources(environment_profile: String, camera_profile: String, compositor_profile: String) -> void:
     if _world_environment == null:
         return
 
     var environment_resource := _environment_resources.get(environment_profile) as Environment
     var camera_resource := _camera_attribute_resources.get(camera_profile) as CameraAttributesPractical
+    var compositor_resource := _compositor_resources.get(compositor_profile) as Compositor
     if environment_resource != null:
         _world_environment.environment = environment_resource
     if camera_resource != null:
         _world_environment.camera_attributes = camera_resource
+    _world_environment.compositor = compositor_resource
+
+
+func _apply_sun_shafts_profile(enabled: bool) -> void:
+    if _sun_shafts_controller != null:
+        _sun_shafts_controller.set_runtime_enabled(enabled)
 
 
 func _apply_fog_profile(max_density: float) -> void:

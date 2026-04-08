@@ -3,11 +3,11 @@
 [ext_resource type="Script" uid="uid://eb0v7nc1t8o3" path="res://addons/gnd_biomes/Biomes.gd" id="1_8b86h"]
 [ext_resource type="Script" uid="uid://bmv225qduery8" path="res://levels/test_biomes.gd" id="1_flr7s"]
 [ext_resource type="Script" uid="uid://c7po5kdfyl86e" path="res://addons/gnd_biomes/BiomeScatterEntry.gd" id="2_471tc"]
-[ext_resource type="Script" uid="uid://pw1ljvn4g7cy" path="res://scenery/SunShaftsCompositorEffect.gd" id="2_mh1bx"]
 [ext_resource type="Environment" uid="uid://nisddm6dgh86" path="res://materials/environment_filmic.tres" id="2_ptoc1"]
 [ext_resource type="Script" uid="uid://bs433ey6i3c11" path="res://scenery/TerrainPatch3D.gd" id="2_terrain"]
 [ext_resource type="PackedScene" uid="uid://bkepaelbv6c50" path="res://generated/biomes_billboards/trees/00_pine-tree-1/billboard.tscn" id="3_oakni"]
 [ext_resource type="PackedScene" uid="uid://b0arh1uwyilru" path="res://objects/pine-tree-1.tscn" id="3_qc3ns"]
+[ext_resource type="Compositor" uid="uid://bpytambhrsmub" path="res://materials/default_compositor.tres" id="4_ptoc1"]
 [ext_resource type="PackedScene" uid="uid://b4c8s22viordq" path="res://objects/pine-tree-2.tscn" id="5_qsh2c"]
 [ext_resource type="Texture2D" uid="uid://b7qpk2tctbu0x" path="res://levels/biomes_mask.png" id="6_2omi8"]
 [ext_resource type="PackedScene" uid="uid://b6d80typr1lwv" path="res://generated/biomes_billboards/trees/02_pine-tree-2/billboard.tscn" id="7_hx8ph"]
@@ -37,27 +37,6 @@
 [ext_resource type="PackedScene" uid="uid://ctwu0ey7hgcm1" path="res://objects/old-well.tscn" id="34_pbujr"]
 [ext_resource type="Script" uid="uid://dv1xopie6t4q2" path="res://ui/QualityProfilesCanvas.gd" id="35_quality"]
 [ext_resource type="CameraAttributesPractical" path="res://materials/camera_attributes_filmic.tres" id="36_cam_high"]
-
-[sub_resource type="CompositorEffect" id="CompositorEffect_mh1bx"]
-resource_local_to_scene = false
-resource_name = ""
-enabled = true
-effect_callback_type = 4
-needs_motion_vectors = false
-needs_normal_roughness = false
-script = ExtResource("2_mh1bx")
-sun_screen_uv = Vector2(-1.9328296, -3.8837178)
-sun_visible = true
-shaft_color = Color(0.71875, 0.63786393, 0.37902832, 1)
-density = 0.399
-bright_threshold = 0.182
-weight = 0.0455
-decay = 0.93
-exposure = 1.3
-max_radius = 1.132
-
-[sub_resource type="Compositor" id="Compositor_ym8rc"]
-compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_mh1bx")])
 
 [sub_resource type="Resource" id="Resource_ei7n8"]
 script = ExtResource("2_471tc")
@@ -149,7 +128,7 @@ directional_shadow_max_distance = 200.0
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=18636673]
 environment = ExtResource("2_ptoc1")
 camera_attributes = ExtResource("36_cam_high")
-compositor = SubResource("Compositor_ym8rc")
+compositor = ExtResource("4_ptoc1")
 
 [node name="Trees" type="Node3D" parent="." unique_id=1585352953]
 script = ExtResource("1_8b86h")
