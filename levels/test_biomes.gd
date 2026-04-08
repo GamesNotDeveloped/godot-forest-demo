@@ -15,7 +15,7 @@ const QUALITY_PROFILES := [
 @onready var _directional_light: DirectionalLight3D = $DirectionalLight3D
 @onready var _terrain: TerrainPatch3D = $Terrain
 @onready var _auto_biomes_fog: AutoBiomesFog = $AutoBiomesFog
-@onready var _sun_shafts_controller: SunShaftsController = $SunShaftsController
+@onready var _sun_shafts_controller: Skydome = $Skydome
 
 var _active_quality_profile := QUALITY_PROFILE_FILMIC
 
@@ -251,7 +251,7 @@ func _apply_environment_resources(environment_profile: String, camera_profile: S
 
 func _apply_sun_shafts_profile(enabled: bool) -> void:
     if _sun_shafts_controller != null:
-        _sun_shafts_controller.set_runtime_enabled(enabled)
+        _sun_shafts_controller.sunshafts_enabled = enabled
 
 
 func _apply_fog_profile(max_density: float) -> void:

@@ -27,7 +27,7 @@
 [ext_resource type="ArrayMesh" uid="uid://cextepyc4ggc7" path="res://grass/grass.mesh" id="18_mh1bx"]
 [ext_resource type="PackedScene" uid="uid://bgayoi0kr6cpb" path="res://objects/flower-1.tscn" id="18_va16g"]
 [ext_resource type="PackedScene" uid="uid://cyh3thpygday5" path="res://objects/flower-2.1.tscn" id="19_cwx7y"]
-[ext_resource type="Script" uid="uid://f1y375yaqgu6" path="res://scenery/SunShaftsController.gd" id="19_shafts"]
+[ext_resource type="Script" uid="uid://blkilnimp0sck" path="res://scenery/Skydome.gd" id="19_shafts"]
 [ext_resource type="PackedScene" uid="uid://dutdm74b0brla" path="res://generated/biomes_billboards/plants2/00_flower-1/billboard.tscn" id="20_2xaht"]
 [ext_resource type="PackedScene" uid="uid://wevxi0ut6m5p" path="res://objects/flower-2.2.tscn" id="20_80swb"]
 [ext_resource type="Texture2D" uid="uid://68h8xse5rqd3" path="res://levels/flowers_mask.png" id="21_80swb"]
@@ -115,7 +115,7 @@ noise_type = 3
 script = ExtResource("1_flr7s")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(-0.09382802, 0.82773817, -0.5532142, -0.35695884, 0.49075216, 0.79482245, 0.929396, 0.27205127, 0.24942213, 0, 0.5193932, -0.2882359)
+transform = Transform3D(0.27825943, 0.70001704, -0.65768373, 0, 0.6847263, 0.7288003, 0.960506, -0.20279555, 0.19053155, 0, 0.5193932, -0.2882359)
 light_color = Color(1, 0.93054914, 0.84765625, 1)
 light_energy = 1.28
 light_indirect_energy = 1.18
@@ -214,11 +214,13 @@ min_fog_density = 0.005
 max_density = 0.0149999999999999
 tween_duration = 1.5
 
-[node name="SunShaftsController" type="Node" parent="." unique_id=492184110]
+[node name="Skydome" type="Node" parent="." unique_id=492184110]
 script = ExtResource("19_shafts")
-world_environment_path = NodePath("../WorldEnvironment")
+day_of_year = 134
+time_of_day = 14.927
+latitude = 10.241
 directional_light_path = NodePath("../DirectionalLight3D")
-distance = 3000.0
+world_environment_path = NodePath("../WorldEnvironment")
 
 [node name="CanvasLayer" parent="." unique_id=1602580574 instance=ExtResource("17_1ndc1")]
 

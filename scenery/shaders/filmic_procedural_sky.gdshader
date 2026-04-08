@@ -13,6 +13,10 @@ group_uniforms Sky;
 	uniform float zenith_curve : hint_range(0.1, 8.0) = 1.65;
 	uniform float horizon_glow_strength : hint_range(0.0, 4.0) = 0.5;
 
+group_uniforms GI;
+	uniform vec3 gi_tint : source_color = vec3(1.0, 1.0, 1.0);
+	uniform float gi_energy_multiplier : hint_range(0.0, 10.0) = 1.0;
+
 group_uniforms Sun;
 	uniform vec3 sun_color : source_color = vec3(1.0, 0.95, 0.8);
 	uniform float sun_disk_size : hint_range(0.0, 2.0) = 1.0;
@@ -131,6 +135,10 @@ void sky() {
         final_color += sun_term * atmosphere * sun_visibility;
     } else {
         final_color = mix(final_color, mix(cloud_shadow_color, cloud_light_color, 0.5), cloud_mask);
+    }
+
+    if (AT_CUBEMAP_PASS) {
+        final_color *= gi_tint * gi_energy_multiplier;
     }
 
     COLOR = final_color;
