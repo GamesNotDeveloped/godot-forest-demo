@@ -32,6 +32,7 @@
 [ext_resource type="PackedScene" uid="uid://wevxi0ut6m5p" path="res://objects/flower-2.2.tscn" id="20_80swb"]
 [ext_resource type="Texture2D" uid="uid://68h8xse5rqd3" path="res://levels/flowers_mask.png" id="21_80swb"]
 [ext_resource type="Material" uid="uid://b563p0dw1mx6t" path="res://textures/Ground020_1K-JPG/M_ground.tres" id="25_0f0wj"]
+[ext_resource type="Texture2D" uid="uid://bu2dcb4gb4xgf" path="res://textures/beautiful-glowing-gray-full-moon.jpg" id="31_8echa"]
 [ext_resource type="PackedScene" uid="uid://cb8t3x6gvytl7" path="res://objects/old_house.tscn" id="34_0f0wj"]
 [ext_resource type="AudioStream" uid="uid://cho50y1ngfmfy" path="res://music/sigmamusicart-tension-tension-music-503993.mp3" id="34_flr7s"]
 [ext_resource type="PackedScene" uid="uid://ctwu0ey7hgcm1" path="res://objects/old-well.tscn" id="34_pbujr"]
@@ -115,7 +116,7 @@ noise_type = 3
 script = ExtResource("1_flr7s")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(0.3630861, 0.47970963, -0.79877853, 0, 0.85728335, 0.5148449, 0.93175554, -0.18693304, 0.31126767, 0, 0.5193932, -0.2882359)
+transform = Transform3D(0.21460086, 0.4401208, -0.8719176, 0, 0.8927163, 0.45061937, 0.97670186, -0.096703306, 0.19157767, 0, 0.5193932, -0.2882359)
 light_color = Color(0.23498535, 0.29047748, 0.34375, 1)
 light_energy = 0.212
 light_indirect_energy = 1.18
@@ -209,20 +210,23 @@ script = ExtResource("7_wj6dr")
 biomes_path = NodePath("../Trees")
 world_environment_path = NodePath("../WorldEnvironment")
 sample_target_path = NodePath("../UP_FPSController_Prefab")
+skydome_path = NodePath("../Skydome")
+max_density = 0.107
 radius = 1.2
 min_fog_density = 0.01
-max_density = 0.107
 tween_duration = 1.5
 
 [node name="Skydome" type="Node" parent="." unique_id=492184110]
 script = ExtResource("19_shafts")
+time_transition_duration = 1.0
 day_of_year = 154
-time_of_day = 21.422
-latitude = 28.861000000000004
+time_of_day = 21.951999999999998
+latitude = 20.0
 sun_light_energy = 1.32
 moon_light_color = Color(0.23498535, 0.29047748, 0.34375, 1)
 moon_light_energy = 0.212
 ambient_color_night = Color(0.31347656, 0.3288574, 0.375, 1)
+ambient_energy_day = 1.0
 ambient_energy_night = 0.235
 fog_color_night = Color(0.1749878, 0.1807251, 0.18359375, 1)
 fog_density_night = 1.295
@@ -232,11 +236,16 @@ fog_distance_night = 90.0
 vol_fog_albedo_night = Color(0.09580994, 0.114654526, 0.15234375, 1)
 vol_fog_density_night = 0.107
 vol_fog_sky_affect_night = 0.9
+vol_fog_ambient_inject_sunset_boost = 0.235
+vol_fog_emission_dip_energy = 0.105
 directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
-moon_phase_debug = 0.24526188057342768
+moon_phase_debug = 0.24600970764194585
+shader_sky_energy = 0.242
 shader_night_horizon_color = Color(0.1538086, 0.18239667, 0.234375, 1)
 shader_night_sky_energy = 0.165
+shader_stars_energy = 4.0
+shader_moon_tex = ExtResource("31_8echa")
 shader_moon_size = 1.64
 shader_moon_glow_strength = 0.369
 shader_moon_eclipse_size = 1.31

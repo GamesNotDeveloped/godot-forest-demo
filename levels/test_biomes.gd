@@ -73,6 +73,9 @@ func _apply_profile_settings(profile: Dictionary) -> void:
     _apply_terrain_profile(profile["terrain"] as Dictionary)
     _apply_material_profile(profile["materials"] as String)
 
+    if _sun_shafts_controller:
+        _sun_shafts_controller.apply_now()
+
 
 func _cache_material_references() -> void:
     _environment_resources = {

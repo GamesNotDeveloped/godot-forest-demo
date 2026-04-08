@@ -8,6 +8,9 @@ const DENSITY_EPSILON := 0.0001
 @export var biomes_path: NodePath
 @export var world_environment_path: NodePath
 @export var sample_target_path: NodePath
+@export var skydome_path: NodePath
+var _skydome: Skydome
+@export_range(-1.0, 1.0, 0.0001, "or_greater") var max_density: float = -1.0
 
 @export_range(0.01, 60.0, 0.01, "or_greater") var sample_interval: float = 0.1:
     set(value):
@@ -16,7 +19,6 @@ const DENSITY_EPSILON := 0.0001
 
 @export_range(0.0, 64.0, 0.1, "or_greater") var radius: float = 3.0
 @export_range(0.0, 1.0, 0.0001, "or_greater") var min_fog_density: float = 0.0
-@export_range(-1.0, 1.0, 0.0001, "or_greater") var max_density: float = -1.0
 
 @export_range(0.01, 20.0, 0.01, "or_greater") var tween_duration: float = 0.25:
     set(value):
@@ -27,9 +29,15 @@ var _fog_tween: Tween
 var _current_environment: Environment
 var _max_fog_density := 0.0
 var _last_target_density := INF
+var _current_biome_sample: float = 0.0
 
 
 func _ready() -> void:
+    set_process(true)
+    if not skydome_path.is_empty():
+        _skydome = get_node_or_null(skydome_path) as Skydome
+        if _skydome != null:
+            _skydome.manage_vol_fog_density = false
     _ensure_sample_timer()
     _update_timer_configuration()
     _refresh_environment_cache()
@@ -83,16 +91,14 @@ func _sample_and_apply_fog() -> void:
 
     _refresh_environment_cache()
     var sample := clampf(biomes.sample_mask_value_at_world_position(sample_target.global_position, radius), 0.0, 1.0)
-    var effective_max_density := _get_effective_max_density()
-    var target_density := lerpf(min_fog_density, effective_max_density, sample)
-    if absf(target_density - _last_target_density) <= DENSITY_EPSILON:
+    if absf(sample - _last_target_density) <= DENSITY_EPSILON:
         return
 
-    _last_target_density = target_density
+    _last_target_density = sample
     if _fog_tween != null:
         _fog_tween.kill()
     _fog_tween = create_tween()
-    _fog_tween.tween_property(environment, "volumetric_fog_density", target_density, tween_duration)
+    _fog_tween.tween_property(self, "_current_biome_sample", sample, tween_duration)
 
 
 func _get_environment() -> Environment:
@@ -142,11 +148,15 @@ func apply_profile_override(max_density_override: float) -> void:
     var biomes := get_node_or_null(biomes_path) as Biomes
     var sample_target := get_node_or_null(sample_target_path) as Node3D
     if biomes == null or sample_target == null:
-        environment.volumetric_fog_density = _get_effective_max_density()
+        var base_min = min_fog_density
+        var base_max = _get_effective_max_density()
+        if _skydome != null:
+            base_min += _skydome.get_current_vol_fog_min_density()
+            base_max += _skydome.get_current_vol_fog_max_density()
+        environment.volumetric_fog_density = lerpf(base_min, base_max, _current_biome_sample)
         _last_target_density = environment.volumetric_fog_density
         return
 
     var sample := clampf(biomes.sample_mask_value_at_world_position(sample_target.global_position, radius), 0.0, 1.0)
-    var target_density := lerpf(min_fog_density, _get_effective_max_density(), sample)
-    environment.volumetric_fog_density = target_density
-    _last_target_density = target_density
+    _current_biome_sample = sample
+    _last_target_density = sample

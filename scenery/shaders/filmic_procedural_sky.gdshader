@@ -27,6 +27,7 @@ group_uniforms NightSky;
 	uniform vec3 night_zenith_color : source_color = vec3(0.01, 0.015, 0.03);
 	uniform float night_sky_energy : hint_range(0.0, 10.0) = 1.0;
 	uniform vec3 stars_color : source_color = vec3(1.0, 1.0, 1.0);
+	uniform float stars_energy : hint_range(0.0, 50.0) = 2.0;
 
 group_uniforms GI;
 	uniform vec3 gi_tint : source_color = vec3(1.0, 1.0, 1.0);
@@ -98,8 +99,8 @@ void sky() {
 	float sun_alt = custom_sun_dir.y;
 	
 	// WIDER TRANSITIONS
-	float day_blend = smoothstep(-0.15, 0.1, sun_alt);
-	float sunset_blend = smoothstep(-0.15, 0.0, sun_alt) * (1.0 - smoothstep(0.0, 0.15, sun_alt));
+	float day_blend = smoothstep(-0.05, 0.15, sun_alt);
+	float sunset_blend = smoothstep(-0.1, 0.02, sun_alt) * (1.0 - smoothstep(0.02, 0.25, sun_alt));
 	
 	float horizon_t = smoothstep(horizon_height - horizon_softness, horizon_height + horizon_softness, dir.y);
 	float zenith_t = pow(saturate(max(dir.y, 0.0)), zenith_curve);
@@ -140,11 +141,11 @@ void sky() {
 	float star_intensity = smoothstep(star_size, star_size * 0.2, star_d) * smoothstep(0.95, 0.96, star_h);
 	float twinkle = mix(0.3, 1.0, sin(cloud_time * 3.0 + star_h * 100.0) * 0.5 + 0.5);
 	float stars = star_intensity * twinkle * 8.0 * pow(1.0 - zenith_t, 2.0);
-	final_color += stars_color * stars * (1.0 - day_blend);
+	final_color += stars_color * stars * stars_energy * (1.0 - day_blend);
 
 	vec2 cloud_uv = dir_to_cloud_plane_uv(dir, cloud_plane_height, cloud_plane_curve);
 	vec2 wind_dir = normalize(max(abs(cloud_wind_direction.x) + abs(cloud_wind_direction.y), 0.0001) * cloud_wind_direction);
-	float motion_time = cloud_time * cloud_wind_speed * cloud_motion_scale;
+	float motion_time = (cloud_time + TIME * 0.05) * cloud_wind_speed * cloud_motion_scale;
 	vec2 scroll_a = wind_dir * length(cloud_scroll_a);
 	vec2 scroll_b = wind_dir * length(cloud_scroll_b) * 1.35;
 	vec2 warp_scroll = wind_dir * 0.0034;

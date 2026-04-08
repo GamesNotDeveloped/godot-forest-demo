@@ -2,6 +2,14 @@
 class_name Skydome
 extends Node
 
+signal time_changed(day: int, time: float)
+signal day_changed(day: int)
+
+@export var time_transition_duration: float = 2.0
+var _rendered_day: int = 180
+var _rendered_time: float = 12.0
+var _time_tween: Tween
+
 const SUN_SHAFTS_EFFECT_SCRIPT := preload("res://scenery/SunShaftsCompositorEffect.gd")
 const SKY_MATERIAL_RES := preload("res://scenery/materials/M_filmic_procedural_sky.tres")
 const SKY_RES := preload("res://materials/sky_filmic.tres")
@@ -10,13 +18,11 @@ const SKY_RES := preload("res://materials/sky_filmic.tres")
 @export_range(1, 365) var day_of_year: int = 180:
     set(v):
         day_of_year = v
-        _update_sun_transform()
-        _update_cloud_time()
+        _request_time_update()
 @export_range(0.0, 24.0) var time_of_day: float = 12.0:
     set(v):
         time_of_day = v
-        _update_sun_transform()
-        _update_cloud_time()
+        _request_time_update()
 @export_range(-90.0, 90.0) var latitude: float = 45.0:
     set(v):
         latitude = v
@@ -49,7 +55,7 @@ const SKY_RES := preload("res://materials/sky_filmic.tres")
     set(v): ambient_color_day = v; _update_sun_transform()
 @export var ambient_color_night: Color = Color(0.02, 0.03, 0.06):
     set(v): ambient_color_night = v; _update_sun_transform()
-@export var ambient_energy_day: float = 1.0:
+@export var ambient_energy_day: float = 1.5:
     set(v): ambient_energy_day = v; _update_sun_transform()
 @export var ambient_energy_night: float = 0.1:
     set(v): ambient_energy_night = v; _update_sun_transform()
@@ -92,13 +98,34 @@ const SKY_RES := preload("res://materials/sky_filmic.tres")
 @export var vol_fog_length_night: float = 3.0:
     set(v): vol_fog_length_night = v; _update_sun_transform()
 
-@export var auto_biomes_fog_path: NodePath:
-    set(v): auto_biomes_fog_path = v; _update_sun_transform()
+@export var manage_vol_fog_density: bool = true:
+    set(v): manage_vol_fog_density = v; _update_sun_transform()
+
+var current_vol_fog_min_density: float = 0.0
+var current_vol_fog_max_density: float = 0.0
 
 @export var vol_fog_min_density_day: float = 0.005:
     set(v): vol_fog_min_density_day = v; _update_sun_transform()
 @export var vol_fog_min_density_night: float = 0.01:
     set(v): vol_fog_min_density_night = v; _update_sun_transform()
+@export_group("SDFGI & Fog Workarounds")
+@export var vol_fog_ambient_inject_day: float = 0.04:
+    set(v): vol_fog_ambient_inject_day = v; _update_sun_transform()
+@export var vol_fog_ambient_inject_night: float = 0.1:
+    set(v): vol_fog_ambient_inject_night = v; _update_sun_transform()
+@export var vol_fog_ambient_inject_sunset_boost: float = 0.4:
+    set(v): vol_fog_ambient_inject_sunset_boost = v; _update_sun_transform()
+
+@export var vol_fog_emission_dip_color: Color = Color(0.0, 0.0, 0.0):
+    set(v): vol_fog_emission_dip_color = v; _update_sun_transform()
+@export var vol_fog_emission_dip_energy: float = 0.0:
+    set(v): vol_fog_emission_dip_energy = v; _update_sun_transform()
+
+@export var sky_contribution_day: float = 0.25:
+    set(v): sky_contribution_day = v; _update_sun_transform()
+@export var sky_contribution_night: float = 0.8:
+    set(v): sky_contribution_night = v; _update_sun_transform()
+
 @export_group("Nodes")
 @export var directional_light_path: NodePath:
     set(v):
@@ -165,7 +192,7 @@ var _is_daytime: bool = true
     set(v):
         shader_zenith_color = v
         _set_shader_param("zenith_color", v)
-@export var shader_sky_energy: float = 0.242:
+@export var shader_sky_energy: float = 1.0:
     set(v):
         shader_sky_energy = v
         _set_shader_param("sky_energy", v)
@@ -219,6 +246,10 @@ var _is_daytime: bool = true
     set(v):
         shader_stars_color = v
         _set_shader_param("stars_color", v)
+@export var shader_stars_energy: float = 2.0:
+    set(v):
+        shader_stars_energy = v
+        _set_shader_param("stars_energy", v)
 
 @export_group("Sky Shader: GI (SDFGI Fill)")
 @export var gi_day_tint: Color = Color(0.8, 0.75, 0.7, 1.0):
@@ -397,7 +428,9 @@ var _is_daytime: bool = true
 
 func _enter_tree() -> void:
     if Engine.is_editor_hint() or is_inside_tree():
-        _init_sky()
+        _rendered_day = day_of_year
+    _rendered_time = time_of_day
+    _init_sky()
 
 func _ready() -> void:
     _is_ready = true
@@ -408,9 +441,11 @@ func _ready() -> void:
     set_process(true)
 
 func _process(_delta: float) -> void:
-    _update_sun_transform()
-    _update_cloud_time()
-    _update_cloud_wind()
+    _update_effect()
+
+func apply_now() -> void:
+    _init_sky()
+    _request_time_update(true)
     _update_effect()
 
 func _refresh() -> void:
@@ -424,15 +459,6 @@ func _get_directional_light() -> DirectionalLight3D:
     var root = get_tree().edited_scene_root if Engine.is_editor_hint() else get_tree().current_scene
     if root:
         return root.find_child("DirectionalLight3D", true, false) as DirectionalLight3D
-    return null
-
-func _get_auto_biomes_fog() -> Node:
-    if not is_inside_tree(): return null
-    if not auto_biomes_fog_path.is_empty():
-        return get_node_or_null(auto_biomes_fog_path)
-    var root = get_tree().edited_scene_root if Engine.is_editor_hint() else get_tree().current_scene
-    if root:
-        return root.find_child("AutoBiomesFog", true, false)
     return null
 
 func _get_world_environment() -> WorldEnvironment:
@@ -473,11 +499,20 @@ func _sync_shader_params() -> void:
     _sky_material.set_shader_parameter("horizon_softness", shader_horizon_softness)
     _sky_material.set_shader_parameter("zenith_curve", shader_zenith_curve)
     _sky_material.set_shader_parameter("horizon_glow_strength", shader_horizon_glow_strength)
+
+    _sky_material.set_shader_parameter("sunset_bottom_color", shader_sunset_bottom_color)
+    _sky_material.set_shader_parameter("sunset_horizon_color", shader_sunset_horizon_color)
+    _sky_material.set_shader_parameter("sunset_zenith_color", shader_sunset_zenith_color)
+    _sky_material.set_shader_parameter("sunset_cloud_color", shader_sunset_cloud_color)
+    _sky_material.set_shader_parameter("sunset_sun_color", shader_sunset_sun_color)
+
     _sky_material.set_shader_parameter("night_lower_sky_color", shader_night_lower_sky_color)
     _sky_material.set_shader_parameter("night_horizon_color", shader_night_horizon_color)
     _sky_material.set_shader_parameter("night_zenith_color", shader_night_zenith_color)
     _sky_material.set_shader_parameter("night_sky_energy", shader_night_sky_energy)
     _sky_material.set_shader_parameter("stars_color", shader_stars_color)
+    _sky_material.set_shader_parameter("stars_energy", shader_stars_energy)
+
     _sky_material.set_shader_parameter("sun_color", shader_sun_color)
     _sky_material.set_shader_parameter("sun_disk_size", shader_sun_disk_size)
     _sky_material.set_shader_parameter("sun_disk_softness", shader_sun_disk_softness)
@@ -487,13 +522,13 @@ func _sync_shader_params() -> void:
     _sky_material.set_shader_parameter("sun_atmosphere_size", shader_sun_atmosphere_size)
     _sky_material.set_shader_parameter("sun_atmosphere_strength", shader_sun_atmosphere_strength)
     _sky_material.set_shader_parameter("sun_energy_scale", shader_sun_energy_scale)
+
     _sky_material.set_shader_parameter("moon_color", shader_moon_color)
     _sky_material.set_shader_parameter("moon_size", shader_moon_size)
     _sky_material.set_shader_parameter("moon_glow_strength", shader_moon_glow_strength)
     _sky_material.set_shader_parameter("moon_eclipse_size", shader_moon_eclipse_size)
     _sky_material.set_shader_parameter("moon_tex", shader_moon_tex)
-    _sky_material.set_shader_parameter("cloud_time", _get_cloud_time_value())
-    _sky_material.set_shader_parameter("cloud_motion_scale", shader_cloud_motion_scale)
+
     _sky_material.set_shader_parameter("cloud_tex_a", shader_cloud_tex_a)
     _sky_material.set_shader_parameter("cloud_tex_b", shader_cloud_tex_b)
     _sky_material.set_shader_parameter("cloud_scroll_a", shader_cloud_scroll_a)
@@ -513,11 +548,13 @@ func _sync_shader_params() -> void:
     _sky_material.set_shader_parameter("cloud_forward_scatter", shader_cloud_forward_scatter)
     _sky_material.set_shader_parameter("cloud_backscatter", shader_cloud_backscatter)
     _sky_material.set_shader_parameter("sun_cloud_occlusion", shader_sun_cloud_occlusion)
+
+    _sky_material.set_shader_parameter("cloud_time", _get_cloud_time_value())
+    _sky_material.set_shader_parameter("cloud_motion_scale", shader_cloud_motion_scale)
     _apply_cloud_wind_params()
 
-
 func _get_cloud_time_value() -> float:
-    return ((float(day_of_year - 1) * 24.0) + time_of_day) * shader_cloud_time_scale
+    return ((float(_rendered_day - 1) * 24.0) + _rendered_time) * shader_cloud_time_scale
 
 
 func _update_cloud_time() -> void:
@@ -549,11 +586,38 @@ func _update_cloud_wind() -> void:
     if _sky_material:
         _apply_cloud_wind_params()
 
+
+func _request_time_update(snap: bool = false) -> void:
+    if not is_inside_tree():
+        return
+    var target_hours = float(day_of_year) * 24.0 + time_of_day
+    var current_hours = float(_rendered_day) * 24.0 + _rendered_time
+
+    if Engine.is_editor_hint() or time_transition_duration <= 0.0 or snap:
+        if _time_tween: _time_tween.kill()
+        _apply_total_hours(target_hours)
+    else:
+        if _time_tween: _time_tween.kill()
+        _time_tween = create_tween()
+        _time_tween.tween_method(_apply_total_hours, current_hours, target_hours, time_transition_duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func _apply_total_hours(total_hours: float) -> void:
+    var new_day = int(floor(total_hours / 24.0))
+    var new_time = fmod(total_hours, 24.0)
+    if new_day != _rendered_day:
+        day_changed.emit(new_day)
+    _rendered_day = new_day
+    _rendered_time = new_time
+
+    _update_sun_transform()
+    _update_cloud_time()
+    time_changed.emit(_rendered_day, _rendered_time)
+
 func _update_sun_transform() -> void:
     var light = _get_directional_light()
     if not is_inside_tree(): return
 
-    var current_day = float(day_of_year) + time_of_day / 24.0
+    var current_day = float(_rendered_day) + _rendered_time / 24.0
     var moon_phase = fmod(current_day / 29.53, 1.0)
     moon_phase_debug = moon_phase
 
@@ -563,7 +627,7 @@ func _update_sun_transform() -> void:
     var theta_moon = theta_sun - moon_phase * TAU
     var declination_moon = deg_to_rad(-23.45) * cos(theta_moon) + deg_to_rad(5.14) * sin(theta_moon)
 
-    var hour_angle = deg_to_rad(15.0 * (time_of_day - 12.0))
+    var hour_angle = deg_to_rad(15.0 * (_rendered_time - 12.0))
     var lat_rad = deg_to_rad(latitude)
 
     var get_dir = func(ha: float, dec: float) -> Vector3:
@@ -576,7 +640,7 @@ func _update_sun_transform() -> void:
     var moon_hour_angle = hour_angle - moon_phase * TAU
     var moon_dir = get_dir.call(moon_hour_angle, declination_moon)
 
-    var sidereal_time = deg_to_rad(current_day * 360.0 + time_of_day * 15.0)
+    var sidereal_time = deg_to_rad(current_day * 360.0 + _rendered_time * 15.0)
     var celestial_basis = Basis()
     celestial_basis = celestial_basis.rotated(Vector3.RIGHT, lat_rad - PI / 2.0)
     celestial_basis = celestial_basis.rotated(Vector3.UP, -sidereal_time)
@@ -596,10 +660,10 @@ func _update_sun_transform() -> void:
     var s_alt = sun_dir.y
     var m_alt = moon_dir.y
 
-    var day_blend = smoothstep(-0.15, 0.1, s_alt)
-    var sunset_blend = smoothstep(-0.15, 0.0, s_alt) * (1.0 - smoothstep(0.0, 0.15, s_alt))
+    var day_blend = smoothstep(-0.05, 0.15, s_alt)
+    var sunset_blend = smoothstep(-0.1, 0.02, s_alt) * (1.0 - smoothstep(0.02, 0.25, s_alt))
 
-    var sun_energy = sun_light_energy * smoothstep(-0.05, 0.1, s_alt)
+    var sun_energy = sun_light_energy * smoothstep(-0.05, 0.05, s_alt)
     var moon_energy = moon_light_energy * smoothstep(0.0, 0.05, m_alt) * (1.0 - smoothstep(-0.1, 0.0, s_alt))
 
     if sun_energy >= moon_energy:
@@ -616,13 +680,13 @@ func _update_sun_transform() -> void:
         _is_daytime = false
 
     _set_shader_param("gi_tint", gi_night_tint.lerp(gi_day_tint, day_blend))
-    _set_shader_param("gi_energy_multiplier", lerp(gi_night_energy, gi_day_energy, day_blend))
+    _set_shader_param("gi_energy_multiplier", lerp(gi_night_energy, gi_day_energy, day_blend) + sunset_blend * 0.5)
 
     var env_node = _get_world_environment()
     if env_node and env_node.environment:
         var env = env_node.environment
         env.ambient_light_color = ambient_color_night.lerp(ambient_color_day, day_blend)
-        env.ambient_light_energy = lerp(ambient_energy_night, ambient_energy_day, day_blend)
+        env.ambient_light_energy = lerp(ambient_energy_night, ambient_energy_day, pow(day_blend, 0.5)) + sunset_blend * 0.8
 
         var fog_day_mix = fog_color_night.lerp(fog_color_day, day_blend)
         env.fog_light_color = fog_day_mix.lerp(sunset_light_color, sunset_blend * 0.5)
@@ -634,20 +698,30 @@ func _update_sun_transform() -> void:
         var vol_day_mix = vol_fog_albedo_night.lerp(vol_fog_albedo_day, day_blend)
         env.volumetric_fog_albedo = vol_day_mix.lerp(sunset_light_color, sunset_blend * 0.3)
 
-        var target_min_density = lerp(vol_fog_min_density_night, vol_fog_min_density_day, day_blend)
-        var target_max_density = lerp(vol_fog_density_night, vol_fog_density_day, day_blend)
+        current_vol_fog_min_density = lerp(vol_fog_min_density_night, vol_fog_min_density_day, day_blend)
+        current_vol_fog_max_density = lerp(vol_fog_density_night, vol_fog_density_day, day_blend)
 
-        var abf = _get_auto_biomes_fog()
-        if abf:
-            abf.set("min_fog_density", target_min_density)
-            abf.set("max_density", target_max_density)
-        else:
-            # Fallback: mix min/max based on nothing (assume max or avg?)
-            # Usually if no ABF, we just want the 'max' to be the density.
-            env.volumetric_fog_density = target_max_density
+        if manage_vol_fog_density:
+            env.volumetric_fog_density = current_vol_fog_max_density
 
         env.volumetric_fog_sky_affect = lerp(vol_fog_sky_affect_night, vol_fog_sky_affect_day, day_blend)
         env.volumetric_fog_length = lerp(vol_fog_length_night, vol_fog_length_day, day_blend)
+
+        # SDFGI Workarounds application
+        var base_inject = lerp(vol_fog_ambient_inject_night, vol_fog_ambient_inject_day, day_blend)
+
+        var dip_center = 0.05
+        var dip_width = 0.15
+        var dip_factor = 1.0 - smoothstep(0.0, dip_width, abs(s_alt - dip_center))
+        var dip_blend = smoothstep(0.0, 1.0, dip_factor)
+
+        #env.volumetric_fog_ambient_inject = base_inject + dip_blend * vol_fog_ambient_inject_sunset_boost
+
+        # Emission boost to actually light up the fog
+        #var target_emission = vol_fog_emission_dip_color * vol_fog_emission_dip_energy
+        #env.volumetric_fog_emission = Color(0,0,0).lerp(target_emission, dip_blend)
+
+        #env.ambient_light_sky_contribution = lerp(sky_contribution_night, sky_contribution_day, day_blend)
 
 func _ensure_effect_installed() -> void:
     var env_node = _get_world_environment()
@@ -734,3 +808,10 @@ func _get_active_viewport_size() -> Vector2:
             if vp: return vp.get_visible_rect().size
     var vp = get_viewport()
     return vp.get_visible_rect().size if vp else Vector2.ZERO
+
+
+func get_current_vol_fog_min_density() -> float:
+    return current_vol_fog_min_density
+
+func get_current_vol_fog_max_density() -> float:
+    return current_vol_fog_max_density
