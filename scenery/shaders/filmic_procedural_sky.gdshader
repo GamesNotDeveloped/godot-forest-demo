@@ -63,6 +63,7 @@ group_uniforms Clouds;
 uniform vec3 custom_sun_dir = vec3(0.0, 1.0, 0.0);
 uniform vec3 custom_moon_dir = vec3(0.0, -1.0, 0.0);
 uniform mat3 celestial_matrix = mat3(1.0);
+uniform float cloud_time = 0.0;
 
 vec2 dir_to_cloud_plane_uv(vec3 dir, float plane_height, float curve) {
 	float denom = max(dir.y + plane_height, 0.05);
@@ -112,17 +113,17 @@ void sky() {
 	float star_d = length(star_f - star_pos);
 	float star_size = mix(0.03, 0.1, fract(star_h * 11.11));
 	float star_intensity = smoothstep(star_size, star_size * 0.2, star_d) * smoothstep(0.95, 0.96, star_h);
-	float twinkle = mix(0.3, 1.0, sin(TIME * 3.0 + star_h * 100.0) * 0.5 + 0.5);
+	float twinkle = mix(0.3, 1.0, sin(cloud_time * 3.0 + star_h * 100.0) * 0.5 + 0.5);
 	float stars = star_intensity * twinkle * 8.0 * pow(1.0 - zenith_t, 2.0);
 	final_color += stars_color * stars * (1.0 - day_blend);
 
 	vec2 cloud_uv = dir_to_cloud_plane_uv(dir, cloud_plane_height, cloud_plane_curve);
-	vec2 warp = texture(cloud_tex_b, cloud_uv * 0.01 + vec2(0.003, -0.002) * TIME).rg * 2.0 - 1.0;
+	vec2 warp = texture(cloud_tex_b, cloud_uv * 0.01 + vec2(0.003, -0.002) * cloud_time).rg * 2.0 - 1.0;
 	cloud_uv += warp * cloud_warp_strength;
 
-	float cloud_a = texture(cloud_tex_a, cloud_uv * cloud_scale_a + cloud_scroll_a * TIME).r;
-	float cloud_b = texture(cloud_tex_b, cloud_uv * cloud_scale_b + cloud_scroll_b * TIME).r;
-	float breakup = texture(cloud_tex_b, cloud_uv * 0.04 - vec2(0.0015, 0.0008) * TIME).r;
+	float cloud_a = texture(cloud_tex_a, cloud_uv * cloud_scale_a + cloud_scroll_a * cloud_time).r;
+	float cloud_b = texture(cloud_tex_b, cloud_uv * cloud_scale_b + cloud_scroll_b * cloud_time).r;
+	float breakup = texture(cloud_tex_b, cloud_uv * 0.04 - vec2(0.0015, 0.0008) * cloud_time).r;
 
 	float cloud_shape = mix(cloud_a, cloud_b, 0.5);
 	cloud_shape = mix(cloud_shape, cloud_shape * breakup, 0.4);

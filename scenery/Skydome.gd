@@ -11,10 +11,12 @@ const SKY_RES := preload("res://materials/sky_filmic.tres")
     set(v):
         day_of_year = v
         _update_sun_transform()
+        _update_cloud_time()
 @export_range(0.0, 24.0) var time_of_day: float = 12.0:
     set(v):
         time_of_day = v
         _update_sun_transform()
+        _update_cloud_time()
 @export_range(-90.0, 90.0) var latitude: float = 45.0:
     set(v):
         latitude = v
@@ -208,6 +210,10 @@ var _is_daytime: bool = true
         shader_moon_eclipse_size = v
         _set_shader_param("moon_eclipse_size", v)
 @export_group("Sky Shader: Clouds")
+@export var shader_cloud_time_scale: float = 1.0:
+    set(v):
+        shader_cloud_time_scale = v
+        _update_cloud_time()
 @export var shader_cloud_tex_a: Texture2D = preload("res://scenery/materials/cloud_noise_a.tres"):
     set(v):
         shader_cloud_tex_a = v
@@ -294,9 +300,11 @@ func _ready() -> void:
     _is_ready = true
     _init_sky()
     _update_sun_transform()
+    _update_cloud_time()
     set_process(true)
 
 func _process(_delta: float) -> void:
+    _update_cloud_time()
     _update_effect()
 
 func _refresh() -> void:
@@ -370,6 +378,7 @@ func _sync_shader_params() -> void:
     _sky_material.set_shader_parameter("moon_size", shader_moon_size)
     _sky_material.set_shader_parameter("moon_glow_strength", shader_moon_glow_strength)
     _sky_material.set_shader_parameter("moon_eclipse_size", shader_moon_eclipse_size)
+    _sky_material.set_shader_parameter("cloud_time", _get_cloud_time_value())
     _sky_material.set_shader_parameter("cloud_tex_a", shader_cloud_tex_a)
     _sky_material.set_shader_parameter("cloud_tex_b", shader_cloud_tex_b)
     _sky_material.set_shader_parameter("cloud_scroll_a", shader_cloud_scroll_a)
@@ -389,6 +398,14 @@ func _sync_shader_params() -> void:
     _sky_material.set_shader_parameter("cloud_forward_scatter", shader_cloud_forward_scatter)
     _sky_material.set_shader_parameter("cloud_backscatter", shader_cloud_backscatter)
     _sky_material.set_shader_parameter("sun_cloud_occlusion", shader_sun_cloud_occlusion)
+
+
+func _get_cloud_time_value() -> float:
+    return ((float(day_of_year - 1) * 24.0) + time_of_day) * shader_cloud_time_scale
+
+
+func _update_cloud_time() -> void:
+    _set_shader_param("cloud_time", _get_cloud_time_value())
 
 func _update_sun_transform() -> void:
     var light = _get_directional_light()
