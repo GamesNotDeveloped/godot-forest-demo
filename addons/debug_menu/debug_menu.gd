@@ -81,6 +81,8 @@ var frame_time_gradient := Gradient.new()
 func _init() -> void:
     # This must be done here instead of `_ready()` to avoid having `visibility_changed` be emitted immediately.
 
+    visible = false
+
     if not InputMap.has_action("cycle_debug_menu"):
         # Create default input action if no user-defined override exists.
         # We can't do it in the editor plugin's activation code as it doesn't seem to work there.
