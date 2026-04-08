@@ -16,7 +16,7 @@ const QUALITY_PROFILES := [
 @onready var _terrain: TerrainPatch3D = $Terrain
 @onready var _auto_biomes_fog: AutoBiomesFog = $AutoBiomesFog
 
-var _active_quality_profile := QUALITY_PROFILE_HIGH
+var _active_quality_profile := QUALITY_PROFILE_FILMIC
 
 var _environment_resources: Dictionary = {}
 var _camera_attribute_resources: Dictionary = {}
@@ -108,9 +108,9 @@ func _build_quality_profile(profile_name: String) -> Dictionary:
                 "camera_resource": QUALITY_PROFILE_FILMIC,
                 "fog_controller_max_density": 0.02,
                 "light": {
-                    "light_energy": 1.28,
-                    "light_indirect_energy": 1.18,
-                    "light_volumetric_fog_energy": 7.1,
+                    "light_energy": 1.26,
+                    "light_indirect_energy": 1.3,
+                    "light_volumetric_fog_energy": 6.2,
                     "light_angular_distance": 3.6,
                     "directional_shadow_max_distance": 200.0,
                 },

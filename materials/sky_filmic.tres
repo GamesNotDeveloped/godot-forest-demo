@@ -1,0 +1,6 @@
+[gd_resource type="Sky" format=3 uid="uid://btw7yngwhucrp"]
+
+[ext_resource type="Material" uid="uid://c7qpojnluiopo" path="res://scenery/materials/M_filmic_procedural_sky.tres" id="1_mat"]
+
+[resource]
+sky_material = ExtResource("1_mat")
