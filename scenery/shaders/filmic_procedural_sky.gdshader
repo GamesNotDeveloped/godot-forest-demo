@@ -2,6 +2,7 @@ shader_type sky;
 
 uniform sampler2D cloud_tex_a : source_color, filter_linear, repeat_enable;
 uniform sampler2D cloud_tex_b : source_color, filter_linear, repeat_enable;
+uniform sampler2D moon_tex : source_color, filter_linear_mipmap, repeat_disable;
 
 group_uniforms DaySky;
 	uniform vec3 lower_sky_color : source_color = vec3(0.66, 0.71, 0.8);
@@ -12,6 +13,13 @@ group_uniforms DaySky;
 	uniform float horizon_softness : hint_range(0.02, 1.0) = 0.24;
 	uniform float zenith_curve : hint_range(0.1, 8.0) = 1.65;
 	uniform float horizon_glow_strength : hint_range(0.0, 4.0) = 0.5;
+
+group_uniforms Sunset;
+	uniform vec3 sunset_bottom_color : source_color = vec3(1.0, 0.5, 0.2);
+	uniform vec3 sunset_horizon_color : source_color = vec3(0.8, 0.2, 0.05);
+	uniform vec3 sunset_zenith_color : source_color = vec3(0.4, 0.3, 0.5);
+	uniform vec3 sunset_cloud_color : source_color = vec3(1.0, 0.4, 0.15);
+	uniform vec3 sunset_sun_color : source_color = vec3(1.0, 0.4, 0.1);
 
 group_uniforms NightSky;
 	uniform vec3 night_lower_sky_color : source_color = vec3(0.03, 0.05, 0.09);
@@ -64,6 +72,9 @@ uniform vec3 custom_sun_dir = vec3(0.0, 1.0, 0.0);
 uniform vec3 custom_moon_dir = vec3(0.0, -1.0, 0.0);
 uniform mat3 celestial_matrix = mat3(1.0);
 uniform float cloud_time = 0.0;
+uniform vec2 cloud_wind_direction = vec2(0.8, 0.3);
+uniform float cloud_wind_speed = 1.0;
+uniform float cloud_motion_scale = 0.12;
 
 vec2 dir_to_cloud_plane_uv(vec3 dir, float plane_height, float curve) {
 	float denom = max(dir.y + plane_height, 0.05);
@@ -85,17 +96,31 @@ void sky() {
 	vec3 dir = normalize(EYEDIR);
 
 	float sun_alt = custom_sun_dir.y;
-	float day_blend = smoothstep(-0.05, 0.05, sun_alt);
-
+	
+	// WIDER TRANSITIONS
+	float day_blend = smoothstep(-0.15, 0.1, sun_alt);
+	float sunset_blend = smoothstep(-0.15, 0.0, sun_alt) * (1.0 - smoothstep(0.0, 0.15, sun_alt));
+	
 	float horizon_t = smoothstep(horizon_height - horizon_softness, horizon_height + horizon_softness, dir.y);
 	float zenith_t = pow(saturate(max(dir.y, 0.0)), zenith_curve);
-	
+
+	// Day
 	vec3 day_base = mix(lower_sky_color, horizon_color, horizon_t);
 	day_base = mix(day_base, zenith_color, zenith_t);
 	float day_glow = pow(1.0 - saturate(abs(dir.y - horizon_height) * 2.5), 4.0);
 	day_base += horizon_color * day_glow * horizon_glow_strength;
+	
+	// Sunset
+	vec3 sunset_base = mix(sunset_bottom_color, sunset_horizon_color, horizon_t);
+	sunset_base = mix(sunset_base, sunset_zenith_color, zenith_t);
+	float sunset_glow = pow(1.0 - saturate(abs(dir.y - horizon_height) * 2.5), 4.0);
+	sunset_base += sunset_horizon_color * sunset_glow * horizon_glow_strength * 1.5;
+
+	// Mix Day and Sunset
+	day_base = mix(day_base, sunset_base, sunset_blend);
 	day_base *= sky_energy;
 
+	// Night
 	vec3 night_base = mix(night_lower_sky_color, night_horizon_color, horizon_t);
 	night_base = mix(night_base, night_zenith_color, zenith_t);
 	float night_glow = pow(1.0 - saturate(abs(dir.y - horizon_height) * 2.5), 4.0);
@@ -118,12 +143,18 @@ void sky() {
 	final_color += stars_color * stars * (1.0 - day_blend);
 
 	vec2 cloud_uv = dir_to_cloud_plane_uv(dir, cloud_plane_height, cloud_plane_curve);
-	vec2 warp = texture(cloud_tex_b, cloud_uv * 0.01 + vec2(0.003, -0.002) * cloud_time).rg * 2.0 - 1.0;
+	vec2 wind_dir = normalize(max(abs(cloud_wind_direction.x) + abs(cloud_wind_direction.y), 0.0001) * cloud_wind_direction);
+	float motion_time = cloud_time * cloud_wind_speed * cloud_motion_scale;
+	vec2 scroll_a = wind_dir * length(cloud_scroll_a);
+	vec2 scroll_b = wind_dir * length(cloud_scroll_b) * 1.35;
+	vec2 warp_scroll = wind_dir * 0.0034;
+	vec2 breakup_scroll = wind_dir * -0.0021;
+	vec2 warp = texture(cloud_tex_b, cloud_uv * 0.01 + warp_scroll * motion_time).rg * 2.0 - 1.0;
 	cloud_uv += warp * cloud_warp_strength;
 
-	float cloud_a = texture(cloud_tex_a, cloud_uv * cloud_scale_a + cloud_scroll_a * cloud_time).r;
-	float cloud_b = texture(cloud_tex_b, cloud_uv * cloud_scale_b + cloud_scroll_b * cloud_time).r;
-	float breakup = texture(cloud_tex_b, cloud_uv * 0.04 - vec2(0.0015, 0.0008) * cloud_time).r;
+	float cloud_a = texture(cloud_tex_a, cloud_uv * cloud_scale_a + scroll_a * motion_time).r;
+	float cloud_b = texture(cloud_tex_b, cloud_uv * cloud_scale_b + scroll_b * motion_time).r;
+	float breakup = texture(cloud_tex_b, cloud_uv * 0.04 + breakup_scroll * motion_time).r;
 
 	float cloud_shape = mix(cloud_a, cloud_b, 0.5);
 	cloud_shape = mix(cloud_shape, cloud_shape * breakup, 0.4);
@@ -132,7 +163,7 @@ void sky() {
 	float horizon_mask = smoothstep(-0.1, cloud_horizon_fade, dir.y);
 	float top_mask = 1.0 - smoothstep(1.0 - cloud_top_fade, 1.0, max(dir.y, 0.0));
 	cloud_mask *= horizon_mask * top_mask * cloud_opacity;
-	
+
 	float sky_visibility = 1.0 - (cloud_mask * sun_cloud_occlusion);
 
 	// Sun
@@ -142,8 +173,9 @@ void sky() {
 	float disk = smoothstep(1.0 - disk_radius - disk_soft, 1.0 - disk_radius, sun_dot);
 	float halo = pow(saturate(sun_dot), 1.0 / (0.08 * sun_halo_size)) * sun_halo_strength;
 	float atmosphere = pow(saturate(sun_dot), 1.0 / (0.35 * sun_atmosphere_size)) * sun_atmosphere_strength;
-	
-	vec3 sun_body = sun_color * sun_energy_scale;
+
+	vec3 active_sun_color = mix(sun_color, sunset_sun_color, sunset_blend);
+	vec3 sun_body = active_sun_color * sun_energy_scale;
 	final_color += sun_body * disk * sky_visibility * sun_disk_strength;
 	final_color += sun_body * halo * sky_visibility;
 	final_color += sun_body * atmosphere * sky_visibility;
@@ -151,8 +183,8 @@ void sky() {
 	// Moon
 	float moon_dot = dot(dir, custom_moon_dir);
 	float m_radius = 0.015 * moon_size;
-	float moon_light = 0.0;
-	float moon_mask_val = 0.0;
+	vec3 final_moon_color = vec3(0.0);
+	float moon_alpha = 0.0;
 
 	if (moon_dot > 1.0 - m_radius * 2.0) {
 		vec3 up = abs(custom_moon_dir.y) < 0.999 ? vec3(0,1,0) : vec3(1,0,0);
@@ -164,41 +196,58 @@ void sky() {
 		float r2 = x*x + y*y;
 
 		if (r2 < 1.0) {
-			moon_mask_val = smoothstep(1.0, 1.0 - 0.05, r2);
+			float moon_mask_val = smoothstep(1.0, 0.9, r2);
 			float z = -sqrt(1.0 - r2);
 			vec3 N = normalize(x * right + y * up + z * custom_moon_dir);
-			
-			moon_light = max(0.0, dot(N, custom_sun_dir));
+
+			float N_dot_L = dot(N, custom_sun_dir);
+			float phase_light = smoothstep(-0.1, 0.1, N_dot_L);
 			
 			float earth_shadow_radius = m_radius * moon_eclipse_size;
 			float umbra_dist = length(dir + custom_sun_dir);
 			float umbra = smoothstep(earth_shadow_radius * 0.8, earth_shadow_radius, umbra_dist);
+
+			float light_intensity = phase_light * mix(0.05, 1.0, umbra);
 			
-			moon_light *= umbra;
-			moon_light += (1.0 - umbra) * 0.02; // blood moon / ambient
+			vec2 moon_uv = vec2(x, y) * 0.5 + 0.5;
+			vec3 tex_color = texture(moon_tex, moon_uv).rgb;
+			float tex_val = mix(1.0, tex_color.r, step(0.01, tex_color.r + tex_color.g + tex_color.b));
+			
+			vec3 earthshine_color = moon_color * 0.1;
+			vec3 bright_color = moon_color * 1.5;
+			
+			final_moon_color = mix(earthshine_color, bright_color, light_intensity) * tex_val;
+			
+			// W noc oswietlony fragment 100%, nieoswietlony 25%
+			// W dzien oswietlony fragment ok. 60-80% (leciutko przebija niebo), nieoswietlony 0% (niewidoczny calkiem)
+			float lit_alpha = clamp(1.0 - day_blend * 0.3, 0.0, 1.0);
+			float unlit_alpha = 0.25 * (1.0 - day_blend);
+			moon_alpha = mix(unlit_alpha, lit_alpha, light_intensity) * moon_mask_val;
 		}
 	}
 
-	float moon_illumination = smoothstep(-0.2, 0.5, dot(custom_sun_dir, -custom_moon_dir));
-	float moon_glow = pow(saturate(moon_dot), 1.0 / (0.05 * moon_size)) * moon_glow_strength * (1.0 - day_blend) * (0.05 + 0.95 * moon_illumination);
-	vec3 moon_body = moon_color;
-	
-	final_color += moon_body * moon_light * moon_mask_val * sky_visibility * 2.0;
-	final_color += moon_body * moon_glow * sky_visibility;
+	float moon_illumination = smoothstep(-0.5, 0.5, dot(custom_sun_dir, -custom_moon_dir));
+	float glow_intensity = pow(saturate(moon_dot), 30.0 / max(0.01, moon_size)) * max(0.0, moon_glow_strength);
+	vec3 glow_color = moon_color * glow_intensity * (0.1 + 0.9 * moon_illumination) * (1.0 - day_blend * 0.8);
+
+	final_color = mix(final_color, final_moon_color, moon_alpha * sky_visibility);
+	final_color += glow_color * sky_visibility;
 
 	// Clouds
 	vec3 active_light_dir = mix(custom_moon_dir, custom_sun_dir, day_blend);
 	float cloud_dot = dot(dir, active_light_dir);
 	float silver_lining = pow(saturate(cloud_dot), 12.0) * cloud_forward_scatter;
 	float backscatter_val = pow(1.0 - saturate(cloud_dot), 2.0) * cloud_backscatter;
-	
-	vec3 active_light_color = mix(moon_color * 0.1, sun_color * sun_energy_scale, day_blend);
+
+	vec3 cloud_sun_light = mix(sun_color, sunset_cloud_color, sunset_blend) * sun_energy_scale;
+	vec3 active_light_color = mix(moon_color * 0.1, cloud_sun_light, day_blend);
 	vec3 cloud_col = mix(cloud_shadow_color * mix(0.02, 1.0, day_blend), active_light_color, saturate(0.1 + silver_lining - backscatter_val));
-	
+
 	final_color = mix(final_color, cloud_col, cloud_mask);
 
 	if (AT_CUBEMAP_PASS) {
-		final_color *= gi_tint * gi_energy_multiplier;
+		vec3 gi_base = mix(night_base, day_base, day_blend);
+		final_color = gi_base * gi_tint * gi_energy_multiplier;
 	}
 
 	COLOR = final_color;
