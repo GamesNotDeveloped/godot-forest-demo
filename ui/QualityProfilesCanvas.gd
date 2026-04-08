@@ -1,15 +1,19 @@
 extends CanvasLayer
 
-const PROFILE_NAMES := ["Filmic", "High", "Mid", "Low"]
-
 var _buttons: Dictionary = {}
 var _active_label: Label
+var _buttons_row: HBoxContainer
+var _manager: QualityProfilesManager
 
 
 func _ready() -> void:
     layer = 96
     _build_overlay()
-    call_deferred("_sync_with_host")
+    _manager = _find_manager()
+    _rebuild_profile_buttons()
+    if _manager != null:
+        _manager.profile_changed.connect(_on_manager_profile_changed)
+    call_deferred("_sync_with_manager")
 
 
 func _build_overlay() -> void:
@@ -62,47 +66,83 @@ func _build_overlay() -> void:
     _active_label.add_theme_color_override("font_color", Color(0.93, 0.94, 0.9, 0.92))
     row.add_child(_active_label)
 
-    for profile_name in PROFILE_NAMES:
+    _buttons_row = HBoxContainer.new()
+    _buttons_row.add_theme_constant_override("separation", 8)
+    row.add_child(_buttons_row)
+
+
+func _find_manager() -> QualityProfilesManager:
+    var host := get_parent()
+    if host == null:
+        return null
+    return host.get_node_or_null("QualityProfilesManager") as QualityProfilesManager
+
+
+func _rebuild_profile_buttons() -> void:
+    _buttons.clear()
+    if _buttons_row == null:
+        return
+
+    for child in _buttons_row.get_children():
+        child.queue_free()
+
+    if _manager == null:
+        return
+
+    for profile in _manager.get_profiles():
+        if profile == null:
+            continue
+
         var button := Button.new()
-        button.text = profile_name
+        button.text = _get_profile_label(profile)
         button.custom_minimum_size = Vector2(88.0, 28.0)
         button.focus_mode = Control.FOCUS_NONE
         button.add_theme_font_size_override("font_size", 14)
-        button.pressed.connect(_on_profile_button_pressed.bind(profile_name))
-        row.add_child(button)
-        _buttons[profile_name] = button
+        button.pressed.connect(_on_profile_button_pressed.bind(profile.id))
+        _buttons_row.add_child(button)
+        _buttons[profile.id] = button
 
 
-func _sync_with_host() -> void:
-    var host := get_parent()
-    if host != null and host.has_method("get_active_quality_profile"):
-        _set_active_profile(host.call("get_active_quality_profile"))
+func _sync_with_manager() -> void:
+    if _manager == null:
+        _set_active_profile(null)
+        return
+
+    _set_active_profile(_manager.get_selected_profile())
+
+
+func _on_profile_button_pressed(profile_id: StringName) -> void:
+    if _manager != null:
+        _manager.select_profile_by_id(profile_id)
+
+
+func _on_manager_profile_changed() -> void:
+    _sync_with_manager()
+
+
+func _set_active_profile(profile: QualityProfile) -> void:
+    var active_profile_id: StringName = &""
+    if profile == null:
+        _active_label.text = "Quality"
     else:
-        _set_active_profile("High")
+        active_profile_id = profile.id
+        _active_label.text = "Quality: %s" % _get_profile_label(profile)
 
-
-func _select_profile(profile_name: String) -> void:
-    var host := get_parent()
-    if host != null and host.has_method("apply_quality_profile"):
-        host.call("apply_quality_profile", profile_name)
-    _set_active_profile(profile_name)
-
-
-func _on_profile_button_pressed(profile_name: String) -> void:
-    _select_profile(profile_name)
-
-
-func _set_active_profile(profile_name: String) -> void:
-    _active_label.text = "Quality: %s" % profile_name
-
-    for candidate in PROFILE_NAMES:
-        var button := _buttons.get(candidate) as Button
+    for candidate_id in _buttons.keys():
+        var button := _buttons.get(candidate_id) as Button
         if button == null:
             continue
-        button.add_theme_stylebox_override("normal", _make_button_style(candidate == profile_name, false))
-        button.add_theme_stylebox_override("hover", _make_button_style(candidate == profile_name, true))
-        button.add_theme_stylebox_override("pressed", _make_button_style(candidate == profile_name, true))
-        button.add_theme_color_override("font_color", Color(0.96, 0.97, 0.93, 0.96) if candidate == profile_name else Color(0.88, 0.89, 0.85, 0.92))
+        var is_active: bool = candidate_id == active_profile_id
+        button.add_theme_stylebox_override("normal", _make_button_style(is_active, false))
+        button.add_theme_stylebox_override("hover", _make_button_style(is_active, true))
+        button.add_theme_stylebox_override("pressed", _make_button_style(is_active, true))
+        button.add_theme_color_override("font_color", Color(0.96, 0.97, 0.93, 0.96) if is_active else Color(0.88, 0.89, 0.85, 0.92))
+
+
+func _get_profile_label(profile: QualityProfile) -> String:
+    if profile.name.is_empty():
+        return String(profile.id)
+    return profile.name
 
 
 func _make_button_style(is_active: bool, is_hovered: bool) -> StyleBoxFlat:

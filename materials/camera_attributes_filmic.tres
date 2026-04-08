@@ -1,4 +1,4 @@
-[gd_resource type="CameraAttributesPractical" format=3]
+[gd_resource type="CameraAttributesPractical" format=3 uid="uid://c1eswprngr57f"]
 
 [resource]
 auto_exposure_enabled = true

@@ -10,9 +10,7 @@ var _rendered_day: int = 180
 var _rendered_time: float = 12.0
 var _time_tween: Tween
 
-const SUN_SHAFTS_EFFECT_SCRIPT := preload("res://scenery/SunShaftsCompositorEffect.gd")
-const SKY_MATERIAL_RES := preload("res://scenery/materials/M_filmic_procedural_sky.tres")
-const SKY_RES := preload("res://materials/sky_filmic.tres")
+const SUN_SHAFTS_EFFECT_SCRIPT := preload("res://addons/gnd_skydome/SunShaftsCompositorEffect.gd")
 
 @export_group("Time & Date")
 @export_range(1, 365) var day_of_year: int = 180:
@@ -135,6 +133,20 @@ var current_vol_fog_max_density: float = 0.0
     set(v):
         world_environment_path = v
         _refresh()
+
+@export_group("Resources")
+@export var sky_resource: Sky:
+    set(v):
+        sky_resource = v
+        _refresh()
+@export var sky_material: ShaderMaterial:
+    set(v):
+        sky_material = v
+        _refresh()
+
+@export_group("Wind Globals")
+@export var wind_direction_project_setting: StringName = &"shader_globals/gnd_wind_direction/value"
+@export var wind_speed_project_setting: StringName = &"shader_globals/gnd_wind_speed/value"
 
 @export_group("Sunshafts")
 @export var sunshafts_enabled: bool = true:
@@ -476,16 +488,22 @@ func _init_sky() -> void:
     var env = env_node.environment
     if not env: return
 
-    if env.sky != SKY_RES:
-        env.sky = SKY_RES
+    if sky_resource != null and env.sky != sky_resource:
+        env.sky = sky_resource
 
-    _sky_material = SKY_MATERIAL_RES
+    _sky_material = _resolve_sky_material(env)
     if _sky_material and _is_ready:
         _sync_shader_params()
 
+
+func _resolve_sky_material(env: Environment) -> ShaderMaterial:
+    if sky_material != null:
+        return sky_material
+    if env == null or env.sky == null:
+        return null
+    return env.sky.get("sky_material") as ShaderMaterial
+
 func _set_shader_param(param_name: String, value: Variant) -> void:
-    if not _sky_material:
-        _sky_material = SKY_MATERIAL_RES
     if _sky_material:
         _sky_material.set_shader_parameter(param_name, value)
 
@@ -563,16 +581,20 @@ func _update_cloud_time() -> void:
 
 func _get_global_wind_direction() -> Vector2:
     var direction := shader_cloud_wind_direction
-    if shader_cloud_use_global_wind:
-        direction = ProjectSettings.get_setting("shader_globals/gnd_wind_direction/value", direction)
+    if shader_cloud_use_global_wind and _has_project_setting(wind_direction_project_setting):
+        direction = ProjectSettings.get_setting(String(wind_direction_project_setting), direction)
     return direction
 
 
 func _get_global_wind_speed() -> float:
     var speed := 1.0
-    if shader_cloud_use_global_wind:
-        speed = float(ProjectSettings.get_setting("shader_globals/gnd_wind_speed/value", speed))
+    if shader_cloud_use_global_wind and _has_project_setting(wind_speed_project_setting):
+        speed = float(ProjectSettings.get_setting(String(wind_speed_project_setting), speed))
     return speed * shader_cloud_wind_speed_multiplier
+
+
+func _has_project_setting(setting_name: StringName) -> bool:
+    return setting_name != &"" and ProjectSettings.has_setting(String(setting_name))
 
 
 func _apply_cloud_wind_params() -> void:
@@ -581,8 +603,6 @@ func _apply_cloud_wind_params() -> void:
 
 
 func _update_cloud_wind() -> void:
-    if not _sky_material:
-        _sky_material = SKY_MATERIAL_RES
     if _sky_material:
         _apply_cloud_wind_params()
 
@@ -725,8 +745,15 @@ func _update_sun_transform() -> void:
 
 func _ensure_effect_installed() -> void:
     var env_node = _get_world_environment()
-    if not env_node: return
+    if not env_node:
+        _compositor_effect = null
+        return
+    if not sunshafts_enabled:
+        _remove_effect_from_world_environment(env_node)
+        return
+
     var compositor = env_node.compositor
+    var had_existing_compositor := compositor != null
     if not compositor:
         compositor = Compositor.new()
         env_node.compositor = compositor
@@ -743,9 +770,34 @@ func _ensure_effect_installed() -> void:
     if existing:
         _compositor_effect = existing
     else:
+        if had_existing_compositor:
+            compositor = env_node.compositor.duplicate(true) as Compositor
+            env_node.compositor = compositor
+            effects = compositor.compositor_effects.filter(func(item): return item != null)
         _compositor_effect = SUN_SHAFTS_EFFECT_SCRIPT.new()
         effects.append(_compositor_effect)
         compositor.compositor_effects = effects
+
+
+func _remove_effect_from_world_environment(env_node: WorldEnvironment) -> void:
+    var compositor := env_node.compositor
+    if compositor == null:
+        _compositor_effect = null
+        return
+
+    var remaining_effects: Array[CompositorEffect] = []
+    for item in compositor.compositor_effects:
+        if item == null:
+            continue
+        if item.get_script() == SUN_SHAFTS_EFFECT_SCRIPT:
+            continue
+        remaining_effects.append(item)
+
+    if remaining_effects.is_empty():
+        env_node.compositor = null
+    else:
+        compositor.compositor_effects = remaining_effects
+    _compositor_effect = null
 
 func _update_effect() -> void:
     _ensure_effect_installed()
@@ -814,4 +866,7 @@ func get_current_vol_fog_min_density() -> float:
     return current_vol_fog_min_density
 
 func get_current_vol_fog_max_density() -> float:
+    return current_vol_fog_max_density
+
+func get_current_vol_fog_density() -> float:
     return current_vol_fog_max_density

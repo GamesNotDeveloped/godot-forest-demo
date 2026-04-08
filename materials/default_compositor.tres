@@ -1,6 +1,0 @@
-[gd_resource type="Compositor" format=3 uid="uid://bpytambhrsmub"]
-
-[ext_resource type="CompositorEffect" uid="uid://cnct2t7w3t3xn" path="res://materials/sunshafts_compositor_fx.tres" id="1_33qdx"]
-
-[resource]
-compositor_effects = Array[CompositorEffect]([ExtResource("1_33qdx")])
