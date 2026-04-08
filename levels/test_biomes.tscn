@@ -35,13 +35,14 @@
 [ext_resource type="PackedScene" uid="uid://cb8t3x6gvytl7" path="res://objects/old_house.tscn" id="34_0f0wj"]
 [ext_resource type="AudioStream" uid="uid://cho50y1ngfmfy" path="res://music/sigmamusicart-tension-tension-music-503993.mp3" id="34_flr7s"]
 [ext_resource type="PackedScene" uid="uid://ctwu0ey7hgcm1" path="res://objects/old-well.tscn" id="34_pbujr"]
+[ext_resource type="Script" uid="uid://dv1xopie6t4q2" path="res://ui/QualityProfilesCanvas.gd" id="35_quality"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_ffumx"]
 auto_exposure_enabled = true
-auto_exposure_scale = 0.33
-auto_exposure_speed = 3.0
-auto_exposure_min_sensitivity = 91.33
-auto_exposure_max_sensitivity = 506.5
+auto_exposure_scale = 0.28
+auto_exposure_speed = 1.5
+auto_exposure_min_sensitivity = 80.0
+auto_exposure_max_sensitivity = 220.0
 
 [sub_resource type="CompositorEffect" id="CompositorEffect_mh1bx"]
 resource_local_to_scene = false
@@ -142,10 +143,10 @@ script = ExtResource("1_flr7s")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
 transform = Transform3D(-0.09382802, 0.82773817, -0.5532142, -0.35695884, 0.49075216, 0.79482245, 0.929396, 0.27205127, 0.24942213, 0, 0.5193932, -0.2882359)
 light_color = Color(1, 0.93054914, 0.84765625, 1)
-light_energy = 1.409
-light_indirect_energy = 0.925
-light_volumetric_fog_energy = 6.176
-light_angular_distance = 2.5
+light_energy = 1.28
+light_indirect_energy = 1.18
+light_volumetric_fog_energy = 7.1
+light_angular_distance = 3.6
 shadow_enabled = true
 directional_shadow_mode = 1
 directional_shadow_max_distance = 200.0
@@ -248,6 +249,9 @@ distance = 3000.0
 
 [node name="CanvasLayer" parent="." unique_id=1602580574 instance=ExtResource("17_1ndc1")]
 
+[node name="QualityProfilesCanvas" type="CanvasLayer" parent="." unique_id=1602580575]
+script = ExtResource("35_quality")
+
 [node name="UP_FPSController_Prefab" parent="." unique_id=654069376 instance=ExtResource("17_hx8ph")]
 transform = Transform3D(-0.15708953, 0, -0.98758435, 0, 0.99999994, 0, 0.98758435, 0, -0.15708953, -40.331, 1.6011527, -9.52136)
 speed_factor = 0.7
@@ -259,6 +263,7 @@ player_scale = 0.65
 
 [node name="MouseCapture" type="Node" parent="." unique_id=440965075]
 script = ExtResource("18_hx8ph")
+pause_target_path = NodePath("../UP_FPSController_Prefab")
 metadata/_custom_type_script = "uid://b21dp6stblt2g"
 
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=860038656]
