@@ -54,6 +54,7 @@
 [ext_resource type="AudioStream" uid="uid://fqnuofshaed1" path="res://thunder/399656__bajko__sfx_thunder-blast.wav" id="52_c6or4"]
 [ext_resource type="AudioStream" uid="uid://dd3xpi0qd5ftg" path="res://thunder/136971__dwoboyle__ambiance-heavy-rain-loop.wav" id="53_xnulj"]
 [ext_resource type="AudioStream" uid="uid://blr157w0srbul" path="res://thunder/116323__dymewiz__rain-05.wav" id="54_8l7hv"]
+[ext_resource type="Script" uid="uid://n6h2ydalytac" path="res://addons/gnd_weather/PuddleSurface3D.gd" id="56_aty88"]
 
 [sub_resource type="Resource" id="Resource_quality_profile_filmic"]
 script = ExtResource("38_3k2hm")
@@ -192,8 +193,8 @@ script = ExtResource("35_quality")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
 transform = Transform3D(-0.1434846, 0.9605521, -0.2382264, 0, 0.24071719, 0.97059536, 0.9896526, 0.13926548, -0.03453921, 0, 0.5193932, -0.2882359)
-light_color = Color(1, 0.93, 0.85, 1)
-light_energy = 1.685
+light_color = Color(0.8634761, 0.8292324, 0.7947403, 1)
+light_energy = 1.3712482
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
 light_angular_distance = 3.6
@@ -346,10 +347,11 @@ shader_moon_eclipse_size = 1.531
 shader_cloud_time_scale = 30.0
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9494095, 1.6462641, -0.09005833)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9078379, 1.9297523, 0.549505)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
+precipitation_intensity = 0.821
 storm_threshold = 0.845
 precipitation_wind_strength = 10.0
 wind_influence = 0.52
@@ -421,6 +423,29 @@ bus = &"Rain"
 [node name="Rain2" type="AudioStreamPlayer" parent="." unique_id=355123381]
 stream = ExtResource("54_8l7hv")
 bus = &"Rain"
+
+[node name="PuddleSurface3D" type="Node3D" parent="." unique_id=2131158692]
+transform = Transform3D(0.90699464, 0.003002563, 0.42113143, -0.0035291607, 0.9999936, 0.00047107972, -0.42112738, -0.0019135084, 0.9069994, -0.3621993, -0.02830997, 2.7128243)
+script = ExtResource("56_aty88")
+surface_size = Vector2(3.755, 6.23)
+surface_height_offset = 0.072
+rain_ripple_threshold = 0.4
+rain_wave_threshold = 0.18
+roughness_dry = 0.27
+roughness_wet = 0.0
+specular_wet = 0.08
+shallow_color = Color(0.375, 0.26774597, 0.18164063, 0)
+deep_color = Color(0, 0, 0, 1)
+depth_absorption = 0.0
+fresnel_power = 3.2
+specular_strength = 0.14
+wave_scale = 0.6
+secondary_wave_speed = 4.6
+secondary_wave_scale = 6.1
+secondary_wave_intensity = 0.24
+ripple_speed = 1.58
+ripple_max_radius = 0.36
+edge_foam_strength = 0.58
 
 [connection signal="profile_changed" from="QualityProfilesManager" to="." method="_on_quality_profiles_manager_profile_changed"]
 [connection signal="world_time_scale_changed" from="WeatherControlsCanvas" to="." method="_on_weather_controls_canvas_world_time_scale_changed"]
