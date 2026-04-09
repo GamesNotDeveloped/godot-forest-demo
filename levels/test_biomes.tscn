@@ -46,7 +46,6 @@
 [ext_resource type="CameraAttributesPractical" uid="uid://c1eswprngr57f" path="res://materials/camera_attributes_filmic.tres" id="43_j63ba"]
 [ext_resource type="CameraAttributesPractical" path="res://materials/camera_attributes_high.tres" id="44_h44du"]
 [ext_resource type="CameraAttributesPractical" uid="uid://n24ik0agktua" path="res://materials/camera_attributes_mid.tres" id="45_716pq"]
-[ext_resource type="Script" uid="uid://4xov8ndpybam" path="res://addons/gnd_weather/RainVolume.gd" id="45_a3p2h"]
 [ext_resource type="CameraAttributesPractical" path="res://materials/camera_attributes_low.tres" id="46_2v3co"]
 [ext_resource type="Compositor" uid="uid://c6vl1e5gs60bn" path="res://materials/filmic_compositor.tres" id="47_jyfmq"]
 [ext_resource type="Sky" uid="uid://btw7yngwhucrp" path="res://materials/sky_filmic.tres" id="48_6i6fd"]
@@ -172,7 +171,8 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 noise_type = 3
 
 [sub_resource type="Curve" id="Curve_8l7hv"]
-_data = [Vector2(0, 0), 0.0, 0.024778249, 0, 0, Vector2(0.71364653, 0.019491553), 0.0, 0.0, 0, 0, Vector2(1, 0.8292372), 6.566097, 3.0039914, 0, 0]
+_limits = [0.0, 0.8292372, 0.0, 1.0]
+_data = [Vector2(0, 0), 0.0, 0.024778249, 0, 0, Vector2(0.71364653, 0.019491553), 0.0, 0.0, 0, 0, Vector2(1, 0.62368476), 4.6162915, 3.0039914, 0, 0]
 point_count = 3
 
 [node name="TestBiomes" type="Node3D" unique_id=1245326294]
@@ -319,17 +319,17 @@ sky_material = ExtResource("49_euh1f")
 weather_overcast_intensity = 0.54
 weather_fog_density_boost = 0.3
 weather_storm_fog_density_boost = 0.91
-weather_fog_density_target = 0.912
+weather_fog_density_target = 0.0
 weather_fog_curve = SubResource("Curve_8l7hv")
 weather_fog_sky_affect_target = 0.942
 weather_fog_begin_distance = 0.0
 weather_fog_end_distance = 93.0
 weather_volumetric_fog_boost = 0.35
-weather_storm_volumetric_fog_boost = 1.0
-weather_volumetric_fog_density_target = 0.384
+weather_storm_volumetric_fog_boost = 0.3
+weather_volumetric_fog_density_target = 0.12
 weather_volumetric_fog_sky_affect_target = 1.0
 weather_volumetric_fog_emission_color = Color(1, 1, 1, 1)
-weather_volumetric_fog_emission_energy = 0.39
+weather_volumetric_fog_emission_energy = 0.28
 moon_phase_debug = 0.22894090755164243
 shader_sky_energy = 0.242
 shader_horizon_height = 0.178
@@ -348,32 +348,10 @@ shader_moon_size = 1.64
 shader_moon_eclipse_size = 1.531
 shader_cloud_time_scale = 30.0
 
-[node name="RainVolume" type="VisualInstance3D" parent="." unique_id=679915056]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.1228933, 0.71021414, 0)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
-script = ExtResource("45_a3p2h")
-precipitation_delta = 8.91
-size = Vector3(4, 3.4204283, 4)
-metadata/_custom_type_script = "uid://4xov8ndpybam"
-
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
-precipitation_intensity = 0.45
 storm_threshold = 0.189
 wind_influence = 0.52
 follow_height = 0.855
@@ -381,7 +359,7 @@ density_multiplier = 3.95
 near_layer_speed_multiplier = 0.93
 near_rain_color = Color(1, 1, 1, 0.1254902)
 mid_rain_color = Color(0.49803922, 0.49803922, 0.49803922, 0.24313726)
-rain_probe_density = 1.5999999999999999
+rain_probe_density = 1.6
 rain_probe_max_count = 48
 
 [node name="CanvasLayer" parent="." unique_id=1602580574 instance=ExtResource("17_1ndc1")]

@@ -1,9 +1,166 @@
 class_name WeatherServer
 extends RefCounted
 
+class WeatherRuntime extends RefCounted:
+    signal weather_state_changed
+    signal thunder(strength: float)
+
+    var precipitation_intensity: float = 0.0
+    var storm_threshold: float = 0.82
+    var sheltered_volumetric_emission_scale: float = 0.0
+    var lightning_enabled: bool = true
+    var lightning_min_interval: float = 3.2
+    var lightning_max_interval: float = 9.5
+    var lightning_flash_decay: float = 4.8
+
+    var _observer_position: Vector3 = Vector3.ZERO
+    var _has_observer_sample: bool = false
+    var _global_precipitation: float = 0.0
+    var _local_precipitation: float = 0.0
+    var _storm_factor: float = 0.0
+    var _lightning_flash: float = 0.0
+    var _shelter_factor: float = 0.0
+    var _local_emission_scale: float = 1.0
+    var _pending_flash_pulses: int = 0
+    var _next_flash_delay: float = 0.0
+    var _next_lightning_burst: float = 0.0
+    var _rng := RandomNumberGenerator.new()
+
+    func _init() -> void:
+        _rng.randomize()
+
+    func configure(
+        next_precipitation_intensity: float,
+        next_storm_threshold: float,
+        next_sheltered_volumetric_emission_scale: float,
+        next_lightning_enabled: bool,
+        next_lightning_min_interval: float,
+        next_lightning_max_interval: float,
+        next_lightning_flash_decay: float
+    ) -> void:
+        precipitation_intensity = clampf(next_precipitation_intensity, 0.0, 1.0)
+        storm_threshold = clampf(next_storm_threshold, 0.0, 1.0)
+        sheltered_volumetric_emission_scale = clampf(next_sheltered_volumetric_emission_scale, 0.0, 1.0)
+        lightning_enabled = next_lightning_enabled
+        lightning_min_interval = maxf(next_lightning_min_interval, 0.1)
+        lightning_max_interval = maxf(next_lightning_max_interval, 0.1)
+        lightning_flash_decay = maxf(next_lightning_flash_decay, 0.1)
+
+    func set_observer_sample(world_position: Vector3) -> void:
+        _observer_position = world_position
+        _has_observer_sample = true
+
+    func clear_observer_sample() -> void:
+        _observer_position = Vector3.ZERO
+        _has_observer_sample = false
+
+    func update(world_3d: World3D, delta: float) -> void:
+        var changed := _refresh_precipitation_state(world_3d)
+
+        var next_flash := move_toward(_lightning_flash, 0.0, delta * lightning_flash_decay)
+        if absf(next_flash - _lightning_flash) > 0.0001:
+            _lightning_flash = next_flash
+            changed = true
+
+        if not lightning_enabled or _storm_factor <= 0.02:
+            if _pending_flash_pulses != 0 or _next_flash_delay != 0.0 or _next_lightning_burst != 0.0:
+                _pending_flash_pulses = 0
+                _next_flash_delay = 0.0
+                _next_lightning_burst = 0.0
+                changed = true
+            if changed:
+                weather_state_changed.emit()
+            return
+
+        if _pending_flash_pulses > 0:
+            _next_flash_delay -= delta
+            if _next_flash_delay <= 0.0:
+                _trigger_lightning_pulse(_storm_factor)
+            elif changed:
+                weather_state_changed.emit()
+            return
+
+        _next_lightning_burst -= delta
+        if _next_lightning_burst <= 0.0:
+            _pending_flash_pulses = _rng.randi_range(1, 3)
+            _next_flash_delay = _rng.randf_range(0.02, 0.18)
+            _reset_lightning_schedule(_storm_factor)
+            weather_state_changed.emit()
+        elif changed:
+            weather_state_changed.emit()
+
+    func get_weather_state() -> Dictionary:
+        return {
+            "global_precipitation": _global_precipitation,
+            "local_precipitation": _local_precipitation,
+            "storm_factor": _storm_factor,
+            "lightning_flash": _lightning_flash,
+            "shelter_factor": _shelter_factor,
+            "local_emission_scale": _local_emission_scale,
+        }
+
+    func _refresh_precipitation_state(world_3d: World3D) -> bool:
+        var next_global := clampf(precipitation_intensity, 0.0, 1.0)
+        var next_local := next_global
+        if _has_observer_sample and world_3d != null:
+            next_local = WeatherServer.get_rain_participation_strength(
+                world_3d,
+                _observer_position,
+                next_global
+            )
+
+        var next_storm := _compute_storm_factor(next_local)
+        var next_shelter := 0.0
+        if next_global > 0.0001 and next_local < next_global:
+            next_shelter = clampf((next_global - next_local) / next_global, 0.0, 1.0)
+        var next_local_emission_scale := lerpf(1.0, sheltered_volumetric_emission_scale, next_shelter)
+
+        var changed := (
+            absf(_global_precipitation - next_global) > 0.0001
+            or absf(_local_precipitation - next_local) > 0.0001
+            or absf(_storm_factor - next_storm) > 0.0001
+            or absf(_shelter_factor - next_shelter) > 0.0001
+            or absf(_local_emission_scale - next_local_emission_scale) > 0.0001
+        )
+
+        _global_precipitation = next_global
+        _local_precipitation = next_local
+        _storm_factor = next_storm
+        _shelter_factor = next_shelter
+        _local_emission_scale = next_local_emission_scale
+
+        return changed
+
+    func _compute_storm_factor(intensity: float) -> float:
+        if intensity <= storm_threshold:
+            return 0.0
+
+        var denominator := maxf(1.0 - storm_threshold, 0.0001)
+        var t := clampf((intensity - storm_threshold) / denominator, 0.0, 1.0)
+        return t * t * (3.0 - 2.0 * t)
+
+    func _trigger_lightning_pulse(storm_factor: float) -> void:
+        var flash_strength := _rng.randf_range(0.62, 1.0) * (0.52 + storm_factor * 0.48)
+        _lightning_flash = maxf(_lightning_flash, flash_strength)
+        thunder.emit(clampf(flash_strength, 0.0, 1.0))
+        _pending_flash_pulses -= 1
+
+        if _pending_flash_pulses > 0:
+            _next_flash_delay = _rng.randf_range(0.05, 0.22)
+
+        weather_state_changed.emit()
+
+    func _reset_lightning_schedule(storm_factor: float) -> void:
+        var min_interval := lerpf(lightning_max_interval * 0.45, lightning_min_interval, clampf(storm_factor, 0.0, 1.0))
+        var max_interval := lerpf(lightning_max_interval * 1.15, lightning_max_interval * 0.55, clampf(storm_factor, 0.0, 1.0))
+        min_interval = maxf(0.35, min_interval)
+        max_interval = maxf(min_interval + 0.1, max_interval)
+        _next_lightning_burst = _rng.randf_range(min_interval, max_interval)
+
 static var _rain_volumes_by_world: Dictionary = {}
 static var _visible_rain_probe_fields_by_world: Dictionary = {}
 static var _visible_rain_probe_configs_by_world: Dictionary = {}
+static var _weather_runtime_by_world: Dictionary = {}
 static var _rain_render_fields_by_world: Dictionary = {}
 
 
@@ -70,6 +227,80 @@ static func clear_visible_rain_probe_field_config(world_3d: World3D, cache_key: 
         _visible_rain_probe_configs_by_world[world_id] = world_bucket
 
     clear_visible_rain_participation_cache(world_3d, cache_key)
+
+
+static func get_weather_runtime(world_3d: World3D) -> WeatherRuntime:
+    if world_3d == null:
+        return null
+
+    var world_id := world_3d.get_instance_id()
+    var runtime := _weather_runtime_by_world.get(world_id) as WeatherRuntime
+    if runtime != null:
+        return runtime
+
+    runtime = WeatherRuntime.new()
+    _weather_runtime_by_world[world_id] = runtime
+    return runtime
+
+
+static func clear_weather_runtime(world_3d: World3D) -> void:
+    if world_3d == null:
+        return
+
+    _weather_runtime_by_world.erase(world_3d.get_instance_id())
+
+
+static func configure_weather_state(
+    world_3d: World3D,
+    precipitation_intensity: float,
+    storm_threshold: float,
+    sheltered_volumetric_emission_scale: float,
+    lightning_enabled: bool,
+    lightning_min_interval: float,
+    lightning_max_interval: float,
+    lightning_flash_decay: float
+) -> void:
+    var runtime := get_weather_runtime(world_3d)
+    if runtime == null:
+        return
+
+    runtime.configure(
+        precipitation_intensity,
+        storm_threshold,
+        sheltered_volumetric_emission_scale,
+        lightning_enabled,
+        lightning_min_interval,
+        lightning_max_interval,
+        lightning_flash_decay
+    )
+
+
+static func set_weather_observer_sample(world_3d: World3D, world_position: Vector3) -> void:
+    var runtime := get_weather_runtime(world_3d)
+    if runtime == null:
+        return
+    runtime.set_observer_sample(world_position)
+
+
+static func clear_weather_observer_sample(world_3d: World3D) -> void:
+    var runtime := get_weather_runtime(world_3d)
+    if runtime == null:
+        return
+    runtime.clear_observer_sample()
+
+
+static func update_weather_state(world_3d: World3D, delta: float) -> void:
+    var runtime := get_weather_runtime(world_3d)
+    if runtime == null:
+        return
+    runtime.update(world_3d, delta)
+
+
+static func get_weather_state(world_3d: World3D) -> Dictionary:
+    var runtime := get_weather_runtime(world_3d)
+    if runtime == null:
+        return {}
+    return runtime.get_weather_state()
 
 
 static func get_configured_visible_rain_probe_field_layout(
