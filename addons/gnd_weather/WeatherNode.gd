@@ -10,6 +10,8 @@ const RAIN_STREAK_SHADER := preload("./rain_streak.gdshader")
 const NEAR_FIELD_NAME := "RainNear"
 const MID_FIELD_NAME := "RainMid"
 const RAIN_FIELD_RUNTIME_REFRESH_INTERVAL_MSEC := 250
+const RAIN_FIELD_COUNT_REDUCTION_SPACING_SCALE := 2.0
+const RAIN_FIELD_WIDTH_SCALE := 1.5
 
 @export_group("Nodes")
 @export_node_path("Node") var skydome_path: NodePath
@@ -53,7 +55,11 @@ const RAIN_FIELD_RUNTIME_REFRESH_INTERVAL_MSEC := 250
 @export var follow_height: float = 7.5
 @export var near_emission_extents: Vector3 = Vector3(4.6, 3.0, 4.6)
 @export var mid_emission_extents: Vector3 = Vector3(4.2, 2.8, 4.2)
-@export_range(0.1, 6.0, 0.05) var density_multiplier: float = 1.2
+@export_range(0.1, 8.0, 0.01) var rain_mesh_density: float = 1.0:
+    set(value):
+        rain_mesh_density = maxf(value, 0.1)
+        _invalidate_rain_field_state_cache()
+        _refresh_editor_preview()
 @export_range(1.0, 80.0, 0.1) var base_fall_speed: float = 26.0
 @export_range(0.5, 6.0, 0.05) var rain_streak_alpha_curve_exponent: float = 2.4
 @export_range(0.1, 4.0, 0.01) var near_layer_speed_multiplier: float = 1.0
@@ -857,12 +863,20 @@ func _smooth_factor(value: float, start: float, end: float) -> float:
 func _get_rain_direction(wind_speed_value: float, rain_intensity: float) -> Vector3:
     var wind_dir := _get_wind_direction()
     var wind_tilt := maxf(wind_speed_value * wind_influence, 0.0)
-    var rain_tilt_factor := _smooth_factor(rain_intensity, 0.18, 0.9)
+    var rain_tilt_factor := _get_rain_tilt_factor(rain_intensity)
     var lateral_strength := minf(
         pow(wind_tilt, 1.1) * lerpf(0.05, 0.14, rain_tilt_factor),
         0.32
     )
     return Vector3(wind_dir.x * lateral_strength, -1.0, wind_dir.y * lateral_strength).normalized()
+
+
+func _get_rain_tilt_factor(rain_intensity: float) -> float:
+    var timing_intensity := clampf(rain_intensity, 0.0, 1.0)
+    if timing_intensity <= 0.5:
+        return 0.0
+    var remapped_t := (timing_intensity - 0.5) / 0.5
+    return pow(clampf(remapped_t, 0.0, 1.0), 2.4)
 
 
 func _get_layer_intensity(intensity: float, is_mid_layer: bool) -> float:
@@ -961,7 +975,7 @@ func _get_rain_field_visual_width(layer_intensity: float, is_mid_layer: bool, fi
         lerpf(0.006, 0.0105, layer_intensity)
         if not is_mid_layer
         else lerpf(0.005, 0.009, layer_intensity)
-    )
+    ) * RAIN_FIELD_WIDTH_SCALE
     if not _rain_mesh_debug_preview_enabled:
         return streak_width
 
@@ -1008,7 +1022,12 @@ func _get_rain_field_center_y(follow_y: float, card_height: float) -> float:
 
 
 func _get_rain_field_spacing(base_spacing: float, camera: Camera3D = null) -> float:
-    var spacing := maxf(base_spacing / sqrt(maxf(density_multiplier, 0.1)), 0.1)
+    var spacing := maxf(
+        base_spacing
+        * RAIN_FIELD_COUNT_REDUCTION_SPACING_SCALE
+        / sqrt(maxf(rain_mesh_density * 4.0, 0.1)),
+        0.1
+    )
     var probe_spacing := -1.0
     if camera != null:
         probe_spacing = WeatherServer.get_configured_visible_rain_probe_spacing(
@@ -1017,7 +1036,7 @@ func _get_rain_field_spacing(base_spacing: float, camera: Camera3D = null) -> fl
             camera
         )
     if probe_spacing > 0.0:
-        spacing = minf(spacing, probe_spacing)
+        spacing = minf(spacing, probe_spacing * RAIN_FIELD_COUNT_REDUCTION_SPACING_SCALE)
     return maxf(spacing, 0.1)
 
 
