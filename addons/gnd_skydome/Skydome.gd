@@ -748,6 +748,9 @@ func _ensure_effect_installed() -> void:
     if not env_node:
         _compositor_effect = null
         return
+    if Engine.is_editor_hint():
+        _remove_effect_from_world_environment(env_node)
+        return
     if not sunshafts_enabled:
         _remove_effect_from_world_environment(env_node)
         return
@@ -756,6 +759,9 @@ func _ensure_effect_installed() -> void:
     var had_existing_compositor := compositor != null
     if not compositor:
         compositor = Compositor.new()
+        env_node.compositor = compositor
+    elif _compositor_effect == null:
+        compositor = compositor.duplicate(true) as Compositor
         env_node.compositor = compositor
 
     var effects: Array[CompositorEffect] = compositor.compositor_effects
@@ -786,12 +792,18 @@ func _remove_effect_from_world_environment(env_node: WorldEnvironment) -> void:
         return
 
     var remaining_effects: Array[CompositorEffect] = []
+    var removed_effect := false
     for item in compositor.compositor_effects:
         if item == null:
             continue
         if item.get_script() == SUN_SHAFTS_EFFECT_SCRIPT:
+            removed_effect = true
             continue
         remaining_effects.append(item)
+
+    if not removed_effect:
+        _compositor_effect = null
+        return
 
     if remaining_effects.is_empty():
         env_node.compositor = null

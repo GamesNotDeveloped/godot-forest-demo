@@ -310,7 +310,7 @@ shader_night_sky_energy = 0.165
 shader_stars_energy = 10.0
 shader_moon_tex = ExtResource("31_8echa")
 shader_moon_size = 1.64
-shader_moon_eclipse_size = 1.5310000000000001
+shader_moon_eclipse_size = 1.531
 shader_cloud_time_scale = 30.0
 
 [node name="CanvasLayer" parent="." unique_id=1602580574 instance=ExtResource("17_1ndc1")]
