@@ -18,6 +18,9 @@ const WIND_TURBULENCE_VALUE_SETTING := &"shader_globals/gnd_wind_turbulence/valu
 const WIND_PATTERN_VALUE_SETTING := &"shader_globals/gnd_wind_pattern/value"
 const VISIBLE_RAIN_PROBE_REFERENCE_DISTANCE := 8.0
 const RAIN_FIELD_FEATHER_RENDER_CUTOFF := 0.24
+const RAIN_PROBE_SUPPRESSIVE_FEATHER_BLEND_START := 0.28
+const RAIN_PROBE_SUPPRESSIVE_FEATHER_BLEND_END := 0.94
+const RAIN_FIELD_LOWER_CULL_SAMPLE_FACTORS := [0.18, 0.42]
 const RAIN_FIELD_RESAMPLE_INTERVAL_MSEC := 250
 const RAIN_FIELD_FOOTPRINT_OFFSETS := [
     Vector3.ZERO,
@@ -596,6 +599,33 @@ static func _get_rain_participation_strength_for_sorted_volumes(
     return intensity
 
 
+static func _get_rain_probe_render_strength_for_sorted_volumes(
+    sorted_volumes: Array,
+    world_position: Vector3,
+    base_strength: float
+) -> float:
+    var intensity: float = clampf(base_strength, 0.0, 1.0)
+    for volume in sorted_volumes:
+        var blend: float = volume.get_precipitation_blend(world_position)
+        if blend <= 0.0:
+            continue
+
+        var precipitation_multiplier: float = volume.get_precipitation_multiplier()
+        var full_intensity: float = clampf(
+            (intensity + volume.get_precipitation_delta()) * precipitation_multiplier,
+            0.0,
+            1.0
+        )
+        var effective_blend: float = blend
+        if full_intensity < intensity - 0.0001 and blend < 1.0:
+            effective_blend = _remap_probe_render_suppressive_blend(blend)
+
+        var precipitation_delta: float = volume.get_precipitation_delta() * effective_blend
+        var blended_multiplier: float = lerpf(1.0, precipitation_multiplier, effective_blend)
+        intensity = clampf((intensity + precipitation_delta) * blended_multiplier, 0.0, 1.0)
+    return intensity
+
+
 static func _get_rain_participation_strength_for_volumes_footprint_min(
     sorted_volumes: Array,
     world_position: Vector3,
@@ -607,13 +637,13 @@ static func _get_rain_participation_strength_for_volumes_footprint_min(
     for sample_offset_scale in RAIN_FIELD_FOOTPRINT_OFFSETS:
         min_intensity = minf(
             min_intensity,
-            _get_rain_participation_strength_for_sorted_volumes(
+            _get_rain_probe_render_strength_for_sorted_volumes(
                 sorted_volumes,
                 world_position + sample_offset_scale * footprint_half_extent,
                 base_strength
             )
         )
-        if min_intensity <= 0.0:
+        if min_intensity <= 0.001:
             return 0.0
 
     return clampf(min_intensity, 0.0, 1.0)
@@ -631,7 +661,9 @@ static func get_rain_render_field_state(
     base_strength: float,
     half_extents: Vector3,
     cell_spacing: float,
-    jitter_ratio: float
+    jitter_ratio: float,
+    rain_direction: Vector3,
+    rain_motion_half_span: float
 ) -> Dictionary:
     if world_3d == null or cache_key < 0 or layer_key == &"":
         return {
@@ -642,7 +674,7 @@ static func get_rain_render_field_state(
 
     var clamped_strength: float = clampf(base_strength, 0.0, 1.0)
     var active_volumes: Array = _get_active_rain_volumes(world_3d)
-    if clamped_strength <= 0.0 and active_volumes.is_empty():
+    if clamped_strength <= 0.001 and active_volumes.is_empty():
         clear_rain_render_field_cache(world_3d, cache_key)
         return {
             "count": 0,
@@ -678,6 +710,7 @@ static func get_rain_render_field_state(
         }
 
     var jitter_amount: float = clampf(jitter_ratio, 0.0, 1.0) * spacing * 0.5
+    var normalized_rain_direction := rain_direction.normalized()
     var snapped_grid_x: int = int(floor(view_origin.x / spacing))
     var snapped_grid_z: int = int(floor(view_origin.z / spacing))
     var active_count: int = 0
@@ -710,33 +743,66 @@ static func get_rain_render_field_state(
             if absf(world_z - view_origin.z) > safe_half_extents.z + spacing:
                 continue
 
-            var sample_position := Vector3(world_x, sample_y, world_z)
+            var instance_position := Vector3(world_x, layer_center_y, world_z)
             var intensity: float = _get_rain_participation_strength_for_volumes_footprint_min(
                 active_volumes,
-                sample_position,
+                instance_position,
                 clamped_strength,
                 spacing * 0.45
             )
             var feather_mask := _get_rain_field_feather_render_mask_for_volumes(
                 active_volumes,
-                sample_position,
+                instance_position,
                 clamped_strength,
                 spacing * 0.45
             )
+            if rain_motion_half_span > 0.0:
+                for sample_factor in RAIN_FIELD_LOWER_CULL_SAMPLE_FACTORS:
+                    var lower_sample_position := instance_position + normalized_rain_direction * (rain_motion_half_span * float(sample_factor))
+                    intensity = minf(
+                        intensity,
+                        _get_rain_participation_strength_for_volumes_footprint_min(
+                            active_volumes,
+                            lower_sample_position,
+                            clamped_strength,
+                            spacing * 0.45
+                        )
+                    )
+                    feather_mask = minf(
+                        feather_mask,
+                        _get_rain_field_feather_render_mask_for_volumes(
+                            active_volumes,
+                            lower_sample_position,
+                            clamped_strength,
+                            spacing * 0.45
+                        )
+                    )
             if not probe_layout.is_empty() and not probe_values.is_empty():
                 var probe_intensity := _sample_visible_rain_probe_layout_footprint_min(
                     view_transform,
                     probe_layout,
-                    sample_position,
+                    instance_position,
                     spacing * 0.45,
                     probe_values
                 )
                 if probe_intensity >= 0.0:
                     intensity = minf(intensity, probe_intensity)
-            if intensity <= 0.0 or feather_mask <= RAIN_FIELD_FEATHER_RENDER_CUTOFF:
+                if rain_motion_half_span > 0.0:
+                    for sample_factor in RAIN_FIELD_LOWER_CULL_SAMPLE_FACTORS:
+                        var lower_probe_sample_position := instance_position + normalized_rain_direction * (rain_motion_half_span * float(sample_factor))
+                        var lower_probe_intensity := _sample_visible_rain_probe_layout_footprint_min(
+                            view_transform,
+                            probe_layout,
+                            lower_probe_sample_position,
+                            spacing * 0.45,
+                            probe_values
+                        )
+                        if lower_probe_intensity >= 0.0:
+                            intensity = minf(intensity, lower_probe_intensity)
+            if intensity <= 0.001 or feather_mask <= RAIN_FIELD_FEATHER_RENDER_CUTOFF:
                 continue
 
-            positions[active_count] = Vector3(world_x, layer_center_y, world_z)
+            positions[active_count] = instance_position
             custom_data[active_count] = Color(
                 _get_rain_field_phase(grid_x, grid_z),
                 _get_rain_field_instance_alpha(intensity) * _normalize_rain_field_feather_mask(feather_mask),
@@ -828,7 +894,7 @@ static func get_visible_rain_probe_field_state(
 
     var clamped_strength: float = clampf(base_strength, 0.0, 1.0)
     var active_volumes: Array = _get_active_rain_volumes(world_3d)
-    if clamped_strength <= 0.0 and active_volumes.is_empty():
+    if clamped_strength <= 0.001 and active_volumes.is_empty():
         clear_visible_rain_participation_cache(world_3d, cache_key)
         return {
             "strength": 0.0,
@@ -862,7 +928,7 @@ static func get_visible_rain_probe_field_state(
             field_scale,
             probe_index
         )
-        values[probe_index] = _get_rain_participation_strength_for_sorted_volumes(
+        values[probe_index] = _get_rain_probe_render_strength_for_sorted_volumes(
             active_volumes,
             probe_position,
             clamped_strength
@@ -1278,7 +1344,7 @@ static func _get_visible_rain_probe_values_for_layout(
             field_scale,
             probe_index
         )
-        values[probe_index] = _get_rain_participation_strength_for_sorted_volumes(
+        values[probe_index] = _get_rain_probe_render_strength_for_sorted_volumes(
             active_volumes,
             probe_position,
             base_strength
@@ -1357,7 +1423,7 @@ static func _sample_visible_rain_probe_layout_footprint_min(
             continue
         min_value = minf(min_value, sample_value)
         has_sample = true
-        if min_value <= 0.0:
+        if min_value <= 0.001:
             return 0.0
 
     if not has_sample:
@@ -1386,6 +1452,14 @@ static func _get_rain_field_feather_render_mask_for_volumes(
             return 0.0
 
     return clampf(min_mask, 0.0, 1.0)
+
+
+static func _remap_probe_render_suppressive_blend(blend: float) -> float:
+    return _smoothstepf(
+        clampf(blend, 0.0, 1.0),
+        RAIN_PROBE_SUPPRESSIVE_FEATHER_BLEND_START,
+        RAIN_PROBE_SUPPRESSIVE_FEATHER_BLEND_END
+    )
 
 
 static func _get_rain_field_feather_render_mask_at_position(
@@ -1446,7 +1520,7 @@ static func _get_visible_rain_probe_field_state(
 
     for probe_index in range(values.size()):
         var value: float = values[probe_index]
-        if value <= 0.0:
+        if value <= 0.001:
             continue
 
         visible_intensity = maxf(visible_intensity, value)
@@ -1501,6 +1575,11 @@ static func _normalize_rain_field_feather_mask(feather_mask: float) -> float:
         0.0,
         1.0
     )
+
+
+static func _smoothstepf(value: float, start: float, end: float) -> float:
+    var t := clampf((value - start) / maxf(end - start, 0.0001), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
 
 
 static func _get_rain_field_variation(grid_x: int, grid_z: int) -> float:

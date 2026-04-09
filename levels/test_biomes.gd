@@ -194,7 +194,6 @@ func _on_weather_rain_strength_changed(strength):
 
 
 func _on_weather_rain_local_strength_changed(strength: float) -> void:
-    print("local strength ", strength)
     if _rain_low_pass_filter == null or _weather == null:
         return
 

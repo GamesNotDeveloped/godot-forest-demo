@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
+render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled;
 
 uniform vec4 tint : source_color = vec4(0.84, 0.9, 1.0, 0.12);
 uniform float width_softness : hint_range(0.01, 0.8) = 0.22;
@@ -65,7 +65,9 @@ void fragment() {
 		+ UV.x * mix(6.0, 14.0, variation)
 	);
 	float alpha = width_mask * body_fade;
-
-	ALBEDO = tint.rgb;
-	ALPHA = alpha * 0.37 * clamp(intensity_alpha * 0.5, 0.3, 0.8);
+    if(alpha < 0.00001) {
+        discard;
+    }
+	ALBEDO = tint.rgb * (alpha * 0.47 * clamp(intensity_alpha * 0.5, 0.3, 0.8));
+	ALPHA = alpha * 0.57 * clamp(intensity_alpha * 0.5, 0.1, 0.7);
 }

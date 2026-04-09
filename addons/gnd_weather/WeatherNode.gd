@@ -585,6 +585,7 @@ func _update_rain_rendering() -> void:
     var view_transform := camera.global_transform
     var rain_basis: Basis = _get_rain_field_basis(rain_direction, view_transform.basis)
     var near_card_height: float = _get_rain_field_card_height(near_emission_extents, near_layer_intensity, false)
+    var near_travel_distance: float = _get_rain_field_travel_distance(near_card_height, render_intensity)
     var near_spacing: float = _get_rain_field_spacing(near_field_spacing, camera)
     var near_state: Dictionary = _get_rain_render_field_state_cached(
         &"near",
@@ -596,7 +597,9 @@ func _update_rain_rendering() -> void:
         global_intensity,
         near_emission_extents,
         near_spacing,
-        near_field_jitter
+        near_field_jitter,
+        rain_direction,
+        _get_rain_field_motion_half_span(near_card_height, near_travel_distance)
     )
     _update_rain_field_layer(
         _near_rain_field,
@@ -615,6 +618,7 @@ func _update_rain_rendering() -> void:
         return
 
     var mid_card_height: float = _get_rain_field_card_height(mid_emission_extents, mid_layer_intensity, true)
+    var mid_travel_distance: float = _get_rain_field_travel_distance(mid_card_height, render_intensity)
     var mid_spacing: float = _get_rain_field_spacing(mid_field_spacing, camera)
     var mid_state: Dictionary = _get_rain_render_field_state_cached(
         &"mid",
@@ -626,7 +630,9 @@ func _update_rain_rendering() -> void:
         global_intensity,
         mid_emission_extents,
         mid_spacing,
-        mid_field_jitter
+        mid_field_jitter,
+        rain_direction,
+        _get_rain_field_motion_half_span(mid_card_height, mid_travel_distance)
     )
     _update_rain_field_layer(
         _mid_rain_field,
@@ -707,7 +713,9 @@ func _get_rain_render_field_state_cached(
     base_strength: float,
     half_extents: Vector3,
     cell_spacing: float,
-    jitter_ratio: float
+    jitter_ratio: float,
+    rain_direction: Vector3,
+    rain_motion_half_span: float
 ) -> Dictionary:
     if Engine.is_editor_hint():
         return WeatherServer.get_rain_render_field_state(
@@ -722,7 +730,9 @@ func _get_rain_render_field_state_cached(
             base_strength,
             half_extents,
             cell_spacing,
-            jitter_ratio
+            jitter_ratio,
+            rain_direction,
+            rain_motion_half_span
         )
 
     var cache := _get_rain_render_field_state_cache(layer_key)
@@ -736,6 +746,8 @@ func _get_rain_render_field_state_cached(
         var last_sample_y: float = float(cache.get("sample_y", INF))
         var last_layer_center_y: float = float(cache.get("layer_center_y", INF))
         var last_cell_spacing: float = float(cache.get("cell_spacing", -1.0))
+        var last_rain_direction: Vector3 = cache.get("rain_direction", Vector3.ZERO)
+        var last_rain_motion_half_span: float = float(cache.get("rain_motion_half_span", -1.0))
         var last_half_extents: Vector3 = cache.get("half_extents", Vector3.ZERO)
 
         needs_refresh = (
@@ -745,6 +757,8 @@ func _get_rain_render_field_state_cached(
             or absf(last_sample_y - sample_y) > 0.0001
             or absf(last_layer_center_y - layer_center_y) > 0.0001
             or absf(last_cell_spacing - cell_spacing) > 0.0001
+            or not last_rain_direction.is_equal_approx(rain_direction)
+            or absf(last_rain_motion_half_span - rain_motion_half_span) > 0.0001
             or not last_half_extents.is_equal_approx(half_extents)
         )
     if not needs_refresh:
@@ -767,7 +781,9 @@ func _get_rain_render_field_state_cached(
         base_strength,
         half_extents,
         cell_spacing,
-        jitter_ratio
+        jitter_ratio,
+        rain_direction,
+        rain_motion_half_span
     )
     _store_rain_render_field_state_cache(layer_key, {
         "ready": true,
@@ -779,6 +795,8 @@ func _get_rain_render_field_state_cached(
         "sample_y": sample_y,
         "layer_center_y": layer_center_y,
         "cell_spacing": cell_spacing,
+        "rain_direction": rain_direction,
+        "rain_motion_half_span": rain_motion_half_span,
         "half_extents": half_extents,
     })
     return field_state
@@ -878,7 +896,6 @@ func _update_rain_field_visuals(
     )
     material.set_shader_parameter("tint", effective_color)
     material.set_shader_parameter("intensity_alpha", clampf(rain_intensity, 0.0, 1.0))
-    print("rain intensity", rain_intensity)
     material.set_shader_parameter("width_softness", lerpf(0.14, 0.24, layer_intensity))
     material.set_shader_parameter("tail_softness", lerpf(0.24, 0.62, layer_intensity))
     material.set_shader_parameter("center_bias", lerpf(0.34, 0.68, layer_intensity))
@@ -898,7 +915,7 @@ func _update_rain_field_visuals(
     )
     material.set_shader_parameter(
         "travel_distance",
-        lerpf(card_height * 0.14, card_height * 1.05, pow(timing_intensity, 1.3))
+        _get_rain_field_travel_distance(card_height, timing_intensity)
     )
     material.set_shader_parameter("respawn_spread", _get_rain_field_respawn_spread(field_spacing))
     material.set_shader_parameter(
@@ -948,6 +965,15 @@ func _get_rain_field_spawn_duration(layer_intensity: float, is_mid_layer: bool) 
     if is_mid_layer:
         return lerpf(0.08, 0.42, pow(intensity, 1.2))
     return lerpf(0.06, 0.36, pow(intensity, 1.05))
+
+
+func _get_rain_field_travel_distance(card_height: float, rain_intensity: float) -> float:
+    var timing_intensity := clampf(rain_intensity, 0.0, 1.0)
+    return lerpf(card_height * 0.14, card_height * 1.05, pow(timing_intensity, 1.3))
+
+
+func _get_rain_field_motion_half_span(card_height: float, travel_distance: float) -> float:
+    return maxf(card_height + travel_distance, 0.0) * 0.5
 
 
 func _get_rain_field_card_height(extents: Vector3, layer_intensity: float, is_mid_layer: bool) -> float:
