@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cb8t3x6gvytl7"]
 
 [ext_resource type="PackedScene" uid="uid://8rkvtihjaha2" path="res://objects/old-house/scene.gltf" id="1_55pgk"]
-[ext_resource type="Script" uid="uid://4xov8ndpybam" path="res://scenery/RainVolume.gd" id="2_o6lqo"]
+[ext_resource type="Script" uid="uid://4xov8ndpybam" path="res://addons/gnd_weather/RainVolume.gd" id="2_o6lqo"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_55pgk"]
 size = Vector3(0.62601876, 0.05595795, 1.2509776)
@@ -79,9 +79,6 @@ points = PackedVector3Array(-1.5126499, 0.050049953, 1.4068155, -1.9806498, -0.0
 density = 0.0256
 height_falloff = 0.4151102
 edge_fade = 0.5656852
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_18tkx"]
-size = Vector3(5.250366, 2.2314758, 3.5603027)
 
 [node name="OldHouse" unique_id=1458074419 instance=ExtResource("1_55pgk")]
 
@@ -189,14 +186,23 @@ transform = Transform3D(0.8955798, 0, 0.44490093, 0, 1, 0, -0.44490093, 0, 0.895
 size = Vector3(4, 2, 5.2073975)
 material = SubResource("FogMaterial_55pgk")
 
-[node name="RainVolume" type="Area3D" parent="." index="26" unique_id=1397810757]
-transform = Transform3D(0.45545167, 0, -0.8902605, 0, 1, 0, 0.8902605, 0, 0.45545167, 0, 0, 0)
-collision_layer = 1048576
-collision_mask = 0
-monitoring = false
+[node name="RainVolume" type="VisualInstance3D" parent="." index="26" unique_id=1397810757]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+transform = Transform3D(0.45545167, 0, -0.8902605, 0, 1, 0, 0.8902605, 0, 0.45545167, 0.11583289, 1.1274872, 0.06892877)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+layers = 1
 script = ExtResource("2_o6lqo")
+size = Vector3(4.8170033, 2, 3.3896112)
+edge_feather = 0.5
 metadata/_custom_type_script = "uid://4xov8ndpybam"
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="RainVolume" index="0" unique_id=1401187859]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3020629, 1.1274872, -0.09973134)
-shape = SubResource("BoxShape3D_18tkx")

@@ -26,7 +26,7 @@
 [ext_resource type="PackedScene" uid="uid://bgayoi0kr6cpb" path="res://objects/flower-1.tscn" id="18_va16g"]
 [ext_resource type="PackedScene" uid="uid://cyh3thpygday5" path="res://objects/flower-2.1.tscn" id="19_cwx7y"]
 [ext_resource type="Script" uid="uid://blkilnimp0sck" path="res://addons/gnd_skydome/Skydome.gd" id="19_shafts"]
-[ext_resource type="Script" uid="uid://lgnwh1qwjbmt" path="res://scenery/WeatherNode.gd" id="19_weather"]
+[ext_resource type="Script" uid="uid://lgnwh1qwjbmt" path="res://addons/gnd_weather/WeatherNode.gd" id="19_weather"]
 [ext_resource type="PackedScene" uid="uid://dutdm74b0brla" path="res://generated/biomes_billboards/plants2/00_flower-1/billboard.tscn" id="20_2xaht"]
 [ext_resource type="PackedScene" uid="uid://wevxi0ut6m5p" path="res://objects/flower-2.2.tscn" id="20_80swb"]
 [ext_resource type="Texture2D" uid="uid://68h8xse5rqd3" path="res://levels/flowers_mask.png" id="21_80swb"]
@@ -169,6 +169,10 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
 noise_type = 3
+
+[sub_resource type="Curve" id="Curve_8l7hv"]
+_data = [Vector2(0, 0), 0.0, 0.024778249, 0, 0, Vector2(0.71364653, 0.019491553), 0.0, 0.0, 0, 0, Vector2(0.9619687, 0.4822033), 4.10381, 4.10381, 0, 0, Vector2(0.99776286, 1), 32.36156, 3.0039914, 0, 0]
+point_count = 4
 
 [node name="TestBiomes" type="Node3D" unique_id=1245326294]
 script = ExtResource("1_flr7s")
@@ -315,6 +319,7 @@ weather_overcast_intensity = 0.54
 weather_fog_density_boost = 0.3
 weather_storm_fog_density_boost = 0.91
 weather_fog_density_target = 0.912
+weather_fog_curve = SubResource("Curve_8l7hv")
 weather_fog_sky_affect_target = 0.942
 weather_fog_begin_distance = 0.0
 weather_fog_end_distance = 93.0
@@ -402,17 +407,22 @@ autostart = true
 
 [node name="Thunder1" type="AudioStreamPlayer" parent="." unique_id=400482196]
 stream = ExtResource("51_kwcl0")
+bus = &"Rain"
 
 [node name="Thunder2" type="AudioStreamPlayer" parent="." unique_id=1600119013]
 stream = ExtResource("52_c6or4")
+bus = &"Rain"
 
 [node name="Rain1" type="AudioStreamPlayer" parent="." unique_id=193261155]
 stream = ExtResource("53_xnulj")
+bus = &"Rain"
 
 [node name="Rain2" type="AudioStreamPlayer" parent="." unique_id=355123381]
 stream = ExtResource("54_8l7hv")
+bus = &"Rain"
 
 [connection signal="profile_changed" from="QualityProfilesManager" to="." method="_on_quality_profiles_manager_profile_changed"]
+[connection signal="rain_local_strength_changed" from="Weather" to="." method="_on_weather_rain_local_strength_changed"]
 [connection signal="rain_strength_changed" from="Weather" to="." method="_on_weather_rain_strength_changed"]
 [connection signal="thunder" from="Weather" to="." method="_on_weather_thunder"]
 [connection signal="timeout" from="WorldTimer" to="." method="_on_world_timer_timeout"]

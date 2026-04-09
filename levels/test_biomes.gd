@@ -4,6 +4,10 @@ const PROFILE_ID_FILMIC := &"filmic"
 const PROFILE_ID_HIGH := &"high"
 const PROFILE_ID_MID := &"mid"
 const PROFILE_ID_LOW := &"low"
+const RAIN_BUS_NAME := &"Rain"
+const RAIN_LP_OPEN_CUTOFF_HZ := 20500.0
+const RAIN_LP_OCCLUDED_CUTOFF_HZ := 3000.0
+const RAIN_LP_TWEEN_DURATION := 0.12
 
 @onready var _quality_profiles_manager: QualityProfilesManager = $QualityProfilesManager
 @onready var _directional_light: DirectionalLight3D = $DirectionalLight3D
@@ -11,6 +15,16 @@ const PROFILE_ID_LOW := &"low"
 @onready var _auto_biomes_fog: AutoBiomesFog = $AutoBiomesFog
 @onready var _sun_shafts_controller: Skydome = $Skydome
 @onready var _weather: WeatherNode = $Weather
+
+var _rain_low_pass_filter: AudioEffectLowPassFilter
+var _rain_low_pass_tween: Tween
+
+
+func _ready() -> void:
+    var rain_bus_index := AudioServer.get_bus_index(RAIN_BUS_NAME)
+    if rain_bus_index >= 0 and AudioServer.get_bus_effect_count(rain_bus_index) > 0:
+        _rain_low_pass_filter = AudioServer.get_bus_effect(rain_bus_index, 0) as AudioEffectLowPassFilter
+    _apply_rain_low_pass_cutoff(RAIN_LP_OPEN_CUTOFF_HZ)
 
 
 func _on_quality_profiles_manager_profile_changed() -> void:
@@ -162,3 +176,39 @@ func _on_weather_rain_strength_changed(strength):
     else:
         $Rain1.stop()
         $Rain2.stop()
+
+
+func _on_weather_rain_local_strength_changed(strength: float) -> void:
+    print("local strength ", strength)
+    if _rain_low_pass_filter == null or _weather == null:
+        return
+
+    var global_strength := clampf(_weather.precipitation_intensity, 0.0, 1.0)
+    var shelter_factor := 0.0
+    if global_strength > 0.0001:
+        shelter_factor = clampf((global_strength - strength) / global_strength, 0.0, 1.0)
+
+    var target_cutoff := lerpf(RAIN_LP_OPEN_CUTOFF_HZ, RAIN_LP_OCCLUDED_CUTOFF_HZ, shelter_factor)
+    _tween_rain_low_pass_cutoff(target_cutoff)
+
+
+func _tween_rain_low_pass_cutoff(target_cutoff_hz: float) -> void:
+    if _rain_low_pass_filter == null:
+        return
+
+    if _rain_low_pass_tween != null:
+        _rain_low_pass_tween.kill()
+
+    _rain_low_pass_tween = create_tween()
+    _rain_low_pass_tween.tween_property(
+        _rain_low_pass_filter,
+        "cutoff_hz",
+        clampf(target_cutoff_hz, RAIN_LP_OCCLUDED_CUTOFF_HZ, RAIN_LP_OPEN_CUTOFF_HZ),
+        RAIN_LP_TWEEN_DURATION
+    ).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+func _apply_rain_low_pass_cutoff(cutoff_hz: float) -> void:
+    if _rain_low_pass_filter == null:
+        return
+    _rain_low_pass_filter.cutoff_hz = clampf(cutoff_hz, RAIN_LP_OCCLUDED_CUTOFF_HZ, RAIN_LP_OPEN_CUTOFF_HZ)

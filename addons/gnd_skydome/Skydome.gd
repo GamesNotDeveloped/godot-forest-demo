@@ -209,6 +209,11 @@ var _weather_local_emission_scale: float = 1.0
     set(v):
         weather_fog_density_target = v
         _update_sun_transform()
+@export var weather_fog_curve: Curve = Curve.new():
+    set(v):
+        weather_fog_curve = v
+        _ensure_weather_fog_curve()
+        _update_sun_transform()
 @export_range(0.0, 1.0, 0.001) var weather_fog_sky_affect_target: float = 0.12:
     set(v):
         weather_fog_sky_affect_target = v
@@ -538,6 +543,7 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
     _is_ready = true
+    _ensure_weather_fog_curve()
     _init_sky()
     _update_sun_transform()
     _update_cloud_time()
@@ -907,8 +913,7 @@ func _apply_weather_overrides(env: Environment, light: DirectionalLight3D) -> vo
     env.ambient_light_color = env.ambient_light_color.lerp(Color(0.38, 0.41, 0.46, 1.0), overcast_cooling * 0.82)
     env.ambient_light_energy *= maxf(0.18, 1.0 - (precipitation * 0.24 + storm_factor * 0.08) * weather_override_strength)
 
-    var fog_weather_blend := clampf((precipitation - 0.72) / 0.28, 0.0, 1.0)
-    fog_weather_blend = fog_weather_blend * fog_weather_blend * (3.0 - 2.0 * fog_weather_blend)
+    var fog_weather_blend := _sample_weather_fog_curve(clampf((precipitation - 0.72) / 0.28, 0.0, 1.0))
     fog_weather_blend = clampf(fog_weather_blend + storm_factor * 0.18, 0.0, 1.0)
 
     env.fog_light_color = env.fog_light_color.lerp(Color(0.25, 0.28, 0.34, 1.0), overcast_cooling * 0.86)
@@ -946,6 +951,27 @@ func _apply_weather_overrides(env: Environment, light: DirectionalLight3D) -> vo
         env.ambient_light_energy += lightning_flash * (0.28 + storm_factor * 0.35)
         env.fog_light_color = env.fog_light_color.lerp(Color(0.74, 0.82, 0.96, 1.0), lightning_flash * 0.7)
         env.volumetric_fog_albedo = env.volumetric_fog_albedo.lerp(Color(0.58, 0.66, 0.82, 1.0), lightning_flash * 0.35)
+
+
+func _ensure_weather_fog_curve() -> void:
+    if weather_fog_curve == null:
+        weather_fog_curve = Curve.new()
+    if weather_fog_curve.get_point_count() > 0:
+        return
+
+    weather_fog_curve.add_point(Vector2(0.0, 0.0))
+    weather_fog_curve.add_point(Vector2(0.58, 0.03))
+    weather_fog_curve.add_point(Vector2(0.82, 0.28))
+    weather_fog_curve.add_point(Vector2(1.0, 1.0))
+
+
+func _sample_weather_fog_curve(value: float) -> float:
+    var t := clampf(value, 0.0, 1.0)
+    _ensure_weather_fog_curve()
+    if weather_fog_curve == null:
+        return t
+    return clampf(weather_fog_curve.sample_baked(t), 0.0, 1.0)
+
 
 func _ensure_effect_installed() -> void:
     var env_node = _get_world_environment()
