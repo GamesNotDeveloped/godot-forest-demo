@@ -357,8 +357,8 @@ density_multiplier = 3.95
 near_layer_speed_multiplier = 0.93
 near_rain_color = Color(1, 1, 1, 0.1254902)
 mid_rain_color = Color(0.49803922, 0.49803922, 0.49803922, 0.24313726)
-rain_probe_density = 1.6
-rain_probe_max_count = 48
+rain_probe_max_count = 128
+rain_probe_distance = 4.0
 
 [node name="CanvasLayer" parent="." unique_id=1602580574 instance=ExtResource("17_1ndc1")]
 

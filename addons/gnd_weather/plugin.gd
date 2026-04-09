@@ -3,7 +3,7 @@ extends EditorPlugin
 
 const RAIN_VOLUME_GIZMO_PLUGIN_SCRIPT := preload("res://addons/gnd_weather/RainVolumeGizmoPlugin.gd")
 const PROBE_BUTTON_TEXT := "Weather Probes"
-const PROBE_REFRESH_INTERVAL := 1.0
+const PROBE_REFRESH_INTERVAL := 0.2
 const PROBE_WORLD_SCALE_MIN := 0.03
 const PROBE_WORLD_SCALE_MAX := 0.18
 const PROBE_WORLD_SCALE_FACTOR := 0.015
@@ -185,7 +185,6 @@ func _sync_registered_probe_configs(world_3d: World3D) -> void:
         WeatherServer.configure_visible_rain_probe_field(
             world_3d,
             weather_node_id,
-            weather_node.rain_probe_density,
             weather_node.rain_probe_max_count,
             weather_node.rain_probe_distance
         )

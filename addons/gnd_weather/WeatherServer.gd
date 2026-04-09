@@ -16,6 +16,7 @@ const WIND_STRENGTH_VALUE_SETTING := &"shader_globals/gnd_wind_strength/value"
 const WIND_TIME_VALUE_SETTING := &"shader_globals/gnd_wind_time/value"
 const WIND_TURBULENCE_VALUE_SETTING := &"shader_globals/gnd_wind_turbulence/value"
 const WIND_PATTERN_VALUE_SETTING := &"shader_globals/gnd_wind_pattern/value"
+const VISIBLE_RAIN_PROBE_REFERENCE_DISTANCE := 8.0
 
 class WeatherRuntime extends RefCounted:
     signal weather_state_changed
@@ -221,7 +222,6 @@ static func remove_rain_volume(world_3d: World3D, volume_rid: RID) -> void:
 static func configure_visible_rain_probe_field(
     world_3d: World3D,
     cache_key: int,
-    density: float,
     max_probes: int,
     distance: float
 ) -> void:
@@ -231,7 +231,6 @@ static func configure_visible_rain_probe_field(
     var world_id := world_3d.get_instance_id()
     var world_bucket: Dictionary = _visible_rain_probe_configs_by_world.get(world_id, {})
     world_bucket[cache_key] = {
-        "density": maxf(density, 0.01),
         "max_probes": maxi(max_probes, 1),
         "distance": maxf(distance, 0.1),
     }
@@ -452,10 +451,18 @@ static func get_configured_visible_rain_probe_field_layout(
 
     return _build_visible_rain_probe_field_layout(
         camera,
-        float(config.get("density", 0.25)),
         int(config.get("max_probes", 24)),
         float(config.get("distance", 8.0))
     )
+
+
+static func get_configured_visible_rain_probe_spacing(
+    world_3d: World3D,
+    cache_key: int,
+    camera: Camera3D
+) -> float:
+    var layout: Dictionary = get_configured_visible_rain_probe_field_layout(world_3d, cache_key, camera)
+    return _get_visible_rain_probe_layout_spacing(layout)
 
 
 static func get_registered_visible_rain_probe_positions(
@@ -549,6 +556,8 @@ static func get_rain_render_field_state(
     world_3d: World3D,
     cache_key: int,
     layer_key: StringName,
+    view_transform: Transform3D,
+    camera: Camera3D,
     view_origin: Vector3,
     sample_y: float,
     layer_center_y: float,
@@ -592,6 +601,21 @@ static func get_rain_render_field_state(
     var snapped_grid_x: int = int(floor(view_origin.x / spacing))
     var snapped_grid_z: int = int(floor(view_origin.z / spacing))
     var active_count: int = 0
+    var probe_layout: Dictionary = {}
+    var probe_values := PackedFloat32Array()
+
+    if camera != null:
+        probe_layout = get_configured_visible_rain_probe_field_layout(world_3d, cache_key, camera)
+        if not probe_layout.is_empty():
+            probe_values = _get_visible_rain_probe_values_for_layout(
+                world_3d,
+                cache_key,
+                view_transform,
+                camera,
+                clamped_strength,
+                active_volumes,
+                probe_layout
+            )
 
     for row_index in range(rows):
         var grid_z: int = snapped_grid_z + row_index - radius_z
@@ -612,6 +636,15 @@ static func get_rain_render_field_state(
                 sample_position,
                 clamped_strength
             )
+            if not probe_layout.is_empty() and not probe_values.is_empty():
+                var probe_intensity := _sample_visible_rain_probe_layout_nearest(
+                    view_transform,
+                    probe_layout,
+                    sample_position,
+                    probe_values
+                )
+                if probe_intensity >= 0.0:
+                    intensity = minf(intensity, probe_intensity)
             if intensity <= 0.001:
                 continue
 
@@ -1015,43 +1048,30 @@ static func _make_rain_render_field_cache_id(cache_key: int, layer_key: StringNa
 
 static func _build_visible_rain_probe_field_layout(
     camera: Camera3D,
-    density: float,
     max_probes: int,
     distance: float
 ) -> Dictionary:
-    var safe_density: float = maxf(density, 0.01)
     var safe_max_probes: int = maxi(max_probes, 1)
     var safe_far_depth: float = maxf(distance, 0.1)
-    var near_depth: float = minf(maxf(safe_far_depth * 0.25, 0.5), safe_far_depth)
-    var far_half_extents: Vector2 = _get_visible_rain_probe_half_extents(camera, safe_far_depth, 1.0)
-    var full_width: float = maxf(far_half_extents.x * 2.0, 0.1)
-    var full_height: float = maxf(far_half_extents.y * 2.0, 0.1)
-
-    var probe_columns: int = maxi(int(ceil(full_width * safe_density)) + 1, 1)
-    var probe_rows: int = maxi(int(ceil(full_height * safe_density)) + 1, 1)
-    var probe_depth_slices: int = maxi(int(ceil(safe_far_depth * safe_density * 0.35)) + 1, 1)
+    var near_depth: float = minf(0.1, safe_far_depth)
+    var axis_count: int = maxi(int(ceil(pow(float(safe_max_probes), 1.0 / 3.0))), 1)
+    var probe_columns: int = axis_count
+    var probe_rows: int = axis_count
+    var probe_depth_slices: int = axis_count
     var probe_count: int = probe_columns * probe_rows * probe_depth_slices
 
-    if probe_count > safe_max_probes:
-        var scale: float = pow(float(probe_count) / float(safe_max_probes), 1.0 / 3.0)
-        probe_columns = maxi(int(floor(float(probe_columns) / scale)), 1)
-        probe_rows = maxi(int(floor(float(probe_rows) / scale)), 1)
-        probe_depth_slices = maxi(int(floor(float(probe_depth_slices) / scale)), 1)
+    while probe_count > safe_max_probes:
+        if probe_columns >= probe_rows and probe_columns >= probe_depth_slices and probe_columns > 1:
+            probe_columns -= 1
+        elif probe_rows >= probe_depth_slices and probe_rows > 1:
+            probe_rows -= 1
+        elif probe_depth_slices > 1:
+            probe_depth_slices -= 1
+        else:
+            break
         probe_count = probe_columns * probe_rows * probe_depth_slices
 
-        while probe_count > safe_max_probes:
-            if probe_columns >= probe_rows and probe_columns >= probe_depth_slices and probe_columns > 1:
-                probe_columns -= 1
-            elif probe_rows >= probe_depth_slices and probe_rows > 1:
-                probe_rows -= 1
-            elif probe_depth_slices > 1:
-                probe_depth_slices -= 1
-            else:
-                break
-            probe_count = probe_columns * probe_rows * probe_depth_slices
-
     return {
-        "density": safe_density,
         "max_probes": safe_max_probes,
         "distance": safe_far_depth,
         "probe_columns": probe_columns,
@@ -1062,6 +1082,24 @@ static func _build_visible_rain_probe_field_layout(
         "field_scale": 1.0,
         "refresh_budget": probe_columns * probe_rows * probe_depth_slices,
     }
+
+
+static func _get_visible_rain_probe_layout_spacing(layout: Dictionary) -> float:
+    if layout.is_empty():
+        return -1.0
+
+    var distance: float = maxf(float(layout.get("distance", 0.1)), 0.1)
+    var near_depth: float = clampf(float(layout.get("near_depth", 0.1)), 0.0, distance)
+    var depth_span: float = maxf(distance - near_depth, 0.1)
+    var field_scale: float = maxf(float(layout.get("field_scale", 1.0)), 0.01)
+    var half_extent: float = maxf(distance * field_scale * 0.5, 0.05)
+    var columns: int = maxi(int(layout.get("probe_columns", 1)), 1)
+    var rows: int = maxi(int(layout.get("probe_rows", 1)), 1)
+    var depth_slices: int = maxi(int(layout.get("probe_depth_slices", 1)), 1)
+    var lateral_spacing: float = (half_extent * 2.0) / maxf(float(columns - 1), 1.0)
+    var vertical_spacing: float = (half_extent * 2.0) / maxf(float(rows - 1), 1.0)
+    var depth_spacing: float = depth_span / maxf(float(depth_slices - 1), 1.0)
+    return maxf(minf(lateral_spacing, minf(vertical_spacing, depth_spacing)), 0.1)
 
 
 static func _get_visible_rain_probe_world_position(
@@ -1081,41 +1119,117 @@ static func _get_visible_rain_probe_world_position(
     var column_index: int = plane_index % probe_columns
 
     var depth_t: float = 0.0 if probe_depth_slices <= 1 else float(slice_index) / float(probe_depth_slices - 1)
-    var depth: float = lerpf(maxf(near_depth, 0.1), maxf(far_depth, near_depth), depth_t)
     var u: float = 0.0 if probe_columns <= 1 else lerpf(-1.0, 1.0, float(column_index) / float(probe_columns - 1))
     var v: float = 0.0 if probe_rows <= 1 else lerpf(1.0, -1.0, float(row_index) / float(probe_rows - 1))
 
-    var half_extents: Vector2 = _get_visible_rain_probe_half_extents(camera, depth, field_scale)
+    var safe_near_depth: float = minf(maxf(near_depth, 0.0), far_depth)
+    var depth_span: float = maxf(far_depth - safe_near_depth, 0.1)
+    var center_depth: float = safe_near_depth + depth_span * 0.5
+    var half_extent: float = maxf(far_depth * field_scale * 0.5, 0.05)
     var forward: Vector3 = -view_transform.basis.z
     var right: Vector3 = view_transform.basis.x
     var up: Vector3 = view_transform.basis.y
     return (
         view_transform.origin
-        + forward * depth
-        + right * (u * half_extents.x)
-        + up * (v * half_extents.y)
+        + forward * center_depth
+        + right * (u * half_extent)
+        + up * (v * half_extent)
+        + forward * ((depth_t - 0.5) * depth_span)
     )
 
 
 static func _get_visible_rain_probe_half_extents(camera: Camera3D, depth: float, field_scale: float) -> Vector2:
-    var aspect: float = 16.0 / 9.0
-    if camera != null:
-        var viewport := camera.get_viewport()
-        if viewport != null:
-            var visible_rect: Rect2 = viewport.get_visible_rect()
-            if visible_rect.size.y > 0.0:
-                aspect = visible_rect.size.x / visible_rect.size.y
+    var half_extent: float = maxf(depth * field_scale * 0.5, 0.05)
+    return Vector2(half_extent, half_extent)
 
-    var half_height: float
-    if camera != null and camera.projection == Camera3D.PROJECTION_ORTHOGONAL:
-        half_height = camera.size * 0.5
-    else:
-        var vertical_fov: float = 70.0 if camera == null else camera.fov
-        half_height = tan(deg_to_rad(vertical_fov) * 0.5) * depth
 
-    half_height *= maxf(field_scale, 0.01)
-    var half_width: float = half_height * aspect
-    return Vector2(half_width, half_height)
+static func _get_visible_rain_probe_values_for_layout(
+    world_3d: World3D,
+    cache_key: int,
+    view_transform: Transform3D,
+    camera: Camera3D,
+    base_strength: float,
+    active_volumes: Array,
+    layout: Dictionary
+) -> PackedFloat32Array:
+    var columns: int = maxi(int(layout.get("probe_columns", 1)), 1)
+    var rows: int = maxi(int(layout.get("probe_rows", 1)), 1)
+    var depth_slices: int = maxi(int(layout.get("probe_depth_slices", 1)), 1)
+    var probe_count: int = columns * rows * depth_slices
+    var cache: Dictionary = _ensure_visible_rain_probe_field_cache(world_3d, cache_key, probe_count)
+    var values: PackedFloat32Array = cache.get("values", PackedFloat32Array())
+    var near_depth: float = float(layout.get("near_depth", 0.5))
+    var far_depth: float = float(layout.get("far_depth", 1.0))
+    var field_scale: float = float(layout.get("field_scale", 1.0))
+
+    for probe_index in range(probe_count):
+        var probe_position: Vector3 = _get_visible_rain_probe_world_position(
+            view_transform,
+            camera,
+            columns,
+            rows,
+            depth_slices,
+            near_depth,
+            far_depth,
+            field_scale,
+            probe_index
+        )
+        values[probe_index] = get_rain_participation_strength_for_volumes(
+            active_volumes,
+            probe_position,
+            base_strength
+        )
+
+    cache["values"] = values
+    cache["cursor"] = 0
+    cache["ready"] = true
+    _store_visible_rain_probe_field_cache(world_3d, cache_key, cache)
+    return values
+
+
+static func _sample_visible_rain_probe_layout_nearest(
+    view_transform: Transform3D,
+    layout: Dictionary,
+    world_position: Vector3,
+    values: PackedFloat32Array
+) -> float:
+    if layout.is_empty() or values.is_empty():
+        return -1.0
+
+    var columns: int = maxi(int(layout.get("probe_columns", 1)), 1)
+    var rows: int = maxi(int(layout.get("probe_rows", 1)), 1)
+    var depth_slices: int = maxi(int(layout.get("probe_depth_slices", 1)), 1)
+    var near_depth: float = maxf(float(layout.get("near_depth", 0.1)), 0.0)
+    var far_depth: float = maxf(float(layout.get("far_depth", near_depth)), near_depth)
+    var field_scale: float = maxf(float(layout.get("field_scale", 1.0)), 0.01)
+    var half_extents: Vector2 = _get_visible_rain_probe_half_extents(null, far_depth, field_scale)
+    var forward: Vector3 = -view_transform.basis.z
+    var right: Vector3 = view_transform.basis.x
+    var up: Vector3 = view_transform.basis.y
+    var sample_offset: Vector3 = world_position - view_transform.origin
+    var sample_depth: float = forward.dot(sample_offset)
+    if sample_depth < near_depth or sample_depth > far_depth:
+        return -1.0
+
+    var sample_x: float = right.dot(sample_offset)
+    var sample_y: float = up.dot(sample_offset)
+    if absf(sample_x) > half_extents.x or absf(sample_y) > half_extents.y:
+        return -1.0
+
+    var column_t: float = 0.0 if columns <= 1 else clampf(sample_x / maxf(half_extents.x * 2.0, 0.0001) + 0.5, 0.0, 1.0)
+    var row_t: float = 0.0 if rows <= 1 else clampf(0.5 - sample_y / maxf(half_extents.y * 2.0, 0.0001), 0.0, 1.0)
+    var depth_t: float = 0.0 if depth_slices <= 1 else clampf(
+        (sample_depth - near_depth) / maxf(far_depth - near_depth, 0.0001),
+        0.0,
+        1.0
+    )
+    var column_index: int = int(round(column_t * float(columns - 1)))
+    var row_index: int = int(round(row_t * float(rows - 1)))
+    var slice_index: int = int(round(depth_t * float(depth_slices - 1)))
+    var probe_index: int = slice_index * columns * rows + row_index * columns + column_index
+    if probe_index < 0 or probe_index >= values.size():
+        return -1.0
+    return values[probe_index]
 
 
 static func _get_visible_rain_probe_field_max(values: PackedFloat32Array) -> float:

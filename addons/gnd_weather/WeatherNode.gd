@@ -76,11 +76,6 @@ const MID_FIELD_NAME := "RainMid"
 @export_range(0.0, 1.0, 0.01) var mid_field_jitter: float = 0.48
 
 @export_group("Rain Probes")
-@export_range(0.01, 4.0, 0.01) var rain_probe_density: float = 0.25:
-    set(value):
-        rain_probe_density = maxf(value, 0.01)
-        if is_inside_tree():
-            _push_rain_probe_config()
 @export_range(1, 256, 1) var rain_probe_max_count: int = 24:
     set(value):
         rain_probe_max_count = maxi(value, 1)
@@ -238,7 +233,6 @@ func _push_rain_probe_config() -> void:
     WeatherServer.configure_visible_rain_probe_field(
         get_world_3d(),
         get_instance_id(),
-        rain_probe_density,
         rain_probe_max_count,
         rain_probe_distance
     )
@@ -464,12 +458,21 @@ func _update_rain_rendering() -> void:
     var mid_layer_intensity: float = _get_layer_intensity(render_intensity, true)
     var sample_y: float = follow_target.global_position.y + 1.0
 
+    var camera := follow_target as Camera3D
+    if camera == null:
+        _clear_rain_field_layer(_near_rain_field)
+        _clear_rain_field_layer(_mid_rain_field)
+        return
+
+    var view_transform := camera.global_transform
     var near_card_height: float = _get_rain_field_card_height(near_emission_extents, near_layer_intensity, false)
-    var near_spacing: float = _get_rain_field_spacing(near_field_spacing)
+    var near_spacing: float = _get_rain_field_spacing(near_field_spacing, camera)
     var near_state: Dictionary = WeatherServer.get_rain_render_field_state(
         get_world_3d(),
         get_instance_id(),
         &"near",
+        view_transform,
+        camera,
         follow_target.global_position,
         sample_y,
         _get_rain_field_center_y(follow_target.global_position.y, near_card_height),
@@ -494,11 +497,13 @@ func _update_rain_rendering() -> void:
         return
 
     var mid_card_height: float = _get_rain_field_card_height(mid_emission_extents, mid_layer_intensity, true)
-    var mid_spacing: float = _get_rain_field_spacing(mid_field_spacing)
+    var mid_spacing: float = _get_rain_field_spacing(mid_field_spacing, camera)
     var mid_state: Dictionary = WeatherServer.get_rain_render_field_state(
         get_world_3d(),
         get_instance_id(),
         &"mid",
+        view_transform,
+        camera,
         follow_target.global_position,
         sample_y,
         _get_rain_field_center_y(follow_target.global_position.y, mid_card_height),
@@ -676,8 +681,18 @@ func _get_rain_field_center_y(follow_y: float, card_height: float) -> float:
     return follow_y + maxf(card_height * 0.5 - 0.9, 0.0)
 
 
-func _get_rain_field_spacing(base_spacing: float) -> float:
-    return maxf(base_spacing / sqrt(maxf(density_multiplier, 0.1)), 0.1)
+func _get_rain_field_spacing(base_spacing: float, camera: Camera3D = null) -> float:
+    var spacing := maxf(base_spacing / sqrt(maxf(density_multiplier, 0.1)), 0.1)
+    var probe_spacing := -1.0
+    if camera != null:
+        probe_spacing = WeatherServer.get_configured_visible_rain_probe_spacing(
+            get_world_3d(),
+            get_instance_id(),
+            camera
+        )
+    if probe_spacing > 0.0:
+        spacing = minf(spacing, probe_spacing)
+    return maxf(spacing, 0.1)
 
 
 func _get_wind_direction() -> Vector2:
