@@ -10,6 +10,8 @@ uniform float travel_distance : hint_range(0.0, 32.0) = 8.0;
 uniform float respawn_spread : hint_range(0.0, 4.0) = 0.35;
 uniform float streak_length_scale : hint_range(0.05, 2.0) = 1.0;
 uniform float intensity_alpha : hint_range(0.0, 1.0) = 1.0;
+uniform float blur_amount : hint_range(0.0, 1.0) = 0.0;
+uniform float glow_amount : hint_range(0.0, 1.0) = 0.0;
 
 varying vec4 instance_custom_data;
 varying float streak_flow;
@@ -64,10 +66,25 @@ void fragment() {
 		+ instance_custom_data.r * 17.0
 		+ UV.x * mix(6.0, 14.0, variation)
 	);
-	float alpha = width_mask * body_fade;
-    if(alpha < 0.00001) {
-        discard;
-    }
-	ALBEDO = tint.rgb * (alpha * 0.47 * clamp(intensity_alpha * 0.5, 0.3, 0.8));
-	ALPHA = alpha * 0.57 * clamp(intensity_alpha * 0.5, 0.1, 0.7);
+	float core_alpha = width_mask * body_fade * streak_mask * breakup;
+	float blur_width = mix(width_softness * 1.25, width_softness * 2.7, blur_amount);
+	float blur_width_mask = 1.0 - smoothstep(0.0, mix(blur_width * 0.9, blur_width * 1.45, detail), centered_x);
+	blur_width_mask *= 1.0 - smoothstep(0.9, 1.28 + blur_amount * 0.34, centered_x);
+	float blur_body_start = 0.07 + blur_amount * 0.07;
+	float blur_body_end_min = body_end_min * mix(0.92, 0.76, blur_amount);
+	float blur_body_end_max = body_end_max * mix(1.04, 1.18, blur_amount);
+	float blur_body_fade = smoothstep(0.0, blur_body_start, UV.y) * (1.0 - smoothstep(blur_body_end_min, blur_body_end_max, UV.y));
+	float blur_breakup = mix(1.0, breakup, 0.35);
+	float blur_shape = blur_width_mask * blur_body_fade * pow(max(streak_mask, 0.0), 0.7) * blur_breakup;
+	float blur_alpha = blur_shape * glow_amount;
+	float alpha = core_alpha + blur_alpha;
+	if (alpha < 0.00001) {
+		discard;
+	}
+	float color_alpha = clamp(intensity_alpha * 0.5, 0.1, 0.3);
+	float opacity_alpha = clamp(intensity_alpha * 0.5, 0.1, 0.4);
+	float blur_visibility = mix(1.0, 0.34, blur_amount);
+	float blur_color_visibility = mix(1.0, 0.52, blur_amount);
+	ALBEDO = tint.rgb * ((core_alpha * 0.47 + blur_alpha * 0.82) * color_alpha * blur_color_visibility);
+	ALPHA = (core_alpha * 0.57 + blur_alpha * 0.36) * opacity_alpha * blur_visibility;
 }

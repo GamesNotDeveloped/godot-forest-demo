@@ -58,6 +58,26 @@ const RAIN_FIELD_RUNTIME_REFRESH_INTERVAL_MSEC := 250
 @export_range(0.5, 6.0, 0.05) var rain_streak_alpha_curve_exponent: float = 2.4
 @export_range(0.1, 4.0, 0.01) var near_layer_speed_multiplier: float = 1.0
 @export_range(0.1, 4.0, 0.01) var mid_layer_speed_multiplier: float = 0.78
+@export_range(0.0, 1.0, 0.01) var near_rain_blur: float = 0.74:
+    set(value):
+        near_rain_blur = clampf(value, 0.0, 1.0)
+        _sync_rain_materials()
+        _refresh_editor_preview()
+@export_range(0.0, 1.0, 0.01) var near_rain_glow: float = 0.28:
+    set(value):
+        near_rain_glow = clampf(value, 0.0, 1.0)
+        _sync_rain_materials()
+        _refresh_editor_preview()
+@export_range(0.0, 1.0, 0.01) var mid_rain_blur: float = 0.22:
+    set(value):
+        mid_rain_blur = clampf(value, 0.0, 1.0)
+        _sync_rain_materials()
+        _refresh_editor_preview()
+@export_range(0.0, 1.0, 0.01) var mid_rain_glow: float = 0.1:
+    set(value):
+        mid_rain_glow = clampf(value, 0.0, 1.0)
+        _sync_rain_materials()
+        _refresh_editor_preview()
 @export var mid_layer_enabled: bool = true
 @export_range(0.0, 1.0, 0.01) var sheltered_volumetric_emission_scale: float = 0.0:
     set(value):
@@ -896,6 +916,8 @@ func _update_rain_field_visuals(
     )
     material.set_shader_parameter("tint", effective_color)
     material.set_shader_parameter("intensity_alpha", clampf(rain_intensity, 0.0, 1.0))
+    material.set_shader_parameter("blur_amount", mid_rain_blur if is_mid_layer else near_rain_blur)
+    material.set_shader_parameter("glow_amount", mid_rain_glow if is_mid_layer else near_rain_glow)
     material.set_shader_parameter("width_softness", lerpf(0.14, 0.24, layer_intensity))
     material.set_shader_parameter("tail_softness", lerpf(0.24, 0.62, layer_intensity))
     material.set_shader_parameter("center_bias", lerpf(0.34, 0.68, layer_intensity))
