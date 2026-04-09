@@ -663,18 +663,24 @@ func _update_rain_field_layer(
 
     if multimesh.instance_count != positions.size():
         multimesh.instance_count = positions.size()
-    multimesh.visible_instance_count = visible_count
 
     var card_height: float = _get_rain_field_card_height(extents, layer_intensity, is_mid_layer)
     _update_rain_field_visuals(rain_field, layer_intensity, is_mid_layer, speed_multiplier, card_height, extents, field_spacing)
 
+    var coverage: float = _get_rain_field_density_coverage(layer_intensity, is_mid_layer)
+    var write_index: int = 0
     for index in range(visible_count):
         var instance_position: Vector3 = positions[index] - global_position
         var instance_custom: Color = custom_data[index]
+        if instance_custom.a > coverage:
+            continue
         var variation_scale: float = lerpf(0.85, 1.15, instance_custom.b)
         var instance_basis: Basis = rain_basis.scaled(Vector3.ONE * variation_scale)
-        multimesh.set_instance_transform(index, Transform3D(instance_basis, instance_position))
-        multimesh.set_instance_custom_data(index, instance_custom)
+        multimesh.set_instance_transform(write_index, Transform3D(instance_basis, instance_position))
+        multimesh.set_instance_custom_data(write_index, instance_custom)
+        write_index += 1
+
+    multimesh.visible_instance_count = write_index
 
 
 func _clear_rain_field_layer(rain_field: MultiMeshInstance3D) -> void:
@@ -820,8 +826,8 @@ func _get_rain_direction(wind_speed_value: float, rain_intensity: float) -> Vect
 
 func _get_layer_intensity(intensity: float, is_mid_layer: bool) -> float:
     if is_mid_layer:
-        return _smooth_factor(intensity, 0.32, 0.92)
-    return pow(clampf(intensity, 0.0, 1.0), 0.9)
+        return _smooth_factor(intensity, 0.22, 0.88)
+    return _smooth_factor(intensity, 0.015, 0.35)
 
 
 func _get_rain_field_basis(rain_direction: Vector3, camera_basis: Basis) -> Basis:
@@ -836,6 +842,12 @@ func _get_rain_field_basis(rain_direction: Vector3, camera_basis: Basis) -> Basi
     if normal_axis.length_squared() <= 0.0001:
         normal_axis = Vector3.FORWARD
     return Basis(right_axis, down_axis, normal_axis).orthonormalized()
+
+
+func _get_rain_field_density_coverage(layer_intensity: float, is_mid_layer: bool) -> float:
+    if is_mid_layer:
+        return _smooth_factor(layer_intensity, 0.12, 0.72)
+    return _smooth_factor(layer_intensity, 0.03, 0.32)
 
 
 func _update_rain_field_visuals(
@@ -857,7 +869,7 @@ func _update_rain_field_visuals(
     mesh.size = Vector2(target_width, card_height)
 
     var alpha_strength := pow(clampf(layer_intensity, 0.0, 1.0), rain_streak_alpha_curve_exponent)
-    var alpha_scale := lerpf(0.02, 1.0, alpha_strength)
+    var alpha_scale := alpha_strength
     var effective_color := Color(
         base_color.r,
         base_color.g,

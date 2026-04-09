@@ -192,8 +192,8 @@ script = ExtResource("35_quality")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
 transform = Transform3D(-0.1434846, 0.9605521, -0.2382264, 0, 0.24071719, 0.97059536, 0.9896526, 0.13926548, -0.03453921, 0, 0.5193932, -0.2882359)
-light_color = Color(1, 0.93, 0.85, 1)
-light_energy = 1.685
+light_color = Color(0.9993348, 0.92950904, 0.8497308, 1)
+light_energy = 1.6834713
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
 light_angular_distance = 3.6
@@ -350,6 +350,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.456251, 2.132822, 0.020937
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
+precipitation_intensity = 0.004
 precipitation_wind_strength = 10.0
 wind_influence = 0.52
 follow_height = 0.855
