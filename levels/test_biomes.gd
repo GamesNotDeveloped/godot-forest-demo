@@ -132,4 +132,4 @@ func _refresh_debug_menu() -> void:
 
 
 func _on_world_timer_timeout():
-    $Skydome.time_of_day = wrapf($Skydome.time_of_day + 0.01, 0, 23.999)
+    $Skydome.time_of_day = wrapf($Skydome.time_of_day + 0.005, 0, 23.999)

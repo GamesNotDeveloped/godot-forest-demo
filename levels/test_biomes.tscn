@@ -178,9 +178,9 @@ metadata/_custom_type_script = "uid://sdanr78joiow"
 script = ExtResource("35_quality")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(-0.3079333, -0.28890634, 0.90648234, 0, 0.9527799, 0.30366188, -0.9514079, 0.09350761, -0.29339266, 0, 0.5193932, -0.2882359)
-light_color = Color(1, 0.93, 0.85, 1)
-light_energy = 1.32
+transform = Transform3D(0.48792982, 0.28093785, -0.82643723, 0, 0.9467906, 0.32185057, 0.8728829, -0.15704049, 0.46196732, 0, 0.5193932, -0.2882359)
+light_color = Color(0.23498535, 0.29047748, 0.34375, 1)
+light_energy = 0.212
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
 light_angular_distance = 3.6
@@ -277,8 +277,8 @@ tween_duration = 1.5
 script = ExtResource("19_shafts")
 time_transition_duration = 1.0
 day_of_year = 154
-time_of_day = 6.769
-latitude = 20.0
+time_of_day = 21.61
+latitude = 52.61699999999999
 sun_light_energy = 1.32
 moon_light_color = Color(0.23498535, 0.29047748, 0.34375, 1)
 moon_light_energy = 0.212
@@ -289,13 +289,13 @@ ambient_energy_night = 0.795
 fog_color_night = Color(0.1749878, 0.1807251, 0.18359375, 1)
 fog_density_night = 0.915
 fog_sky_affect_day = 0.275
-fog_sky_affect_night = 0.435
+fog_sky_affect_night = 0.735
 fog_distance_begin_night = 1.05
-fog_distance_night = 95.235
+fog_distance_night = 28.0
 vol_fog_albedo_night = Color(0.09580994, 0.114654526, 0.15234375, 1)
 vol_fog_density_night = 0.107
 vol_fog_sky_affect_day = 0.615
-vol_fog_sky_affect_night = 0.065
+vol_fog_sky_affect_night = 0.41
 manage_vol_fog_density = false
 vol_fog_ambient_inject_night = 0.0
 vol_fog_ambient_inject_sunset_boost = 0.0
@@ -303,11 +303,14 @@ directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
 sky_resource = ExtResource("48_6i6fd")
 sky_material = ExtResource("49_euh1f")
-moon_phase_debug = 0.22458657862061138
+moon_phase_debug = 0.24552714753358185
 shader_sky_energy = 0.242
 shader_night_horizon_color = Color(0.1538086, 0.18239667, 0.234375, 1)
 shader_night_sky_energy = 0.165
-shader_stars_energy = 10.0
+shader_stars_energy = 0.605
+shader_stars_size_min = 0.049
+shader_stars_size_max = 0.166
+shader_stars_edge_softness = 1.545
 shader_moon_tex = ExtResource("31_8echa")
 shader_moon_size = 1.64
 shader_moon_eclipse_size = 1.531
@@ -353,7 +356,6 @@ camera_attributes = ExtResource("43_j63ba")
 compositor = ExtResource("47_jyfmq")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
-wait_time = 0.1
 autostart = true
 
 [connection signal="profile_changed" from="QualityProfilesManager" to="." method="_on_quality_profiles_manager_profile_changed"]

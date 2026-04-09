@@ -28,6 +28,9 @@ group_uniforms NightSky;
 	uniform float night_sky_energy : hint_range(0.0, 10.0) = 1.0;
 	uniform vec3 stars_color : source_color = vec3(1.0, 1.0, 1.0);
 	uniform float stars_energy : hint_range(0.0, 50.0) = 2.0;
+	uniform float stars_size_min : hint_range(0.005, 0.25) = 0.05;
+	uniform float stars_size_max : hint_range(0.005, 0.4) = 0.14;
+	uniform float stars_edge_softness : hint_range(0.25, 4.0) = 1.5;
 
 group_uniforms GI;
 	uniform vec3 gi_tint : source_color = vec3(1.0, 1.0, 1.0);
@@ -137,8 +140,10 @@ void sky() {
 	float star_h = fract(sin(dot(star_i, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
 	vec3 star_pos = vec3(fract(star_h * 34.34), fract(star_h * 12.34), fract(star_h * 45.34));
 	float star_d = length(star_f - star_pos);
-	float star_size = mix(0.03, 0.1, fract(star_h * 11.11));
-	float star_intensity = smoothstep(star_size, star_size * 0.2, star_d) * smoothstep(0.95, 0.96, star_h);
+	float star_size = mix(stars_size_min, stars_size_max, fract(star_h * 11.11));
+	float star_aa = max(fwidth(star_d) * stars_edge_softness, 0.003);
+	float star_core = 1.0 - smoothstep(star_size - star_aa, star_size + star_aa, star_d);
+	float star_intensity = star_core * smoothstep(0.95, 0.96, star_h);
 	float twinkle = mix(0.3, 1.0, sin(cloud_time * 3.0 + star_h * 100.0) * 0.5 + 0.5);
 	float stars = star_intensity * twinkle * 8.0 * pow(1.0 - zenith_t, 2.0);
 	final_color += stars_color * stars * stars_energy * (1.0 - day_blend);

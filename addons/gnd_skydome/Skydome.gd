@@ -262,6 +262,18 @@ var _is_daytime: bool = true
     set(v):
         shader_stars_energy = v
         _set_shader_param("stars_energy", v)
+@export var shader_stars_size_min: float = 0.05:
+    set(v):
+        shader_stars_size_min = v
+        _set_shader_param("stars_size_min", v)
+@export var shader_stars_size_max: float = 0.14:
+    set(v):
+        shader_stars_size_max = v
+        _set_shader_param("stars_size_max", v)
+@export var shader_stars_edge_softness: float = 1.5:
+    set(v):
+        shader_stars_edge_softness = v
+        _set_shader_param("stars_edge_softness", v)
 
 @export_group("Sky Shader: GI (SDFGI Fill)")
 @export var gi_day_tint: Color = Color(0.8, 0.75, 0.7, 1.0):
@@ -530,6 +542,9 @@ func _sync_shader_params() -> void:
     _sky_material.set_shader_parameter("night_sky_energy", shader_night_sky_energy)
     _sky_material.set_shader_parameter("stars_color", shader_stars_color)
     _sky_material.set_shader_parameter("stars_energy", shader_stars_energy)
+    _sky_material.set_shader_parameter("stars_size_min", shader_stars_size_min)
+    _sky_material.set_shader_parameter("stars_size_max", shader_stars_size_max)
+    _sky_material.set_shader_parameter("stars_edge_softness", shader_stars_edge_softness)
 
     _sky_material.set_shader_parameter("sun_color", shader_sun_color)
     _sky_material.set_shader_parameter("sun_disk_size", shader_sun_disk_size)
