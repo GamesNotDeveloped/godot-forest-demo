@@ -744,6 +744,7 @@ func _request_time_update(snap: bool = false) -> void:
         return
     var target_hours = float(day_of_year) * 24.0 + time_of_day
     var current_hours = float(_rendered_day) * 24.0 + _rendered_time
+    var same_day_wrap := day_of_year == _rendered_day and absf(time_of_day - _rendered_time) > 12.0
 
     if Engine.is_editor_hint() or time_transition_duration <= 0.0 or snap:
         if _time_tween: _time_tween.kill()
@@ -751,7 +752,23 @@ func _request_time_update(snap: bool = false) -> void:
     else:
         if _time_tween: _time_tween.kill()
         _time_tween = create_tween()
-        _time_tween.tween_method(_apply_total_hours, current_hours, target_hours, time_transition_duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+        if same_day_wrap:
+            var wrapped_target_time := _rendered_time + _get_wrapped_time_delta(_rendered_time, time_of_day)
+            _time_tween.tween_method(_apply_wrapped_time_of_day, _rendered_time, wrapped_target_time, time_transition_duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+        else:
+            _time_tween.tween_method(_apply_total_hours, current_hours, target_hours, time_transition_duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+func _get_wrapped_time_delta(from_time: float, to_time: float) -> float:
+    return wrapf((to_time - from_time) + 12.0, 0.0, 24.0) - 12.0
+
+
+func _apply_wrapped_time_of_day(unwrapped_time: float) -> void:
+    _rendered_day = day_of_year
+    _rendered_time = wrapf(unwrapped_time, 0.0, 24.0)
+    _update_sun_transform()
+    _update_cloud_time()
+    time_changed.emit(_rendered_day, _rendered_time)
 
 func _apply_total_hours(total_hours: float) -> void:
     var new_day = int(floor(total_hours / 24.0))
