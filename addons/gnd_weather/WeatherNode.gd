@@ -11,8 +11,11 @@ const MID_PARTICLES_NAME := "RainMid"
 
 @export_group("Nodes")
 @export_node_path("Skydome") var skydome_path: NodePath
-@export_node_path("WorldEnvironment") var world_environment_path: NodePath
-@export_node_path("Node3D") var follow_target_path: NodePath
+@export_node_path("WorldEnvironment") var world_environment_path: NodePath:
+    set(value):
+        world_environment_path = value
+        if is_inside_tree():
+            _refresh_environment_cache()
 
 @export_group("Weather")
 @export_range(0.0, 1.0, 0.001) var precipitation_intensity: float = 0.0:
@@ -46,7 +49,6 @@ const MID_PARTICLES_NAME := "RainMid"
 @export_range(0.1, 4.0, 0.01) var mid_layer_speed_multiplier: float = 0.78
 @export var mid_layer_enabled: bool = true
 @export var mid_layer_offset: Vector3 = Vector3(1.6, -0.9, 2.8)
-@export_range(0.0, 1.0, 0.01) var sheltered_mid_layer_visibility: float = 0.35
 @export_range(0.0, 24.0, 0.1) var sheltered_mid_layer_forward_offset: float = 6.0
 @export_range(0.0, 1.0, 0.01) var sheltered_mid_layer_density_scale: float = 0.08
 @export_range(0.0, 1.0, 0.01) var sheltered_mid_layer_alpha_scale: float = 0.12
@@ -60,6 +62,15 @@ const MID_PARTICLES_NAME := "RainMid"
         mid_rain_color = value
         _sync_rain_materials()
 
+@export_group("Rain Visibility")
+@export_range(1, 7, 1) var visible_rain_probe_columns: int = 3
+@export_range(1, 7, 1) var visible_rain_probe_rows: int = 3
+@export_range(1, 4, 1) var visible_rain_probe_depth_slices: int = 2
+@export_range(0.1, 24.0, 0.1) var visible_rain_probe_near_depth: float = 0.8
+@export_range(0.1, 48.0, 0.1) var visible_rain_probe_far_depth: float = 8.0
+@export_range(0.1, 3.0, 0.01) var visible_rain_probe_field_scale: float = 1.0
+@export_range(1, 32, 1) var visible_rain_probe_refresh_budget: int = 6
+
 @export_group("Storm")
 @export var lightning_enabled: bool = true
 @export_range(0.1, 30.0, 0.1) var lightning_min_interval: float = 3.2
@@ -71,6 +82,7 @@ var _near_particles: GPUParticles3D
 var _mid_particles: GPUParticles3D
 var _near_process_material: ParticleProcessMaterial
 var _mid_process_material: ParticleProcessMaterial
+var _environment: Environment
 var _current_shelter_factor: float = 0.0
 
 var _current_lightning_flash: float = 0.0
@@ -88,6 +100,7 @@ var _last_emitted_local_rain_strength: float = -1.0
 
 func _ready() -> void:
     _rng.randomize()
+    _refresh_environment_cache()
     _ensure_particle_nodes()
     _reset_lightning_schedule(get_storm_factor())
     _apply_weather_state(true)
@@ -95,6 +108,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+    WeatherServer.clear_visible_rain_participation_cache(get_world_3d(), get_instance_id())
     var skydome := _get_skydome()
     if skydome != null:
         skydome.clear_weather_overrides()
@@ -166,16 +180,24 @@ func _get_world_environment() -> WorldEnvironment:
     if not world_environment_path.is_empty():
         return get_node_or_null(world_environment_path) as WorldEnvironment
 
-    var root := get_tree().current_scene
-    if root != null:
-        return root.find_child("WorldEnvironment", true, false) as WorldEnvironment
     return null
 
 
-func _get_follow_target() -> Node3D:
-    if not follow_target_path.is_empty():
-        return get_node_or_null(follow_target_path) as Node3D
+func _get_environment() -> Environment:
+    return _environment
 
+
+func _refresh_environment_cache() -> void:
+    var env_node := _get_world_environment()
+    if env_node != null:
+        _environment = env_node.environment
+        return
+
+    var world_3d := get_world_3d()
+    _environment = world_3d.environment if world_3d != null else null
+
+
+func _get_follow_target() -> Node3D:
     var viewport := get_viewport()
     if viewport != null:
         var camera := viewport.get_camera_3d()
@@ -264,6 +286,7 @@ func _update_follow_position() -> void:
 
     global_position = follow_target.global_position + Vector3(0.0, follow_height, 0.0)
 func _update_particles() -> void:
+    var follow_target := _get_follow_target()
     var global_intensity := clampf(precipitation_intensity, 0.0, 1.0)
     var local_intensity := get_effective_precipitation_intensity()
     _emit_rain_strength_changed(global_intensity)
@@ -271,15 +294,28 @@ func _update_particles() -> void:
     _current_shelter_factor = 0.0
     if global_intensity > 0.001:
         _current_shelter_factor = clampf((global_intensity - local_intensity) / global_intensity, 0.0, 1.0)
-    var near_intensity := local_intensity
-    var mid_intensity := _get_mid_layer_precipitation_intensity(global_intensity, local_intensity)
+    var visible_rain_state: Dictionary = _get_visible_mid_layer_state(follow_target, global_intensity, local_intensity)
+    var mid_intensity: float = float(visible_rain_state.get("intensity", local_intensity))
+    var visible_rain_intensity: float = float(visible_rain_state.get("visible_strength", 0.0))
+    var mid_nearest_visible_depth: float = float(visible_rain_state.get("nearest_depth", 0.0))
+    var mid_has_visible_rain: bool = bool(visible_rain_state.get("has_visible_rain", false))
+    var near_intensity := _get_visible_near_layer_intensity(
+        local_intensity,
+        visible_rain_intensity,
+        mid_has_visible_rain,
+        mid_nearest_visible_depth
+    )
     var near_storm_factor := get_storm_factor(near_intensity)
     var mid_storm_factor := get_storm_factor(mid_intensity)
-    var mid_density_scale := lerpf(1.0, sheltered_mid_layer_density_scale, _current_shelter_factor)
-    var mid_alpha_scale := lerpf(1.0, sheltered_mid_layer_alpha_scale, _current_shelter_factor)
+    var mid_shelter_factor := 0.0
+    if global_intensity > 0.001:
+        mid_shelter_factor = clampf((global_intensity - mid_intensity) / global_intensity, 0.0, 1.0)
+    var mid_density_scale := lerpf(1.0, sheltered_mid_layer_density_scale, mid_shelter_factor)
+    var mid_alpha_scale := lerpf(1.0, sheltered_mid_layer_alpha_scale, mid_shelter_factor)
     var wind_speed_value := _get_wind_speed()
     var rain_direction := _get_rain_direction(wind_speed_value)
-    _update_mid_layer_offset(_get_follow_target())
+    _update_near_layer_offset(follow_target, mid_has_visible_rain, mid_nearest_visible_depth)
+    _update_mid_layer_offset(follow_target, mid_has_visible_rain, mid_nearest_visible_depth)
     _orient_rain_layers(rain_direction)
 
     _update_rain_layer(
@@ -380,10 +416,66 @@ func _get_layer_intensity(intensity: float, is_mid_layer: bool) -> float:
     return _smooth_factor(intensity, 0.04, 0.75)
 
 
-func _get_mid_layer_precipitation_intensity(global_intensity: float, local_intensity: float) -> float:
-    if local_intensity >= global_intensity:
+func _get_visible_mid_layer_state(
+    follow_target: Node3D,
+    global_intensity: float,
+    local_intensity: float
+) -> Dictionary:
+    if not mid_layer_enabled or global_intensity <= 0.001 or local_intensity >= global_intensity:
+        return {
+            "intensity": local_intensity,
+            "nearest_depth": 0.0,
+            "has_visible_rain": false,
+        }
+
+    var camera := follow_target as Camera3D
+    var visible_state: Dictionary = WeatherServer.get_visible_rain_probe_field_state(
+        get_world_3d(),
+        get_instance_id(),
+        follow_target.global_transform if follow_target != null else global_transform,
+        camera,
+        global_intensity,
+        visible_rain_probe_columns,
+        visible_rain_probe_rows,
+        visible_rain_probe_depth_slices,
+        visible_rain_probe_near_depth,
+        visible_rain_probe_far_depth,
+        visible_rain_probe_field_scale,
+        visible_rain_probe_refresh_budget
+    )
+    var visible_intensity: float = float(visible_state.get("strength", 0.0))
+    return {
+        "intensity": clampf(maxf(local_intensity, visible_intensity), 0.0, 1.0),
+        "visible_strength": visible_intensity,
+        "nearest_depth": float(visible_state.get("nearest_depth", 0.0)),
+        "has_visible_rain": bool(visible_state.get("has_visible_rain", false)),
+    }
+
+
+func _get_visible_near_layer_intensity(
+    local_intensity: float,
+    visible_intensity: float,
+    has_visible_rain: bool,
+    nearest_visible_depth: float
+) -> float:
+    var depth_blend := _get_sheltered_near_layer_visibility_blend(has_visible_rain, nearest_visible_depth)
+    if depth_blend <= 0.001:
         return local_intensity
-    return lerpf(local_intensity, global_intensity, sheltered_mid_layer_visibility)
+    return clampf(maxf(local_intensity, visible_intensity * depth_blend), 0.0, 1.0)
+
+
+func _get_sheltered_near_layer_visibility_blend(has_visible_rain: bool, nearest_visible_depth: float) -> float:
+    if _current_shelter_factor <= 0.001 or not has_visible_rain:
+        return 0.0
+
+    var start_depth: float = maxf(visible_rain_probe_near_depth, 0.1)
+    var end_depth: float = start_depth + maxf(absf(near_emission_extents.z) * 0.35, 0.75)
+    var depth_t: float = 1.0 - clampf(
+        (nearest_visible_depth - start_depth) / maxf(end_depth - start_depth, 0.001),
+        0.0,
+        1.0
+    )
+    return depth_t * depth_t * (3.0 - 2.0 * depth_t)
 
 
 func _emit_rain_strength_changed(strength: float) -> void:
@@ -448,7 +540,34 @@ func _orient_rain_layers(rain_direction: Vector3) -> void:
         _mid_particles.global_basis = basis
 
 
-func _update_mid_layer_offset(follow_target: Node3D) -> void:
+func _update_near_layer_offset(
+    follow_target: Node3D,
+    has_visible_rain: bool,
+    nearest_visible_depth: float
+) -> void:
+    if _near_particles == null or follow_target == null:
+        return
+
+    var near_visibility_blend: float = _get_sheltered_near_layer_visibility_blend(
+        has_visible_rain,
+        nearest_visible_depth
+    )
+    if near_visibility_blend <= 0.001:
+        _near_particles.position = Vector3.ZERO
+        return
+
+    var forward := -follow_target.global_basis.z
+    var depth_extent: float = maxf(absf(near_emission_extents.z), 0.1)
+    var placement_margin: float = clampf(depth_extent * 0.06, 0.1, 0.5)
+    var forward_offset: float = maxf(nearest_visible_depth, 0.0) + depth_extent + placement_margin
+    _near_particles.position = forward * forward_offset
+
+
+func _update_mid_layer_offset(
+    follow_target: Node3D,
+    has_visible_rain: bool,
+    nearest_visible_depth: float
+) -> void:
     if _mid_particles == null or follow_target == null:
         return
     if not mid_layer_enabled:
@@ -458,11 +577,21 @@ func _update_mid_layer_offset(follow_target: Node3D) -> void:
     var forward := -follow_target.global_basis.z
     var right := follow_target.global_basis.x
     var up := follow_target.global_basis.y
-    var shelter_forward_offset := sheltered_mid_layer_forward_offset * _current_shelter_factor
+    var forward_offset := mid_layer_offset.z
+    if _current_shelter_factor > 0.001:
+        if has_visible_rain:
+            var depth_extent: float = maxf(absf(mid_emission_extents.z), 0.1)
+            var placement_margin: float = clampf(depth_extent * 0.08, 0.15, 0.75)
+            forward_offset = maxf(
+                mid_layer_offset.z,
+                maxf(nearest_visible_depth, 0.0) + depth_extent + placement_margin
+            )
+        else:
+            forward_offset += sheltered_mid_layer_forward_offset * _current_shelter_factor
     _mid_particles.position = (
         right * mid_layer_offset.x
         + up * mid_layer_offset.y
-        + forward * (mid_layer_offset.z + shelter_forward_offset)
+        + forward * forward_offset
     )
 
 

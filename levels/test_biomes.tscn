@@ -351,7 +351,6 @@ shader_cloud_time_scale = 30.0
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
-follow_target_path = NodePath("../UP_FPSController_Prefab")
 precipitation_intensity = 0.45
 storm_threshold = 0.189
 wind_influence = 0.52
