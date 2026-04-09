@@ -50,7 +50,7 @@ func _build_overlay() -> void:
 	var root := Control.new()
 	root.name = "WeatherControlsRoot"
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.mouse_filter = Control.MOUSE_FILTER_PASS
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 
 	var panel := PanelContainer.new()
@@ -63,7 +63,7 @@ func _build_overlay() -> void:
 	panel.offset_right = 430.0
 	panel.offset_top = 14.0
 	panel.offset_bottom = 136.0
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	panel.add_theme_stylebox_override("panel", _make_panel_style())
 	root.add_child(panel)
@@ -71,6 +71,7 @@ func _build_overlay() -> void:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 14)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(row)
 
 	row.add_child(_create_title_label("Weather"))
@@ -82,6 +83,7 @@ func _build_overlay() -> void:
 
 	_wind_direction_button = OptionButton.new()
 	_wind_direction_button.focus_mode = Control.FOCUS_NONE
+	_wind_direction_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	_wind_direction_button.custom_minimum_size = Vector2(86.0, 28.0)
 	_wind_direction_button.item_selected.connect(_on_wind_direction_selected)
 	for option in WIND_DIRECTION_OPTIONS:
@@ -105,6 +107,7 @@ func _create_title_label(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_size_override("font_size", 15)
 	label.add_theme_color_override("font_color", Color(0.93, 0.94, 0.9, 0.92))
 	return label
@@ -115,6 +118,7 @@ func _create_slider(min_value: float, max_value: float, step: float, width: floa
 	slider.min_value = min_value
 	slider.max_value = max_value
 	slider.step = step
+	slider.mouse_filter = Control.MOUSE_FILTER_STOP
 	slider.custom_minimum_size = Vector2(width, 24.0)
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return slider
@@ -125,6 +129,7 @@ func _create_value_label(text: String) -> Label:
 	label.text = text
 	label.custom_minimum_size = Vector2(56.0, 0.0)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_color_override("font_color", Color(0.86, 0.89, 0.85, 0.88))
 	label.add_theme_font_size_override("font_size", 13)
 	return label
@@ -133,9 +138,11 @@ func _create_value_label(text: String) -> Label:
 func _create_control_group(title: String, control: Control, value_label: Label) -> VBoxContainer:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 2)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var header := Label.new()
 	header.text = title
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	header.add_theme_color_override("font_color", Color(0.72, 0.76, 0.72, 0.9))
 	header.add_theme_font_size_override("font_size", 12)
 	box.add_child(header)
@@ -143,6 +150,7 @@ func _create_control_group(title: String, control: Control, value_label: Label) 
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(control)
 	row.add_child(value_label)
 	box.add_child(row)
@@ -152,9 +160,11 @@ func _create_control_group(title: String, control: Control, value_label: Label) 
 func _create_inline_group(title: String, control: Control) -> VBoxContainer:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 2)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var header := Label.new()
 	header.text = title
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	header.add_theme_color_override("font_color", Color(0.72, 0.76, 0.72, 0.9))
 	header.add_theme_font_size_override("font_size", 12)
 	box.add_child(header)

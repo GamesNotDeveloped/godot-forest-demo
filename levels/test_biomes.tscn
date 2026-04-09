@@ -308,6 +308,13 @@ directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
 sky_resource = ExtResource("48_6i6fd")
 sky_material = ExtResource("49_euh1f")
+weather_overcast_intensity = 0.5
+weather_fog_density_boost = 8.0
+weather_storm_fog_density_boost = 1.76
+weather_fog_density_target = null
+weather_fog_begin_distance = 0.0
+weather_storm_volumetric_fog_boost = 0.58
+weather_volumetric_fog_density_target = null
 moon_phase_debug = 0.22894090755164243
 shader_sky_energy = 0.242
 shader_horizon_height = 0.178
@@ -335,11 +342,12 @@ precipitation_intensity = 0.45
 storm_threshold = 0.189
 wind_influence = 0.52
 follow_height = 0.855
-near_particle_amount = 2000
-mid_particle_amount = 6000
-density_multiplier = 6.0
-near_rain_color = Color(0.72156864, 0.7411765, 0.7607843, 0.23921569)
-mid_rain_color = Color(0.49803922, 0.49803922, 0.49803922, 0.1254902)
+near_particle_amount = 4000
+mid_particle_amount = 10000
+density_multiplier = 3.95
+near_layer_speed_multiplier = 0.9299999999999999
+near_rain_color = Color(1, 1, 1, 0.1254902)
+mid_rain_color = Color(0.49803922, 0.49803922, 0.49803922, 0.24313726)
 
 [node name="CanvasLayer" parent="." unique_id=1602580574 instance=ExtResource("17_1ndc1")]
 
