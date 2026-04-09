@@ -6,7 +6,7 @@ signal thunder(strength: float)
 signal rain_strength_changed(strength: float)
 signal rain_local_strength_changed(strength: float)
 
-const RAIN_STREAK_SHADER := preload("res://scenery/shaders/rain_streak.gdshader")
+const RAIN_STREAK_SHADER := preload("./rain_streak.gdshader")
 const NEAR_FIELD_NAME := "RainNear"
 const MID_FIELD_NAME := "RainMid"
 const RAIN_FIELD_RUNTIME_REFRESH_INTERVAL_MSEC := 250
@@ -566,7 +566,7 @@ func _update_rain_rendering() -> void:
     _emit_rain_strength_changed(global_intensity)
     _emit_local_rain_strength_changed(local_intensity)
 
-    if follow_target == null or render_intensity <= 0.001:
+    if follow_target == null or render_intensity <= 0.0:
         _clear_rain_field_layer(_near_rain_field)
         _clear_rain_field_layer(_mid_rain_field)
         return
@@ -660,7 +660,7 @@ func _update_rain_field_layer(
     var custom_data: PackedColorArray = field_state.get("custom_data", PackedColorArray())
     var visible_count: int = int(field_state.get("count", 0))
 
-    if layer_intensity <= 0.001 or visible_count <= 0:
+    if rain_intensity <= 0.0 or visible_count <= 0:
         multimesh.visible_instance_count = 0
         return
 
@@ -830,7 +830,7 @@ func _get_rain_direction(wind_speed_value: float, rain_intensity: float) -> Vect
 func _get_layer_intensity(intensity: float, is_mid_layer: bool) -> float:
     if is_mid_layer:
         return _smooth_factor(intensity, 0.28, 0.9)
-    return _smooth_factor(intensity, 0.03, 0.42)
+    return _smooth_factor(intensity, 0.0, 0.42)
 
 
 func _get_rain_field_basis(rain_direction: Vector3, camera_basis: Basis) -> Basis:
@@ -848,9 +848,7 @@ func _get_rain_field_basis(rain_direction: Vector3, camera_basis: Basis) -> Basi
 
 
 func _get_rain_field_density_coverage(layer_intensity: float, is_mid_layer: bool) -> float:
-    if is_mid_layer:
-        return pow(_smooth_factor(layer_intensity, 0.18, 0.78), 1.2)
-    return pow(_smooth_factor(layer_intensity, 0.08, 0.38), 1.35)
+    return 1.0
 
 
 func _update_rain_field_visuals(
@@ -872,15 +870,15 @@ func _update_rain_field_visuals(
     var target_width := _get_rain_field_visual_width(layer_intensity, is_mid_layer, field_spacing)
     mesh.size = Vector2(target_width, card_height)
 
-    var alpha_strength := pow(clampf(layer_intensity, 0.0, 1.0), rain_streak_alpha_curve_exponent)
-    var alpha_scale := alpha_strength
     var effective_color := Color(
         base_color.r,
         base_color.g,
         base_color.b,
-        base_color.a * alpha_scale
+        base_color.a
     )
     material.set_shader_parameter("tint", effective_color)
+    material.set_shader_parameter("intensity_alpha", clampf(rain_intensity, 0.0, 1.0))
+    print("rain intensity", rain_intensity)
     material.set_shader_parameter("width_softness", lerpf(0.14, 0.24, layer_intensity))
     material.set_shader_parameter("tail_softness", lerpf(0.24, 0.62, layer_intensity))
     material.set_shader_parameter("center_bias", lerpf(0.34, 0.68, layer_intensity))
@@ -941,8 +939,8 @@ func _get_rain_field_respawn_spread(field_spacing: float) -> float:
 func _get_rain_field_spawn_probability(layer_intensity: float, is_mid_layer: bool) -> float:
     var intensity := clampf(layer_intensity, 0.0, 1.0)
     if is_mid_layer:
-        return pow(intensity, 2.4)
-    return pow(intensity, 2.1)
+        return pow(intensity, 5.0)
+    return pow(intensity, 4.0)
 
 
 func _get_rain_field_spawn_duration(layer_intensity: float, is_mid_layer: bool) -> float:

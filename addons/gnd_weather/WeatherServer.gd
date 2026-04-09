@@ -613,7 +613,7 @@ static func _get_rain_participation_strength_for_volumes_footprint_min(
                 base_strength
             )
         )
-        if min_intensity <= 0.001:
+        if min_intensity <= 0.0:
             return 0.0
 
     return clampf(min_intensity, 0.0, 1.0)
@@ -642,7 +642,7 @@ static func get_rain_render_field_state(
 
     var clamped_strength: float = clampf(base_strength, 0.0, 1.0)
     var active_volumes: Array = _get_active_rain_volumes(world_3d)
-    if clamped_strength <= 0.001 and active_volumes.is_empty():
+    if clamped_strength <= 0.0 and active_volumes.is_empty():
         clear_rain_render_field_cache(world_3d, cache_key)
         return {
             "count": 0,
@@ -733,7 +733,7 @@ static func get_rain_render_field_state(
                 )
                 if probe_intensity >= 0.0:
                     intensity = minf(intensity, probe_intensity)
-            if intensity <= 0.001 or feather_mask <= RAIN_FIELD_FEATHER_RENDER_CUTOFF:
+            if intensity <= 0.0 or feather_mask <= RAIN_FIELD_FEATHER_RENDER_CUTOFF:
                 continue
 
             positions[active_count] = Vector3(world_x, layer_center_y, world_z)
@@ -828,7 +828,7 @@ static func get_visible_rain_probe_field_state(
 
     var clamped_strength: float = clampf(base_strength, 0.0, 1.0)
     var active_volumes: Array = _get_active_rain_volumes(world_3d)
-    if clamped_strength <= 0.001 and active_volumes.is_empty():
+    if clamped_strength <= 0.0 and active_volumes.is_empty():
         clear_visible_rain_participation_cache(world_3d, cache_key)
         return {
             "strength": 0.0,
@@ -1357,7 +1357,7 @@ static func _sample_visible_rain_probe_layout_footprint_min(
             continue
         min_value = minf(min_value, sample_value)
         has_sample = true
-        if min_value <= 0.001:
+        if min_value <= 0.0:
             return 0.0
 
     if not has_sample:
@@ -1446,7 +1446,7 @@ static func _get_visible_rain_probe_field_state(
 
     for probe_index in range(values.size()):
         var value: float = values[probe_index]
-        if value <= 0.001:
+        if value <= 0.0:
             continue
 
         visible_intensity = maxf(visible_intensity, value)

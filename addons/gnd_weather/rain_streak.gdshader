@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
 
 uniform vec4 tint : source_color = vec4(0.84, 0.9, 1.0, 0.12);
 uniform float width_softness : hint_range(0.01, 0.8) = 0.22;
@@ -9,6 +9,7 @@ uniform float flow_speed : hint_range(0.0, 8.0) = 1.0;
 uniform float travel_distance : hint_range(0.0, 32.0) = 8.0;
 uniform float respawn_spread : hint_range(0.0, 4.0) = 0.35;
 uniform float streak_length_scale : hint_range(0.05, 2.0) = 1.0;
+uniform float intensity_alpha : hint_range(0.0, 1.0) = 1.0;
 
 varying vec4 instance_custom_data;
 varying float streak_flow;
@@ -63,8 +64,8 @@ void fragment() {
 		+ instance_custom_data.r * 17.0
 		+ UV.x * mix(6.0, 14.0, variation)
 	);
-	float alpha = width_mask * body_fade * streak_mask * breakup * tint.a * instance_alpha;
+	float alpha = width_mask * body_fade;
 
-	ALBEDO = tint.rgb * alpha;
-	ALPHA = alpha;
+	ALBEDO = tint.rgb;
+	ALPHA = alpha * 0.37 * clamp(intensity_alpha * 0.5, 0.3, 0.8);
 }

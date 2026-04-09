@@ -1,6 +1,6 @@
 [gd_resource type="ShaderMaterial" format=3 uid="uid://c7qpojnluiopo"]
 
-[ext_resource type="Shader" uid="uid://ck1w2pkpwin11" path="res://scenery/shaders/filmic_procedural_sky.gdshader" id="1_shader"]
+[ext_resource type="Shader" uid="uid://ck1w2pkpwin11" path="res://addons/gnd_skydome/filmic_procedural_sky.gdshader" id="1_shader"]
 [ext_resource type="Texture2D" uid="uid://bbp8q3gn520gv" path="res://scenery/materials/cloud_noise_a.tres" id="2_cloud_a"]
 [ext_resource type="Texture2D" uid="uid://bmucus6l3rwem" path="res://scenery/materials/cloud_noise_b.tres" id="3_cloud_b"]
 
