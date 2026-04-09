@@ -11,6 +11,7 @@ enum VolumeShape {
 @export var volume_priority: int = 0
 @export_range(-10.0, 10.0, 0.01) var precipitation_delta: float = -1.0
 @export_range(0.0, 2.0, 0.01) var precipitation_multiplier: float = 1.0
+@export_range(0.0, 4.0, 0.01) var lightning_multiplier: float = 1.0
 
 @export_group("Volume")
 @export var shape: VolumeShape = VolumeShape.BOX
@@ -53,6 +54,10 @@ func get_precipitation_delta() -> float:
 
 func get_precipitation_multiplier() -> float:
     return maxf(precipitation_multiplier, 0.0)
+
+
+func get_lightning_multiplier() -> float:
+    return maxf(lightning_multiplier, 0.0)
 
 
 func contains_world_position(world_position: Vector3) -> bool:

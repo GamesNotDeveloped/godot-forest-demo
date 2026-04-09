@@ -8,7 +8,11 @@ signal day_changed(day: int)
 @export var time_transition_duration: float = 2.0
 var _rendered_day: int = 180
 var _rendered_time: float = 12.0
-var _time_tween: Tween
+var _time_transition_active: bool = false
+var _time_transition_wrapped: bool = false
+var _time_transition_target_total_hours: float = 0.0
+var _time_transition_target_unwrapped_time: float = 0.0
+var _time_transition_speed_hours_per_second: float = 0.0
 
 const SUN_SHAFTS_EFFECT_SCRIPT := preload("res://addons/gnd_skydome/SunShaftsCompositorEffect.gd")
 
@@ -551,6 +555,7 @@ func _ready() -> void:
     set_process(true)
 
 func _process(_delta: float) -> void:
+    _advance_time_transition(_delta)
     _update_effect()
 
 func apply_now() -> void:
@@ -742,25 +747,66 @@ func _update_cloud_wind() -> void:
 func _request_time_update(snap: bool = false) -> void:
     if not is_inside_tree():
         return
-    var target_hours = float(day_of_year) * 24.0 + time_of_day
-    var current_hours = float(_rendered_day) * 24.0 + _rendered_time
+    var target_hours := float(day_of_year) * 24.0 + time_of_day
+    var current_hours := float(_rendered_day) * 24.0 + _rendered_time
     var same_day_wrap := day_of_year == _rendered_day and absf(time_of_day - _rendered_time) > 12.0
 
     if Engine.is_editor_hint() or time_transition_duration <= 0.0 or snap:
-        if _time_tween: _time_tween.kill()
+        _stop_time_transition()
         _apply_total_hours(target_hours)
-    else:
-        if _time_tween: _time_tween.kill()
-        _time_tween = create_tween()
-        if same_day_wrap:
-            var wrapped_target_time := _rendered_time + _get_wrapped_time_delta(_rendered_time, time_of_day)
-            _time_tween.tween_method(_apply_wrapped_time_of_day, _rendered_time, wrapped_target_time, time_transition_duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-        else:
-            _time_tween.tween_method(_apply_total_hours, current_hours, target_hours, time_transition_duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+        return
+
+    if same_day_wrap:
+        var wrapped_target_time := _rendered_time + _get_wrapped_time_delta(_rendered_time, time_of_day)
+        var wrapped_delta := wrapped_target_time - _rendered_time
+        if absf(wrapped_delta) <= 0.0001:
+            _stop_time_transition()
+            _apply_wrapped_time_of_day(wrapped_target_time)
+            return
+        _time_transition_wrapped = true
+        _time_transition_target_unwrapped_time = wrapped_target_time
+        _time_transition_speed_hours_per_second = wrapped_delta / time_transition_duration
+        _time_transition_active = true
+        return
+
+    var total_delta := target_hours - current_hours
+    if absf(total_delta) <= 0.0001:
+        _stop_time_transition()
+        _apply_total_hours(target_hours)
+        return
+    _time_transition_wrapped = false
+    _time_transition_target_total_hours = target_hours
+    _time_transition_speed_hours_per_second = total_delta / time_transition_duration
+    _time_transition_active = true
 
 
 func _get_wrapped_time_delta(from_time: float, to_time: float) -> float:
     return wrapf((to_time - from_time) + 12.0, 0.0, 24.0) - 12.0
+
+
+func _advance_time_transition(delta: float) -> void:
+    if not _time_transition_active or delta <= 0.0:
+        return
+
+    var step := absf(_time_transition_speed_hours_per_second) * delta
+    if _time_transition_wrapped:
+        var next_unwrapped_time := move_toward(_rendered_time, _time_transition_target_unwrapped_time, step)
+        _apply_wrapped_time_of_day(next_unwrapped_time)
+        if absf(next_unwrapped_time - _time_transition_target_unwrapped_time) <= 0.0001:
+            _stop_time_transition()
+        return
+
+    var current_hours := float(_rendered_day) * 24.0 + _rendered_time
+    var next_total_hours := move_toward(current_hours, _time_transition_target_total_hours, step)
+    _apply_total_hours(next_total_hours)
+    if absf(next_total_hours - _time_transition_target_total_hours) <= 0.0001:
+        _stop_time_transition()
+
+
+func _stop_time_transition() -> void:
+    _time_transition_active = false
+    _time_transition_wrapped = false
+    _time_transition_speed_hours_per_second = 0.0
 
 
 func _apply_wrapped_time_of_day(unwrapped_time: float) -> void:

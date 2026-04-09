@@ -304,6 +304,7 @@ func _apply_weather_state_snapshot(state: Dictionary) -> void:
 func _get_fallback_weather_state() -> Dictionary:
     var global_precipitation := _get_global_precipitation_setting()
     var local_precipitation := global_precipitation
+    var lightning_multiplier := 1.0
     var follow_target := _get_follow_target()
     if follow_target != null:
         local_precipitation = WeatherServer.get_rain_participation_strength(
@@ -311,15 +312,21 @@ func _get_fallback_weather_state() -> Dictionary:
             follow_target.global_position,
             global_precipitation
         )
+        lightning_multiplier = WeatherServer.get_rain_lightning_multiplier(
+            get_world_3d(),
+            follow_target.global_position
+        )
 
     var shelter_factor := 0.0
     if global_precipitation > 0.0001 and local_precipitation < global_precipitation:
         shelter_factor = clampf((global_precipitation - local_precipitation) / global_precipitation, 0.0, 1.0)
 
+    var storm_input := clampf(maxf(global_precipitation, local_precipitation) * lightning_multiplier, 0.0, 1.0)
+
     return {
         "global_precipitation": global_precipitation,
         "local_precipitation": local_precipitation,
-        "storm_factor": _compute_storm_factor(local_precipitation),
+        "storm_factor": _compute_storm_factor(storm_input),
         "lightning_flash": 0.0,
         "shelter_factor": shelter_factor,
         "local_emission_scale": lerpf(1.0, sheltered_volumetric_emission_scale, shelter_factor),
@@ -437,17 +444,18 @@ func _update_rain_rendering() -> void:
     var follow_target := _get_follow_target()
     var global_intensity := _current_global_precipitation
     var local_intensity := _current_local_precipitation
+    var render_intensity := maxf(global_intensity, local_intensity)
     _emit_rain_strength_changed(global_intensity)
     _emit_local_rain_strength_changed(local_intensity)
 
-    if follow_target == null or local_intensity <= 0.001:
+    if follow_target == null or render_intensity <= 0.001:
         _clear_rain_field_layer(_near_rain_field)
         _clear_rain_field_layer(_mid_rain_field)
         return
 
     var rain_direction := _get_rain_direction(_get_wind_speed())
-    var near_layer_intensity: float = _get_layer_intensity(local_intensity, false)
-    var mid_layer_intensity: float = _get_layer_intensity(local_intensity, true)
+    var near_layer_intensity: float = _get_layer_intensity(render_intensity, false)
+    var mid_layer_intensity: float = _get_layer_intensity(render_intensity, true)
     var sample_y: float = follow_target.global_position.y + 1.0
 
     var near_card_height: float = _get_rain_field_card_height(near_emission_extents, near_layer_intensity, false)

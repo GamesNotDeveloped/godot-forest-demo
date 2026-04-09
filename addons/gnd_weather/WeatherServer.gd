@@ -102,14 +102,20 @@ class WeatherRuntime extends RefCounted:
     func _refresh_precipitation_state(world_3d: World3D) -> bool:
         var next_global := clampf(precipitation_intensity, 0.0, 1.0)
         var next_local := next_global
+        var lightning_multiplier := 1.0
         if _has_observer_sample and world_3d != null:
             next_local = WeatherServer.get_rain_participation_strength(
                 world_3d,
                 _observer_position,
                 next_global
             )
+            lightning_multiplier = WeatherServer.get_rain_lightning_multiplier(
+                world_3d,
+                _observer_position
+            )
 
-        var next_storm := _compute_storm_factor(next_local)
+        var next_storm_input := clampf(maxf(next_global, next_local) * lightning_multiplier, 0.0, 1.0)
+        var next_storm := _compute_storm_factor(next_storm_input)
         var next_shelter := 0.0
         if next_global > 0.0001 and next_local < next_global:
             next_shelter = clampf((next_global - next_local) / next_global, 0.0, 1.0)
@@ -369,6 +375,30 @@ static func get_rain_participation_strength(
         world_position,
         base_strength
     )
+
+
+static func get_rain_lightning_multiplier(
+    world_3d: World3D,
+    world_position: Vector3
+) -> float:
+    return get_rain_lightning_multiplier_for_volumes(
+        _get_active_rain_volumes(world_3d),
+        world_position
+    )
+
+
+static func get_rain_lightning_multiplier_for_volumes(
+    volumes: Array,
+    world_position: Vector3
+) -> float:
+    var multiplier := 1.0
+    for volume in _sort_rain_volumes(volumes):
+        var blend: float = volume.get_precipitation_blend(world_position)
+        if blend <= 0.0:
+            continue
+
+        multiplier *= lerpf(1.0, volume.get_lightning_multiplier(), blend)
+    return maxf(multiplier, 0.0)
 
 
 static func get_rain_participation_strength_for_volumes(

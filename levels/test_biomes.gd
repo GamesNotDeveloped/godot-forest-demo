@@ -8,6 +8,7 @@ const RAIN_BUS_NAME := &"Rain"
 const RAIN_LP_OPEN_CUTOFF_HZ := 20500.0
 const RAIN_LP_OCCLUDED_CUTOFF_HZ := 3000.0
 const RAIN_LP_TWEEN_DURATION := 0.12
+const DEFAULT_WORLD_TIME_SCALE := 1.0
 
 @onready var _quality_profiles_manager: QualityProfilesManager = $QualityProfilesManager
 @onready var _directional_light: DirectionalLight3D = $DirectionalLight3D
@@ -18,6 +19,7 @@ const RAIN_LP_TWEEN_DURATION := 0.12
 
 var _rain_low_pass_filter: AudioEffectLowPassFilter
 var _rain_low_pass_tween: Tween
+var _world_time_scale: float = DEFAULT_WORLD_TIME_SCALE
 
 
 func _ready() -> void:
@@ -150,7 +152,11 @@ func _refresh_debug_menu() -> void:
 
 
 func _on_world_timer_timeout():
-    $Skydome.time_of_day = wrapf($Skydome.time_of_day + 0.005, 0, 23.999)
+    $Skydome.time_of_day = wrapf($Skydome.time_of_day + ((_world_time_scale * $WorldTimer.wait_time) / 3600.0), 0, 23.999)
+
+
+func _on_weather_controls_canvas_world_time_scale_changed(scale: float) -> void:
+    _world_time_scale = maxf(scale, 0.0)
 
 
 func _on_weather_thunder(strength):

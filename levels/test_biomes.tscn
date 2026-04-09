@@ -36,7 +36,7 @@
 [ext_resource type="AudioStream" uid="uid://cho50y1ngfmfy" path="res://music/sigmamusicart-tension-tension-music-503993.mp3" id="34_flr7s"]
 [ext_resource type="PackedScene" uid="uid://ctwu0ey7hgcm1" path="res://objects/old-well.tscn" id="34_pbujr"]
 [ext_resource type="Script" uid="uid://dv1xopie6t4q2" path="res://ui/QualityProfilesCanvas.gd" id="35_quality"]
-[ext_resource type="Script" uid="uid://chgv4rkwdhejt" path="res://ui/WeatherControlsCanvas.gd" id="36_weather_ui"]
+[ext_resource type="PackedScene" uid="uid://cwasdc7ndk8lf" path="res://ui/WeatherControlsCanvas.tscn" id="36_weather_ui"]
 [ext_resource type="Script" uid="uid://sdanr78joiow" path="res://addons/gnd_quality_profiles/quality_profiles_manager.gd" id="37_8echa"]
 [ext_resource type="Script" uid="uid://cdn2kmll4nqlk" path="res://addons/gnd_quality_profiles/quality_profile.gd" id="38_3k2hm"]
 [ext_resource type="Environment" uid="uid://nisddm6dgh86" path="res://materials/environment_filmic.tres" id="39_jt4jh"]
@@ -188,11 +188,10 @@ metadata/_custom_type_script = "uid://sdanr78joiow"
 [node name="QualityProfilesCanvas" type="CanvasLayer" parent="." unique_id=1602580575]
 script = ExtResource("35_quality")
 
-[node name="WeatherControlsCanvas" type="CanvasLayer" parent="." unique_id=1325048792]
-script = ExtResource("36_weather_ui")
+[node name="WeatherControlsCanvas" parent="." unique_id=1325048792 instance=ExtResource("36_weather_ui")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(0.6222523, -0.6083956, 0.49260223, 0, 0.62926894, 0.77718765, -0.78281677, -0.48360682, 0.391564, 0, 0.5193932, -0.2882359)
+transform = Transform3D(-0.13646512, 0.94468796, -0.29823142, 0, 0.30104777, 0.95360905, 0.9906449, 0.13013439, -0.04108252, 0, 0.5193932, -0.2882359)
 light_color = Color(1, 0.93, 0.85, 1)
 light_energy = 1.32
 light_indirect_energy = 1.18
@@ -291,8 +290,8 @@ tween_duration = 1.5
 script = ExtResource("19_shafts")
 time_transition_duration = 1.0
 day_of_year = 154
-time_of_day = 9.855
-latitude = 52.61699999999999
+time_of_day = 13.254
+latitude = 21.0
 sun_light_energy = 1.32
 moon_light_color = Color(0.23498535, 0.29047748, 0.34375, 1)
 moon_light_energy = 0.212
@@ -330,7 +329,7 @@ weather_volumetric_fog_density_target = 0.12
 weather_volumetric_fog_sky_affect_target = 1.0
 weather_volumetric_fog_emission_color = Color(1, 1, 1, 1)
 weather_volumetric_fog_emission_energy = 0.28
-moon_phase_debug = 0.22894090755164243
+moon_phase_debug = 0.23373687775143814
 shader_sky_energy = 0.242
 shader_horizon_height = 0.178
 shader_atmosphere_horizon_level = -0.375
@@ -402,6 +401,7 @@ camera_attributes = ExtResource("43_j63ba")
 compositor = ExtResource("47_jyfmq")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
+wait_time = 0.1
 autostart = true
 
 [node name="Thunder1" type="AudioStreamPlayer" parent="." unique_id=400482196]
@@ -421,6 +421,7 @@ stream = ExtResource("54_8l7hv")
 bus = &"Rain"
 
 [connection signal="profile_changed" from="QualityProfilesManager" to="." method="_on_quality_profiles_manager_profile_changed"]
+[connection signal="world_time_scale_changed" from="WeatherControlsCanvas" to="." method="_on_weather_controls_canvas_world_time_scale_changed"]
 [connection signal="rain_local_strength_changed" from="Weather" to="." method="_on_weather_rain_local_strength_changed"]
 [connection signal="rain_strength_changed" from="Weather" to="." method="_on_weather_rain_strength_changed"]
 [connection signal="thunder" from="Weather" to="." method="_on_weather_thunder"]
