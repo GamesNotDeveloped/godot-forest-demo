@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://cb8t3x6gvytl7"]
 
 [ext_resource type="PackedScene" uid="uid://8rkvtihjaha2" path="res://objects/old-house/scene.gltf" id="1_55pgk"]
+[ext_resource type="Script" uid="uid://4xov8ndpybam" path="res://scenery/RainVolume.gd" id="2_o6lqo"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_55pgk"]
 size = Vector3(0.62601876, 0.05595795, 1.2509776)
@@ -79,9 +80,12 @@ density = 0.0256
 height_falloff = 0.4151102
 edge_fade = 0.5656852
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_18tkx"]
+size = Vector3(5.250366, 2.2314758, 3.5603027)
+
 [node name="OldHouse" unique_id=1458074419 instance=ExtResource("1_55pgk")]
 
-[node name="Cube_016_Other_0" parent="Sketchfab_model/c79f64e8624842f9a0fabeaf425a8c21_fbx/RootNode/Cube_016" parent_id_path=PackedInt32Array(780919662) index="0" unique_id=567671763]
+[node name="Cube_016_Other_0" parent="Sketchfab_model/c79f64e8624842f9a0fabeaf425a8c21_fbx/RootNode/Cube_016" parent_id_path=PackedInt32Array(325017810) index="0" unique_id=1613922124]
 transform = Transform3D(-0.61803794, 0.7861483, 0, -0.7861483, -0.61803794, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." index="1" unique_id=677791796]
@@ -184,3 +188,15 @@ shape = SubResource("ConvexPolygonShape3D_57mt4")
 transform = Transform3D(0.8955798, 0, 0.44490093, 0, 1, 0, -0.44490093, 0, 0.8955798, -0.022864103, 1.0373695, 0.3429839)
 size = Vector3(4, 2, 5.2073975)
 material = SubResource("FogMaterial_55pgk")
+
+[node name="RainVolume" type="Area3D" parent="." index="26" unique_id=1397810757]
+transform = Transform3D(0.45545167, 0, -0.8902605, 0, 1, 0, 0.8902605, 0, 0.45545167, 0, 0, 0)
+collision_layer = 1048576
+collision_mask = 0
+monitoring = false
+script = ExtResource("2_o6lqo")
+metadata/_custom_type_script = "uid://4xov8ndpybam"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RainVolume" index="0" unique_id=1401187859]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3020629, 1.1274872, -0.09973134)
+shape = SubResource("BoxShape3D_18tkx")

@@ -1,10 +1,16 @@
 class_name WeatherNode
 extends Node3D
 
+signal thunder(strength: float)
+signal rain_strength_changed(strength: float)
+
 const RAIN_STREAK_SHADER := preload("res://scenery/shaders/rain_streak.gdshader")
+const RAIN_VOLUME_SCRIPT := preload("res://scenery/RainVolume.gd")
 
 const NEAR_PARTICLES_NAME := "RainNear"
 const MID_PARTICLES_NAME := "RainMid"
+const RAIN_PROBE_NAME := "RainProbe"
+const RAIN_VOLUME_LAYER_MASK := 1 << 20
 
 @export_group("Nodes")
 @export_node_path("Skydome") var skydome_path: NodePath
@@ -43,6 +49,11 @@ const MID_PARTICLES_NAME := "RainMid"
 @export_range(0.1, 4.0, 0.01) var mid_layer_speed_multiplier: float = 0.78
 @export var mid_layer_enabled: bool = true
 @export var mid_layer_offset: Vector3 = Vector3(1.6, -0.9, 2.8)
+@export_range(0.0, 1.0, 0.01) var sheltered_mid_layer_visibility: float = 0.35
+@export_range(0.0, 24.0, 0.1) var sheltered_mid_layer_forward_offset: float = 6.0
+@export_range(0.0, 1.0, 0.01) var sheltered_mid_layer_density_scale: float = 0.08
+@export_range(0.0, 1.0, 0.01) var sheltered_mid_layer_alpha_scale: float = 0.12
+@export_range(0.0, 1.0, 0.01) var sheltered_volumetric_emission_scale: float = 0.0
 @export var near_rain_color: Color = Color(0.72, 0.74, 0.76, 0.08):
 	set(value):
 		near_rain_color = value
@@ -51,6 +62,16 @@ const MID_PARTICLES_NAME := "RainMid"
 	set(value):
 		mid_rain_color = value
 		_sync_rain_materials()
+
+@export_group("Rain Volumes")
+@export_flags_3d_physics var rain_volume_collision_mask: int = RAIN_VOLUME_LAYER_MASK:
+	set(value):
+		rain_volume_collision_mask = value
+		_sync_rain_probe()
+@export_range(0.05, 4.0, 0.01) var rain_volume_probe_radius: float = 0.35:
+	set(value):
+		rain_volume_probe_radius = maxf(value, 0.05)
+		_sync_rain_probe()
 
 @export_group("Storm")
 @export var lightning_enabled: bool = true
@@ -63,6 +84,10 @@ var _near_particles: GPUParticles3D
 var _mid_particles: GPUParticles3D
 var _near_process_material: ParticleProcessMaterial
 var _mid_process_material: ParticleProcessMaterial
+var _rain_probe: Area3D
+var _rain_probe_shape: CollisionShape3D
+var _active_rain_volumes: Dictionary = {}
+var _current_shelter_factor: float = 0.0
 
 var _current_lightning_flash: float = 0.0
 var _pending_flash_pulses: int = 0
@@ -72,11 +97,14 @@ var _next_lightning_burst: float = 0.0
 var _last_applied_precipitation: float = -1.0
 var _last_applied_storm_factor: float = -1.0
 var _last_applied_lightning_flash: float = -1.0
+var _last_applied_local_emission_scale: float = -1.0
+var _last_emitted_rain_strength: float = -1.0
 
 
 func _ready() -> void:
 	_rng.randomize()
 	_ensure_particle_nodes()
+	_ensure_rain_probe()
 	_reset_lightning_schedule(get_storm_factor())
 	_apply_weather_state(true)
 	set_process(true)
@@ -90,6 +118,7 @@ func _exit_tree() -> void:
 
 func _process(delta: float) -> void:
 	_update_follow_position()
+	_sync_active_rain_volumes()
 	_update_lightning(delta)
 	_update_particles()
 	_push_weather_state()
@@ -103,12 +132,23 @@ func apply_now() -> void:
 	_apply_weather_state(true)
 
 
-func get_storm_factor() -> float:
-	if precipitation_intensity <= storm_threshold:
+func get_effective_precipitation_intensity() -> float:
+	var intensity := clampf(precipitation_intensity, 0.0, 1.0)
+	for volume in _get_sorted_active_rain_volumes():
+		intensity = clampf((intensity + volume.get_precipitation_delta()) * volume.get_precipitation_multiplier(), 0.0, 1.0)
+	return intensity
+
+
+func get_storm_factor(precipitation_override: float = -1.0) -> float:
+	var intensity := precipitation_override
+	if intensity < 0.0:
+		intensity = precipitation_intensity
+
+	if intensity <= storm_threshold:
 		return 0.0
 
 	var denominator := maxf(1.0 - storm_threshold, 0.0001)
-	var t := clampf((precipitation_intensity - storm_threshold) / denominator, 0.0, 1.0)
+	var t := clampf((intensity - storm_threshold) / denominator, 0.0, 1.0)
 	return t * t * (3.0 - 2.0 * t)
 
 
@@ -168,6 +208,42 @@ func _ensure_particle_nodes() -> void:
 		add_child(_mid_particles)
 	_mid_process_material = _mid_particles.process_material as ParticleProcessMaterial
 	_sync_rain_materials()
+
+
+func _ensure_rain_probe() -> void:
+	if _rain_probe == null:
+		_rain_probe = get_node_or_null(RAIN_PROBE_NAME) as Area3D
+	if _rain_probe == null:
+		_rain_probe = Area3D.new()
+		_rain_probe.name = RAIN_PROBE_NAME
+		add_child(_rain_probe)
+
+	if _rain_probe_shape == null and _rain_probe != null:
+		_rain_probe_shape = _rain_probe.get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if _rain_probe_shape == null and _rain_probe != null:
+		_rain_probe_shape = CollisionShape3D.new()
+		_rain_probe_shape.name = "CollisionShape3D"
+		_rain_probe.add_child(_rain_probe_shape)
+
+	_sync_rain_probe()
+
+
+func _sync_rain_probe() -> void:
+	if _rain_probe == null:
+		return
+
+	_rain_probe.monitoring = true
+	_rain_probe.monitorable = false
+	_rain_probe.collision_layer = 0
+	_rain_probe.collision_mask = rain_volume_collision_mask
+
+	if _rain_probe_shape == null:
+		return
+	var sphere := _rain_probe_shape.shape as SphereShape3D
+	if sphere == null:
+		sphere = SphereShape3D.new()
+		_rain_probe_shape.shape = sphere
+	sphere.radius = rain_volume_probe_radius
 
 
 func _build_rain_particles(name: String, extents: Vector3, tint: Color, mesh_size: Vector2, lifetime: float) -> GPUParticles3D:
@@ -232,15 +308,26 @@ func _update_follow_position() -> void:
 		return
 
 	global_position = follow_target.global_position + Vector3(0.0, follow_height, 0.0)
-	_update_mid_layer_offset(follow_target)
+	if _rain_probe != null:
+		_rain_probe.global_position = follow_target.global_position
 
 
 func _update_particles() -> void:
-	var intensity := precipitation_intensity
-	var storm_factor := get_storm_factor()
-	var rain_active := intensity > 0.01
+	var global_intensity := clampf(precipitation_intensity, 0.0, 1.0)
+	var local_intensity := get_effective_precipitation_intensity()
+	_emit_rain_strength_changed(local_intensity)
+	_current_shelter_factor = 0.0
+	if global_intensity > 0.001:
+		_current_shelter_factor = clampf((global_intensity - local_intensity) / global_intensity, 0.0, 1.0)
+	var near_intensity := local_intensity
+	var mid_intensity := _get_mid_layer_precipitation_intensity(global_intensity, local_intensity)
+	var near_storm_factor := get_storm_factor(near_intensity)
+	var mid_storm_factor := get_storm_factor(mid_intensity)
+	var mid_density_scale := lerpf(1.0, sheltered_mid_layer_density_scale, _current_shelter_factor)
+	var mid_alpha_scale := lerpf(1.0, sheltered_mid_layer_alpha_scale, _current_shelter_factor)
 	var wind_speed_value := _get_wind_speed()
 	var rain_direction := _get_rain_direction(wind_speed_value)
+	_update_mid_layer_offset(_get_follow_target())
 	_orient_rain_layers(rain_direction)
 
 	_update_rain_layer(
@@ -248,26 +335,30 @@ func _update_particles() -> void:
 		_near_process_material,
 		near_particle_amount,
 		near_emission_extents,
-		intensity,
-		storm_factor,
+		near_intensity,
+		near_storm_factor,
 		rain_direction,
 		wind_speed_value,
 		near_layer_speed_multiplier,
-		rain_active,
-		false
+		near_intensity > 0.01,
+		false,
+		1.0,
+		1.0
 	)
 	_update_rain_layer(
 		_mid_particles,
 		_mid_process_material,
 		mid_particle_amount,
 		mid_emission_extents,
-		intensity,
-		storm_factor,
+		mid_intensity,
+		mid_storm_factor,
 		rain_direction,
 		wind_speed_value,
 		mid_layer_speed_multiplier,
-		rain_active and mid_layer_enabled,
-		true
+		mid_layer_enabled and mid_intensity > 0.01,
+		true,
+		mid_density_scale,
+		mid_alpha_scale
 	)
 
 
@@ -282,23 +373,28 @@ func _update_rain_layer(
 	wind_speed_value: float,
 	speed_multiplier: float,
 	rain_active: bool,
-	is_mid_layer: bool
+	is_mid_layer: bool,
+	density_scale: float,
+	alpha_scale: float
 ) -> void:
 	if particles == null or process_material == null:
 		return
 
+	var was_emitting := particles.emitting
 	var layer_intensity := _get_layer_intensity(intensity, is_mid_layer)
 	var layer_active := rain_active and layer_intensity > 0.001
 
 	particles.emitting = layer_active
 	if not layer_active:
+		if was_emitting:
+			particles.restart()
 		if is_mid_layer:
 			particles.amount = 1
 		return
 
 	var safe_extents := Vector3(absf(extents.x), absf(extents.y), absf(extents.z))
 	var density := clampf((0.04 + layer_intensity * 1.08 + storm_factor * 0.08) * density_multiplier, 0.0, 6.0)
-	particles.amount = max(6 if not is_mid_layer else 4, int(round(base_amount * density)))
+	particles.amount = max(6 if not is_mid_layer else 4, int(round(base_amount * density * maxf(density_scale, 0.0))))
 
 	process_material.emission_box_extents = safe_extents
 	# Particle nodes are already oriented so their local +Y axis matches the rain fall axis.
@@ -317,7 +413,7 @@ func _update_rain_layer(
 	process_material.scale_min = lerpf(0.28, 0.95, layer_intensity)
 	process_material.scale_max = lerpf(0.42, 1.28, layer_intensity)
 
-	_update_rain_visuals(particles, layer_intensity, is_mid_layer)
+	_update_rain_visuals(particles, layer_intensity, is_mid_layer, alpha_scale)
 
 
 func _get_rain_direction(wind_speed_value: float) -> Vector3:
@@ -332,12 +428,26 @@ func _get_layer_intensity(intensity: float, is_mid_layer: bool) -> float:
 	return _smooth_factor(intensity, 0.04, 0.75)
 
 
+func _get_mid_layer_precipitation_intensity(global_intensity: float, local_intensity: float) -> float:
+	if local_intensity >= global_intensity:
+		return local_intensity
+	return lerpf(local_intensity, global_intensity, sheltered_mid_layer_visibility)
+
+
+func _emit_rain_strength_changed(strength: float) -> void:
+	var clamped_strength := clampf(strength, 0.0, 1.0)
+	if absf(_last_emitted_rain_strength - clamped_strength) <= 0.0001:
+		return
+	_last_emitted_rain_strength = clamped_strength
+	rain_strength_changed.emit(clamped_strength)
+
+
 func _smooth_factor(value: float, start: float, end: float) -> float:
 	var t := clampf((value - start) / maxf(end - start, 0.0001), 0.0, 1.0)
 	return t * t * (3.0 - 2.0 * t)
 
 
-func _update_rain_visuals(particles: GPUParticles3D, layer_intensity: float, is_mid_layer: bool) -> void:
+func _update_rain_visuals(particles: GPUParticles3D, layer_intensity: float, is_mid_layer: bool, alpha_multiplier: float = 1.0) -> void:
 	if particles == null:
 		return
 	var mesh := particles.draw_pass_1 as QuadMesh
@@ -352,8 +462,9 @@ func _update_rain_visuals(particles: GPUParticles3D, layer_intensity: float, is_
 	var target_length := lerpf(0.08, 0.42, layer_intensity) if not is_mid_layer else lerpf(0.06, 0.36, layer_intensity)
 	mesh.size = Vector2(target_width, target_length)
 
-	var alpha_scale := lerpf(0.32, 1.0, layer_intensity)
-	var effective_color := Color(base_color.r, base_color.g, base_color.b, base_color.a * alpha_scale)
+	var base_alpha_scale := lerpf(0.32, 1.0, layer_intensity)
+	var effective_alpha := base_alpha_scale * maxf(alpha_multiplier, 0.0)
+	var effective_color := Color(base_color.r, base_color.g, base_color.b, base_color.a * effective_alpha)
 	material.set_shader_parameter("tint", effective_color)
 	material.set_shader_parameter("width_softness", lerpf(0.12, 0.22, layer_intensity))
 	material.set_shader_parameter("tail_softness", lerpf(0.18, 0.55, layer_intensity))
@@ -378,7 +489,7 @@ func _orient_rain_layers(rain_direction: Vector3) -> void:
 
 
 func _update_mid_layer_offset(follow_target: Node3D) -> void:
-	if _mid_particles == null:
+	if _mid_particles == null or follow_target == null:
 		return
 	if not mid_layer_enabled:
 		_mid_particles.position = Vector3.ZERO
@@ -387,10 +498,11 @@ func _update_mid_layer_offset(follow_target: Node3D) -> void:
 	var forward := -follow_target.global_basis.z
 	var right := follow_target.global_basis.x
 	var up := follow_target.global_basis.y
+	var shelter_forward_offset := sheltered_mid_layer_forward_offset * _current_shelter_factor
 	_mid_particles.position = (
 		right * mid_layer_offset.x
 		+ up * mid_layer_offset.y
-		+ forward * mid_layer_offset.z
+		+ forward * (mid_layer_offset.z + shelter_forward_offset)
 	)
 
 
@@ -413,6 +525,39 @@ func _get_wind_speed() -> float:
 
 func _has_project_setting(setting_name: StringName) -> bool:
 	return setting_name != &"" and ProjectSettings.has_setting(String(setting_name))
+
+
+func _sync_active_rain_volumes() -> void:
+	if _rain_probe == null:
+		return
+
+	var next_active_volumes: Dictionary = {}
+	for area in _rain_probe.get_overlapping_areas():
+		if area == null or area.get_script() != RAIN_VOLUME_SCRIPT:
+			continue
+		if not area.has_method("is_rain_volume_enabled") or not area.call("is_rain_volume_enabled"):
+			continue
+		next_active_volumes[area.get_instance_id()] = area
+	_active_rain_volumes = next_active_volumes
+
+
+func _get_sorted_active_rain_volumes() -> Array:
+	var volumes: Array = []
+	for candidate in _active_rain_volumes.values():
+		if candidate == null or not is_instance_valid(candidate) or not candidate is Area3D or not candidate.is_inside_tree():
+			continue
+		if not candidate.has_method("is_rain_volume_enabled") or not candidate.call("is_rain_volume_enabled"):
+			continue
+		volumes.append(candidate)
+
+	volumes.sort_custom(func(a, b) -> bool:
+		var a_priority := int(a.get("volume_priority"))
+		var b_priority := int(b.get("volume_priority"))
+		if a_priority == b_priority:
+			return a.get_instance_id() < b.get_instance_id()
+		return a_priority < b_priority
+	)
+	return volumes
 
 
 func _update_lightning(delta: float) -> void:
@@ -441,6 +586,7 @@ func _update_lightning(delta: float) -> void:
 func _trigger_lightning_pulse(storm_factor: float) -> void:
 	var flash_strength := _rng.randf_range(0.62, 1.0) * (0.52 + storm_factor * 0.48)
 	_current_lightning_flash = maxf(_current_lightning_flash, flash_strength)
+	thunder.emit(clampf(flash_strength, 0.0, 1.0))
 	_pending_flash_pulses -= 1
 
 	if _pending_flash_pulses > 0:
@@ -460,17 +606,21 @@ func _push_weather_state(force: bool = false) -> void:
 	if skydome == null:
 		return
 
-	var storm_factor := get_storm_factor()
+	var global_precipitation := clampf(precipitation_intensity, 0.0, 1.0)
+	var storm_factor := get_storm_factor(global_precipitation)
+	var local_emission_scale := lerpf(1.0, sheltered_volumetric_emission_scale, _current_shelter_factor)
 	if not force:
 		var unchanged := (
-			absf(_last_applied_precipitation - precipitation_intensity) <= 0.0001
+			absf(_last_applied_precipitation - global_precipitation) <= 0.0001
 			and absf(_last_applied_storm_factor - storm_factor) <= 0.0001
 			and absf(_last_applied_lightning_flash - _current_lightning_flash) <= 0.0001
+			and absf(_last_applied_local_emission_scale - local_emission_scale) <= 0.0001
 		)
 		if unchanged:
 			return
 
-	skydome.set_weather_overrides(precipitation_intensity, storm_factor, _current_lightning_flash)
-	_last_applied_precipitation = precipitation_intensity
+	skydome.set_weather_overrides(global_precipitation, storm_factor, _current_lightning_flash, local_emission_scale)
+	_last_applied_precipitation = global_precipitation
 	_last_applied_storm_factor = storm_factor
 	_last_applied_lightning_flash = _current_lightning_flash
+	_last_applied_local_emission_scale = local_emission_scale

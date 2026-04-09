@@ -190,6 +190,7 @@ var _is_daytime: bool = true
 var _weather_precipitation: float = 0.0
 var _weather_storm_factor: float = 0.0
 var _weather_lightning_flash: float = 0.0
+var _weather_local_emission_scale: float = 1.0
 
 @export_group("Weather Overrides")
 @export_range(0.0, 2.0, 0.01) var weather_overcast_intensity: float = 1.0:
@@ -204,15 +205,19 @@ var _weather_lightning_flash: float = 0.0
     set(v):
         weather_storm_fog_density_boost = v
         _update_sun_transform()
-@export_range(0.0, 1.5, 0.001) var weather_fog_density_target: float = 0.06:
+@export_range(0.0, 1.5, 0.001) var weather_fog_density_target: float = 0.012:
     set(v):
         weather_fog_density_target = v
         _update_sun_transform()
-@export_range(0.0, 100.0, 0.1) var weather_fog_begin_distance: float = 1.8:
+@export_range(0.0, 1.0, 0.001) var weather_fog_sky_affect_target: float = 0.12:
+    set(v):
+        weather_fog_sky_affect_target = v
+        _update_sun_transform()
+@export_range(0.0, 100.0, 0.1) var weather_fog_begin_distance: float = 2.4:
     set(v):
         weather_fog_begin_distance = v
         _update_sun_transform()
-@export_range(1.0, 2000.0, 1.0) var weather_fog_end_distance: float = 120.0:
+@export_range(1.0, 2000.0, 1.0) var weather_fog_end_distance: float = 180.0:
     set(v):
         weather_fog_end_distance = v
         _update_sun_transform()
@@ -224,9 +229,21 @@ var _weather_lightning_flash: float = 0.0
     set(v):
         weather_storm_volumetric_fog_boost = v
         _update_sun_transform()
-@export_range(0.0, 2.0, 0.001) var weather_volumetric_fog_density_target: float = 0.36:
+@export_range(0.0, 2.0, 0.001) var weather_volumetric_fog_density_target: float = 0.14:
     set(v):
         weather_volumetric_fog_density_target = v
+        _update_sun_transform()
+@export_range(0.0, 1.0, 0.001) var weather_volumetric_fog_sky_affect_target: float = 0.32:
+    set(v):
+        weather_volumetric_fog_sky_affect_target = v
+        _update_sun_transform()
+@export var weather_volumetric_fog_emission_color: Color = Color(0.0, 0.0, 0.0, 1.0):
+    set(v):
+        weather_volumetric_fog_emission_color = v
+        _update_sun_transform()
+@export_range(0.0, 8.0, 0.01) var weather_volumetric_fog_emission_energy: float = 0.0:
+    set(v):
+        weather_volumetric_fog_emission_energy = v
         _update_sun_transform()
 
 @export_group("Debug")
@@ -535,19 +552,22 @@ func apply_now() -> void:
     _request_time_update(true)
     _update_effect()
 
-func set_weather_overrides(precipitation: float, storm_factor: float, lightning_flash: float) -> void:
+func set_weather_overrides(precipitation: float, storm_factor: float, lightning_flash: float, local_emission_scale: float = 1.0) -> void:
     var next_precipitation := clampf(precipitation, 0.0, 1.0)
     var next_storm_factor := clampf(storm_factor, 0.0, 1.0)
     var next_lightning_flash := clampf(lightning_flash, 0.0, 1.0)
+    var next_local_emission_scale := clampf(local_emission_scale, 0.0, 1.0)
     var changed := (
         absf(_weather_precipitation - next_precipitation) > 0.0001
         or absf(_weather_storm_factor - next_storm_factor) > 0.0001
         or absf(_weather_lightning_flash - next_lightning_flash) > 0.0001
+        or absf(_weather_local_emission_scale - next_local_emission_scale) > 0.0001
     )
 
     _weather_precipitation = next_precipitation
     _weather_storm_factor = next_storm_factor
     _weather_lightning_flash = next_lightning_flash
+    _weather_local_emission_scale = next_local_emission_scale
 
     if changed and is_inside_tree() and _is_ready:
         _update_sun_transform()
@@ -555,7 +575,7 @@ func set_weather_overrides(precipitation: float, storm_factor: float, lightning_
 
 
 func clear_weather_overrides() -> void:
-    set_weather_overrides(0.0, 0.0, 0.0)
+    set_weather_overrides(0.0, 0.0, 0.0, 1.0)
 
 
 func _refresh() -> void:
@@ -858,6 +878,7 @@ func _apply_weather_overrides(env: Environment, light: DirectionalLight3D) -> vo
     var precipitation := clampf(_weather_precipitation, 0.0, 1.0)
     var storm_factor := clampf(_weather_storm_factor, 0.0, 1.0)
     var lightning_flash := clampf(_weather_lightning_flash, 0.0, 1.0)
+    var local_emission_scale := clampf(_weather_local_emission_scale, 0.0, 1.0)
     var cloud_mix := clampf(precipitation * 0.8 + storm_factor * 0.55, 0.0, 1.0)
     var cloud_darkening := clampf(precipitation * 0.45 + storm_factor * 0.35, 0.0, 1.0)
     var weather_override_strength := maxf(weather_overcast_intensity, 0.0)
@@ -886,20 +907,25 @@ func _apply_weather_overrides(env: Environment, light: DirectionalLight3D) -> vo
     env.ambient_light_color = env.ambient_light_color.lerp(Color(0.38, 0.41, 0.46, 1.0), overcast_cooling * 0.82)
     env.ambient_light_energy *= maxf(0.18, 1.0 - (precipitation * 0.24 + storm_factor * 0.08) * weather_override_strength)
 
+    var fog_weather_blend := clampf((precipitation - 0.72) / 0.28, 0.0, 1.0)
+    fog_weather_blend = fog_weather_blend * fog_weather_blend * (3.0 - 2.0 * fog_weather_blend)
+    fog_weather_blend = clampf(fog_weather_blend + storm_factor * 0.18, 0.0, 1.0)
+
     env.fog_light_color = env.fog_light_color.lerp(Color(0.25, 0.28, 0.34, 1.0), overcast_cooling * 0.86)
-    var weather_fog_density_add := precipitation * weather_fog_density_boost * 0.012 + storm_factor * weather_storm_fog_density_boost * 0.016
-    var weather_fog_distance_blend := clampf(precipitation + storm_factor * 0.35, 0.0, 1.0)
+    var weather_fog_density_add := (precipitation * weather_fog_density_boost * 0.0015 + storm_factor * weather_storm_fog_density_boost * 0.0025) * fog_weather_blend
+    var weather_fog_distance_blend := fog_weather_blend
     var weather_fog_density_target_value := lerpf(env.fog_density, weather_fog_density_target, weather_fog_distance_blend)
     env.fog_density = clampf(maxf(
-        env.fog_density * (1.0 + precipitation * weather_fog_density_boost + storm_factor * weather_storm_fog_density_boost) + weather_fog_density_add,
+        env.fog_density * (1.0 + (precipitation * weather_fog_density_boost * 0.12 + storm_factor * weather_storm_fog_density_boost * 0.16) * fog_weather_blend) + weather_fog_density_add,
         weather_fog_density_target_value
     ), 0.0, 1.5)
+    env.fog_sky_affect = lerpf(env.fog_sky_affect, weather_fog_sky_affect_target, weather_fog_distance_blend)
     env.fog_depth_begin = maxf(0.0, lerpf(env.fog_depth_begin, weather_fog_begin_distance, weather_fog_distance_blend))
     env.fog_depth_end = maxf(weather_fog_begin_distance + 1.0, lerpf(env.fog_depth_end, weather_fog_end_distance, weather_fog_distance_blend))
 
     current_vol_fog_min_density *= 1.0 + precipitation * 0.18
-    var weather_volumetric_density_add := precipitation * weather_volumetric_fog_boost * 0.018 + storm_factor * weather_storm_volumetric_fog_boost * 0.024
-    current_vol_fog_max_density = current_vol_fog_max_density * (1.0 + precipitation * weather_volumetric_fog_boost + storm_factor * weather_storm_volumetric_fog_boost) + weather_volumetric_density_add
+    var weather_volumetric_density_add := (precipitation * weather_volumetric_fog_boost * 0.003 + storm_factor * weather_storm_volumetric_fog_boost * 0.005) * fog_weather_blend
+    current_vol_fog_max_density = current_vol_fog_max_density * (1.0 + (precipitation * weather_volumetric_fog_boost * 0.18 + storm_factor * weather_storm_volumetric_fog_boost * 0.22) * fog_weather_blend) + weather_volumetric_density_add
 
     env.volumetric_fog_albedo = env.volumetric_fog_albedo.lerp(Color(0.17, 0.19, 0.24, 1.0), overcast_cooling * 0.78)
     var weather_volumetric_density_target_value := lerpf(env.volumetric_fog_density, weather_volumetric_fog_density_target, weather_fog_distance_blend)
@@ -907,8 +933,13 @@ func _apply_weather_overrides(env: Environment, light: DirectionalLight3D) -> vo
         maxf(env.volumetric_fog_density, current_vol_fog_max_density) + weather_volumetric_density_add,
         weather_volumetric_density_target_value
     ), 0.0, 2.0)
-    env.volumetric_fog_sky_affect = clampf(env.volumetric_fog_sky_affect * (1.0 - precipitation * 0.12), 0.0, 1.0)
+    env.volumetric_fog_sky_affect = lerpf(env.volumetric_fog_sky_affect, weather_volumetric_fog_sky_affect_target, weather_fog_distance_blend)
     env.volumetric_fog_length = maxf(2.0, env.volumetric_fog_length * (1.0 - precipitation * 0.08))
+    var weather_volumetric_emission_blend := clampf(fog_weather_blend + storm_factor * 0.2, 0.0, 1.0)
+    var weather_volumetric_emission := weather_volumetric_fog_emission_color * (weather_volumetric_fog_emission_energy * weather_volumetric_emission_blend * local_emission_scale)
+    if lightning_flash > 0.0:
+        weather_volumetric_emission = weather_volumetric_emission.lerp(Color(0.58, 0.66, 0.82, 1.0) * (lightning_flash * 0.55), lightning_flash * 0.35)
+    env.volumetric_fog_emission = weather_volumetric_emission
 
     if lightning_flash > 0.0:
         env.ambient_light_color = env.ambient_light_color.lerp(Color(0.76, 0.82, 0.96, 1.0), lightning_flash * 0.4)

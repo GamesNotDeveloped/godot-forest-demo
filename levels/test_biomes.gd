@@ -136,3 +136,29 @@ func _refresh_debug_menu() -> void:
 
 func _on_world_timer_timeout():
     $Skydome.time_of_day = wrapf($Skydome.time_of_day + 0.005, 0, 23.999)
+
+
+func _on_weather_thunder(strength):
+    if strength > 0.9:
+        $Thunder2.play()
+    else:
+        $Thunder1.play()
+
+
+func _on_weather_rain_strength_changed(strength):
+    if strength > 0.4:
+        if $Rain2.playing:
+            $Rain2.stop()
+        if not $Rain1.playing:
+            $Rain1.play()
+        $Rain1.volume_db = 2 * (strength-0.4)
+    elif strength > 0.0001:
+        if $Rain1.playing:
+            $Rain1.stop()
+        if not $Rain2.playing:
+            $Rain2.play()
+        $Rain2.volume_db = ((strength * 3)-1)*2 -1
+
+    else:
+        $Rain1.stop()
+        $Rain2.stop()
