@@ -9,10 +9,17 @@ group_uniforms DaySky;
 	uniform vec3 horizon_color : source_color = vec3(0.82, 0.86, 0.89);
 	uniform vec3 zenith_color : source_color = vec3(0.12, 0.24, 0.48);
 	uniform float sky_energy : hint_range(0.0, 10.0) = 1.0;
-	uniform float horizon_height : hint_range(-0.4, 0.5) = -0.02;
+	uniform float horizon_height : hint_range(-0.4, 0.5) = 0.05;
 	uniform float horizon_softness : hint_range(0.02, 1.0) = 0.24;
 	uniform float zenith_curve : hint_range(0.1, 8.0) = 1.65;
 	uniform float horizon_glow_strength : hint_range(0.0, 4.0) = 0.5;
+
+group_uniforms Atmosphere;
+	uniform float atmosphere_horizon_level : hint_range(-0.2, 0.2) = -0.035;
+	uniform float atmosphere_height : hint_range(0.02, 0.6) = 0.24;
+	uniform float atmosphere_density : hint_range(0.0, 2.0) = 0.46;
+	uniform float atmosphere_sun_scatter : hint_range(0.0, 2.0) = 0.34;
+	uniform float atmosphere_sunset_boost : hint_range(0.0, 3.0) = 1.35;
 
 group_uniforms Sunset;
 	uniform vec3 sunset_bottom_color : source_color = vec3(1.0, 0.5, 0.2);
@@ -132,6 +139,8 @@ void sky() {
 	night_base *= night_sky_energy;
 
 	vec3 final_color = mix(night_base, day_base, day_blend);
+	vec3 active_sun_color = mix(sun_color, sunset_sun_color, sunset_blend);
+	float sun_dot = dot(dir, custom_sun_dir);
 
 	vec3 celestial_dir = celestial_matrix * dir;
 	vec3 star_p = celestial_dir * 250.0;
@@ -145,7 +154,8 @@ void sky() {
 	float star_core = 1.0 - smoothstep(star_size - star_aa, star_size + star_aa, star_d);
 	float star_intensity = star_core * smoothstep(0.95, 0.96, star_h);
 	float twinkle = mix(0.3, 1.0, sin(cloud_time * 3.0 + star_h * 100.0) * 0.5 + 0.5);
-	float stars = star_intensity * twinkle * 8.0 * pow(1.0 - zenith_t, 2.0);
+	float sun_star_occlusion = smoothstep(0.92, 0.9985, sun_dot);
+	float stars = star_intensity * twinkle * 8.0 * pow(1.0 - zenith_t, 2.0) * (1.0 - sun_star_occlusion);
 	final_color += stars_color * stars * stars_energy * (1.0 - day_blend);
 
 	vec2 cloud_uv = dir_to_cloud_plane_uv(dir, cloud_plane_height, cloud_plane_curve);
@@ -171,16 +181,30 @@ void sky() {
 	cloud_mask *= horizon_mask * top_mask * cloud_opacity;
 
 	float sky_visibility = 1.0 - (cloud_mask * sun_cloud_occlusion);
+	float horizon_air = 1.0 - smoothstep(atmosphere_horizon_level, atmosphere_horizon_level + atmosphere_height, dir.y);
+	horizon_air = pow(saturate(horizon_air), 1.35);
+
+	float low_sun = 1.0 - smoothstep(0.04, 0.32, sun_alt);
+	float azimuth_alignment = 0.0;
+	float dir_xz_len = length(dir.xz);
+	float sun_xz_len = length(custom_sun_dir.xz);
+	if (dir_xz_len > 0.0001 && sun_xz_len > 0.0001) {
+		azimuth_alignment = saturate(dot(dir.xz / dir_xz_len, custom_sun_dir.xz / sun_xz_len));
+	}
+
+	vec3 haze_day_color = mix(horizon_color, sunset_horizon_color, sunset_blend * 0.9);
+	vec3 haze_color = mix(night_horizon_color, haze_day_color, day_blend);
+	float haze_mix = saturate(horizon_air * atmosphere_density * mix(0.18, 0.78, day_blend) * mix(1.0, atmosphere_sunset_boost, sunset_blend));
+	final_color = mix(final_color, haze_color, haze_mix * sky_visibility);
+	final_color += active_sun_color * pow(azimuth_alignment, 6.0) * horizon_air * low_sun * atmosphere_sun_scatter * sky_visibility;
 
 	// Sun
-	float sun_dot = dot(dir, custom_sun_dir);
 	float disk_radius = 0.015 * sun_disk_size;
 	float disk_soft = disk_radius * sun_disk_softness;
 	float disk = smoothstep(1.0 - disk_radius - disk_soft, 1.0 - disk_radius, sun_dot);
 	float halo = pow(saturate(sun_dot), 1.0 / (0.08 * sun_halo_size)) * sun_halo_strength;
 	float atmosphere = pow(saturate(sun_dot), 1.0 / (0.35 * sun_atmosphere_size)) * sun_atmosphere_strength;
 
-	vec3 active_sun_color = mix(sun_color, sunset_sun_color, sunset_blend);
 	vec3 sun_body = active_sun_color * sun_energy_scale;
 	final_color += sun_body * disk * sky_visibility * sun_disk_strength;
 	final_color += sun_body * halo * sky_visibility;

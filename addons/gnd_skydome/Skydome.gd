@@ -187,6 +187,9 @@ var _sky_material: ShaderMaterial
 var _compositor_effect: CompositorEffect
 var _is_ready: bool = false
 var _is_daytime: bool = true
+var _weather_precipitation: float = 0.0
+var _weather_storm_factor: float = 0.0
+var _weather_lightning_flash: float = 0.0
 
 @export_group("Debug")
 @export_range(0.0, 1.0) var moon_phase_debug: float
@@ -208,7 +211,7 @@ var _is_daytime: bool = true
     set(v):
         shader_sky_energy = v
         _set_shader_param("sky_energy", v)
-@export var shader_horizon_height: float = 0.178:
+@export var shader_horizon_height: float = 0.05:
     set(v):
         shader_horizon_height = v
         _set_shader_param("horizon_height", v)
@@ -224,6 +227,28 @@ var _is_daytime: bool = true
     set(v):
         shader_horizon_glow_strength = v
         _set_shader_param("horizon_glow_strength", v)
+
+@export_group("Sky Shader: Atmosphere")
+@export var shader_atmosphere_horizon_level: float = -0.035:
+    set(v):
+        shader_atmosphere_horizon_level = v
+        _set_shader_param("atmosphere_horizon_level", v)
+@export var shader_atmosphere_height: float = 0.24:
+    set(v):
+        shader_atmosphere_height = v
+        _set_shader_param("atmosphere_height", v)
+@export var shader_atmosphere_density: float = 0.46:
+    set(v):
+        shader_atmosphere_density = v
+        _set_shader_param("atmosphere_density", v)
+@export var shader_atmosphere_sun_scatter: float = 0.34:
+    set(v):
+        shader_atmosphere_sun_scatter = v
+        _set_shader_param("atmosphere_sun_scatter", v)
+@export var shader_atmosphere_sunset_boost: float = 1.35:
+    set(v):
+        shader_atmosphere_sunset_boost = v
+        _set_shader_param("atmosphere_sunset_boost", v)
 
 @export_group("Sky Shader: Sunset")
 @export var shader_sunset_bottom_color: Color = Color(1.0, 0.5, 0.2, 1):
@@ -472,6 +497,29 @@ func apply_now() -> void:
     _request_time_update(true)
     _update_effect()
 
+func set_weather_overrides(precipitation: float, storm_factor: float, lightning_flash: float) -> void:
+    var next_precipitation := clampf(precipitation, 0.0, 1.0)
+    var next_storm_factor := clampf(storm_factor, 0.0, 1.0)
+    var next_lightning_flash := clampf(lightning_flash, 0.0, 1.0)
+    var changed := (
+        absf(_weather_precipitation - next_precipitation) > 0.0001
+        or absf(_weather_storm_factor - next_storm_factor) > 0.0001
+        or absf(_weather_lightning_flash - next_lightning_flash) > 0.0001
+    )
+
+    _weather_precipitation = next_precipitation
+    _weather_storm_factor = next_storm_factor
+    _weather_lightning_flash = next_lightning_flash
+
+    if changed and is_inside_tree() and _is_ready:
+        _update_sun_transform()
+        _update_effect()
+
+
+func clear_weather_overrides() -> void:
+    set_weather_overrides(0.0, 0.0, 0.0)
+
+
 func _refresh() -> void:
     if is_inside_tree():
         _init_sky()
@@ -529,6 +577,11 @@ func _sync_shader_params() -> void:
     _sky_material.set_shader_parameter("horizon_softness", shader_horizon_softness)
     _sky_material.set_shader_parameter("zenith_curve", shader_zenith_curve)
     _sky_material.set_shader_parameter("horizon_glow_strength", shader_horizon_glow_strength)
+    _sky_material.set_shader_parameter("atmosphere_horizon_level", shader_atmosphere_horizon_level)
+    _sky_material.set_shader_parameter("atmosphere_height", shader_atmosphere_height)
+    _sky_material.set_shader_parameter("atmosphere_density", shader_atmosphere_density)
+    _sky_material.set_shader_parameter("atmosphere_sun_scatter", shader_atmosphere_sun_scatter)
+    _sky_material.set_shader_parameter("atmosphere_sunset_boost", shader_atmosphere_sunset_boost)
 
     _sky_material.set_shader_parameter("sunset_bottom_color", shader_sunset_bottom_color)
     _sky_material.set_shader_parameter("sunset_horizon_color", shader_sunset_horizon_color)
@@ -758,6 +811,59 @@ func _update_sun_transform() -> void:
 
         #env.ambient_light_sky_contribution = lerp(sky_contribution_night, sky_contribution_day, day_blend)
 
+        _apply_weather_overrides(env, light)
+    else:
+        _apply_weather_overrides(null, light)
+
+
+func _apply_weather_overrides(env: Environment, light: DirectionalLight3D) -> void:
+    var precipitation := clampf(_weather_precipitation, 0.0, 1.0)
+    var storm_factor := clampf(_weather_storm_factor, 0.0, 1.0)
+    var lightning_flash := clampf(_weather_lightning_flash, 0.0, 1.0)
+    var cloud_mix := clampf(precipitation * 0.8 + storm_factor * 0.55, 0.0, 1.0)
+    var cloud_darkening := clampf(precipitation * 0.45 + storm_factor * 0.35, 0.0, 1.0)
+
+    _set_shader_param("cloud_coverage", lerpf(shader_cloud_coverage, maxf(shader_cloud_coverage, 0.88), cloud_mix))
+    _set_shader_param("cloud_opacity", lerpf(shader_cloud_opacity, maxf(shader_cloud_opacity, 0.95), clampf(precipitation * 0.85 + storm_factor * 0.35, 0.0, 1.0)))
+    _set_shader_param("cloud_shadow_color", shader_cloud_shadow_color.lerp(Color(0.22, 0.24, 0.29, 1.0), cloud_darkening))
+    _set_shader_param("cloud_light_color", shader_cloud_light_color.lerp(Color(0.66, 0.7, 0.78, 1.0), clampf(precipitation * 0.35 + storm_factor * 0.2, 0.0, 1.0)))
+    _set_shader_param("sun_cloud_occlusion", clampf(shader_sun_cloud_occlusion + precipitation * 0.42 + storm_factor * 0.2, 0.0, 0.98))
+    _set_shader_param("sky_energy", maxf(0.02, shader_sky_energy * (1.0 - precipitation * 0.46 - storm_factor * 0.18) + lightning_flash * 0.18))
+    _set_shader_param("night_sky_energy", maxf(0.02, shader_night_sky_energy * (1.0 - precipitation * 0.34 - storm_factor * 0.16) + lightning_flash * 0.08))
+    _set_shader_param("stars_energy", maxf(0.0, shader_stars_energy * (1.0 - cloud_mix * 0.98)))
+    _set_shader_param("moon_color", shader_moon_color.lerp(Color(0.045, 0.05, 0.06, 1.0), cloud_mix * 0.96))
+    _set_shader_param("moon_size", lerpf(shader_moon_size, shader_moon_size * 0.72, cloud_mix * 0.85))
+    _set_shader_param("moon_glow_strength", maxf(0.0, shader_moon_glow_strength * (1.0 - cloud_mix * 0.96)))
+
+    if light != null:
+        light.light_energy = light.light_energy * (1.0 - precipitation * 0.22) + lightning_flash * lerpf(0.9, 5.6, storm_factor)
+        light.light_color = light.light_color.lerp(Color(0.83, 0.89, 1.0, 1.0), lightning_flash * 0.8)
+
+    if env == null:
+        return
+
+    env.ambient_light_color = env.ambient_light_color.lerp(Color(0.46, 0.49, 0.54, 1.0), precipitation * 0.18)
+    env.ambient_light_energy *= 1.0 - precipitation * 0.14
+
+    env.fog_light_color = env.fog_light_color.lerp(Color(0.31, 0.34, 0.4, 1.0), cloud_darkening * 0.65)
+    env.fog_density = clampf(env.fog_density * (1.0 + precipitation * 0.22 + storm_factor * 0.28), 0.0, 1.5)
+    env.fog_depth_begin = maxf(0.75, env.fog_depth_begin * (1.0 - precipitation * 0.12))
+    env.fog_depth_end = maxf(14.0, env.fog_depth_end * (1.0 - precipitation * 0.28 - storm_factor * 0.12))
+
+    current_vol_fog_min_density *= 1.0 + precipitation * 0.18
+    current_vol_fog_max_density *= 1.0 + precipitation * 0.58 + storm_factor * 0.72
+
+    env.volumetric_fog_albedo = env.volumetric_fog_albedo.lerp(Color(0.2, 0.22, 0.28, 1.0), cloud_darkening * 0.55)
+    env.volumetric_fog_density = maxf(env.volumetric_fog_density, current_vol_fog_max_density)
+    env.volumetric_fog_sky_affect = clampf(env.volumetric_fog_sky_affect * (1.0 - precipitation * 0.12), 0.0, 1.0)
+    env.volumetric_fog_length = maxf(2.0, env.volumetric_fog_length * (1.0 - precipitation * 0.08))
+
+    if lightning_flash > 0.0:
+        env.ambient_light_color = env.ambient_light_color.lerp(Color(0.76, 0.82, 0.96, 1.0), lightning_flash * 0.4)
+        env.ambient_light_energy += lightning_flash * (0.28 + storm_factor * 0.35)
+        env.fog_light_color = env.fog_light_color.lerp(Color(0.74, 0.82, 0.96, 1.0), lightning_flash * 0.7)
+        env.volumetric_fog_albedo = env.volumetric_fog_albedo.lerp(Color(0.58, 0.66, 0.82, 1.0), lightning_flash * 0.35)
+
 func _ensure_effect_installed() -> void:
     var env_node = _get_world_environment()
     if not env_node:
@@ -860,12 +966,18 @@ func _update_effect() -> void:
     _compositor_effect.set("sun_screen_uv", Vector2(screen_pos.x / viewport_size.x, screen_pos.y / viewport_size.y))
     _compositor_effect.set("sun_visible", true)
 
-    _compositor_effect.set("shaft_color", sunshafts_shaft_color)
-    _compositor_effect.set("density", sunshafts_density)
+    var weather_occlusion := clampf(_weather_precipitation * 0.85 + _weather_storm_factor * 0.25, 0.0, 0.96)
+    var shafts_visibility := 1.0 - weather_occlusion
+    if shafts_visibility <= 0.02:
+        _compositor_effect.set("sun_visible", false)
+        return
+
+    _compositor_effect.set("shaft_color", sunshafts_shaft_color.lerp(Color(0.72, 0.74, 0.78, 1.0), weather_occlusion * 0.5))
+    _compositor_effect.set("density", sunshafts_density * shafts_visibility)
     _compositor_effect.set("bright_threshold", sunshafts_bright_threshold)
-    _compositor_effect.set("weight", sunshafts_weight)
+    _compositor_effect.set("weight", sunshafts_weight * shafts_visibility)
     _compositor_effect.set("decay", sunshafts_decay)
-    _compositor_effect.set("exposure", sunshafts_exposure)
+    _compositor_effect.set("exposure", sunshafts_exposure * shafts_visibility)
     _compositor_effect.set("max_radius", sunshafts_max_radius)
 
 func _get_active_camera() -> Camera3D:

@@ -10,6 +10,7 @@ const PROFILE_ID_LOW := &"low"
 @onready var _terrain: TerrainPatch3D = $Terrain
 @onready var _auto_biomes_fog: AutoBiomesFog = $AutoBiomesFog
 @onready var _sun_shafts_controller: Skydome = $Skydome
+@onready var _weather: WeatherNode = $Weather
 
 
 func _on_quality_profiles_manager_profile_changed() -> void:
@@ -24,6 +25,8 @@ func _on_quality_profiles_manager_profile_changed() -> void:
     _apply_terrain_profile(terrain_settings)
     if _sun_shafts_controller != null:
         _sun_shafts_controller.apply_now()
+    if _weather != null:
+        _weather.apply_now()
     _refresh_debug_menu()
 
 
