@@ -601,6 +601,7 @@ func _update_rain_rendering() -> void:
     _update_rain_field_layer(
         _near_rain_field,
         near_state,
+        render_intensity,
         near_layer_intensity,
         false,
         rain_basis,
@@ -630,6 +631,7 @@ func _update_rain_rendering() -> void:
     _update_rain_field_layer(
         _mid_rain_field,
         mid_state,
+        render_intensity,
         mid_layer_intensity,
         true,
         rain_basis,
@@ -642,6 +644,7 @@ func _update_rain_rendering() -> void:
 func _update_rain_field_layer(
     rain_field: MultiMeshInstance3D,
     field_state: Dictionary,
+    rain_intensity: float,
     layer_intensity: float,
     is_mid_layer: bool,
     rain_basis: Basis,
@@ -665,7 +668,7 @@ func _update_rain_field_layer(
         multimesh.instance_count = positions.size()
 
     var card_height: float = _get_rain_field_card_height(extents, layer_intensity, is_mid_layer)
-    _update_rain_field_visuals(rain_field, layer_intensity, is_mid_layer, speed_multiplier, card_height, extents, field_spacing)
+    _update_rain_field_visuals(rain_field, rain_intensity, layer_intensity, is_mid_layer, speed_multiplier, card_height, extents, field_spacing)
 
     var coverage: float = _get_rain_field_density_coverage(layer_intensity, is_mid_layer)
     var write_index: int = 0
@@ -826,8 +829,8 @@ func _get_rain_direction(wind_speed_value: float, rain_intensity: float) -> Vect
 
 func _get_layer_intensity(intensity: float, is_mid_layer: bool) -> float:
     if is_mid_layer:
-        return _smooth_factor(intensity, 0.22, 0.88)
-    return _smooth_factor(intensity, 0.015, 0.35)
+        return _smooth_factor(intensity, 0.28, 0.9)
+    return _smooth_factor(intensity, 0.03, 0.42)
 
 
 func _get_rain_field_basis(rain_direction: Vector3, camera_basis: Basis) -> Basis:
@@ -846,12 +849,13 @@ func _get_rain_field_basis(rain_direction: Vector3, camera_basis: Basis) -> Basi
 
 func _get_rain_field_density_coverage(layer_intensity: float, is_mid_layer: bool) -> float:
     if is_mid_layer:
-        return _smooth_factor(layer_intensity, 0.12, 0.72)
-    return _smooth_factor(layer_intensity, 0.03, 0.32)
+        return pow(_smooth_factor(layer_intensity, 0.18, 0.78), 1.2)
+    return pow(_smooth_factor(layer_intensity, 0.08, 0.38), 1.35)
 
 
 func _update_rain_field_visuals(
     rain_field: MultiMeshInstance3D,
+    rain_intensity: float,
     layer_intensity: float,
     is_mid_layer: bool,
     speed_multiplier: float,
@@ -880,15 +884,32 @@ func _update_rain_field_visuals(
     material.set_shader_parameter("width_softness", lerpf(0.14, 0.24, layer_intensity))
     material.set_shader_parameter("tail_softness", lerpf(0.24, 0.62, layer_intensity))
     material.set_shader_parameter("center_bias", lerpf(0.34, 0.68, layer_intensity))
+    var timing_intensity := clampf(rain_intensity, 0.0, 1.0)
+    var flow_intensity := pow(timing_intensity, 0.7)
     material.set_shader_parameter(
         "flow_speed",
-        (base_fall_speed / 26.0) * lerpf(20.0, 12.0, clampf(layer_intensity, 0.0, 1.0)) * maxf(speed_multiplier, 0.1)
+        (base_fall_speed / 26.0) * lerpf(18.0, 7.5, flow_intensity) * maxf(speed_multiplier, 0.1)
     )
-    material.set_shader_parameter("travel_distance", card_height)
+    material.set_shader_parameter(
+        "spawn_rate",
+        lerpf(0.08, 2.6, pow(timing_intensity, 1.4))
+    )
+    material.set_shader_parameter(
+        "spawn_duration",
+        _get_rain_field_spawn_duration(timing_intensity, is_mid_layer)
+    )
+    material.set_shader_parameter(
+        "travel_distance",
+        lerpf(card_height * 0.14, card_height * 1.05, pow(timing_intensity, 1.3))
+    )
     material.set_shader_parameter("respawn_spread", _get_rain_field_respawn_spread(field_spacing))
     material.set_shader_parameter(
         "streak_length_scale",
-        lerpf(0.18, 1.0, pow(clampf(layer_intensity, 0.0, 1.0), 0.85))
+        lerpf(0.001, 1.0, pow(timing_intensity, 2.1))
+    )
+    material.set_shader_parameter(
+        "spawn_probability",
+        _get_rain_field_spawn_probability(timing_intensity, is_mid_layer)
     )
 
     var local_height: float = maxf(card_height + 6.0, 8.0)
@@ -917,10 +938,23 @@ func _get_rain_field_respawn_spread(field_spacing: float) -> float:
     return minf(field_spacing * 0.14, 0.08)
 
 
+func _get_rain_field_spawn_probability(layer_intensity: float, is_mid_layer: bool) -> float:
+    var intensity := clampf(layer_intensity, 0.0, 1.0)
+    if is_mid_layer:
+        return pow(intensity, 2.4)
+    return pow(intensity, 2.1)
+
+
+func _get_rain_field_spawn_duration(layer_intensity: float, is_mid_layer: bool) -> float:
+    var intensity := clampf(layer_intensity, 0.0, 1.0)
+    if is_mid_layer:
+        return lerpf(0.08, 0.42, pow(intensity, 1.2))
+    return lerpf(0.06, 0.36, pow(intensity, 1.05))
+
+
 func _get_rain_field_card_height(extents: Vector3, layer_intensity: float, is_mid_layer: bool) -> float:
-    var base_height: float = maxf(follow_height + extents.y * (1.2 if is_mid_layer else 0.95), 3.0)
-    var height_scale := lerpf(0.22, 1.05, pow(clampf(layer_intensity, 0.0, 1.0), 0.9))
-    return base_height * height_scale
+    var vertical_extent := 2.2 if is_mid_layer else 2.0
+    return maxf(follow_height + extents.y * vertical_extent, 6.0)
 
 
 func _get_rain_field_center_y(follow_y: float, card_height: float) -> float:

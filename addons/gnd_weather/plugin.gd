@@ -45,6 +45,7 @@ func _enter_tree() -> void:
     _probe_refresh_timer.one_shot = false
     _probe_refresh_timer.timeout.connect(_on_probe_refresh_timeout)
     add_child(_probe_refresh_timer, false, INTERNAL_MODE_FRONT)
+    _probe_refresh_timer.start()
     set_force_draw_over_forwarding_enabled()
 
 
@@ -99,6 +100,7 @@ func _on_rain_meshes_toggled(_enabled: bool) -> void:
 
 
 func _on_probe_refresh_timeout() -> void:
+    _sync_weather_node_editor_preview_cameras(_get_editor_camera())
     if not _is_any_debug_preview_enabled():
         return
     _rain_mesh_sync_accumulator += PROBE_REFRESH_INTERVAL
@@ -277,7 +279,7 @@ func _update_refresh_timer_state() -> void:
     if _is_any_debug_preview_enabled():
         _probe_refresh_timer.start()
     else:
-        _probe_refresh_timer.stop()
+        _probe_refresh_timer.start()
 
 
 func _is_any_debug_preview_enabled() -> bool:
