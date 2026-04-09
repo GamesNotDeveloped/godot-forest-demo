@@ -17,6 +17,15 @@ const WIND_TIME_VALUE_SETTING := &"shader_globals/gnd_wind_time/value"
 const WIND_TURBULENCE_VALUE_SETTING := &"shader_globals/gnd_wind_turbulence/value"
 const WIND_PATTERN_VALUE_SETTING := &"shader_globals/gnd_wind_pattern/value"
 const VISIBLE_RAIN_PROBE_REFERENCE_DISTANCE := 8.0
+const RAIN_FIELD_FEATHER_RENDER_CUTOFF := 0.24
+const RAIN_FIELD_RESAMPLE_INTERVAL_MSEC := 250
+const RAIN_FIELD_FOOTPRINT_OFFSETS := [
+    Vector3.ZERO,
+    Vector3(1.0, 0.0, 1.0),
+    Vector3(1.0, 0.0, -1.0),
+    Vector3(-1.0, 0.0, 1.0),
+    Vector3(-1.0, 0.0, -1.0),
+]
 
 class WeatherRuntime extends RefCounted:
     signal weather_state_changed
@@ -36,6 +45,7 @@ class WeatherRuntime extends RefCounted:
     var _global_precipitation: float = 0.0
     var _local_precipitation: float = 0.0
     var _storm_factor: float = 0.0
+    var _lightning_activity: float = 0.0
     var _lightning_flash: float = 0.0
     var _shelter_factor: float = 0.0
     var _local_emission_scale: float = 1.0
@@ -85,7 +95,7 @@ class WeatherRuntime extends RefCounted:
             _lightning_flash = next_flash
             changed = true
 
-        if not lightning_enabled or _storm_factor <= 0.02:
+        if not lightning_enabled or _lightning_activity <= 0.02:
             if _pending_flash_pulses != 0 or _next_flash_delay != 0.0 or _next_lightning_burst != 0.0:
                 _pending_flash_pulses = 0
                 _next_flash_delay = 0.0
@@ -98,7 +108,7 @@ class WeatherRuntime extends RefCounted:
         if _pending_flash_pulses > 0:
             _next_flash_delay -= delta
             if _next_flash_delay <= 0.0:
-                _trigger_lightning_pulse(_storm_factor)
+                _trigger_lightning_pulse(_lightning_activity)
             elif changed:
                 weather_state_changed.emit()
             return
@@ -107,7 +117,7 @@ class WeatherRuntime extends RefCounted:
         if _next_lightning_burst <= 0.0:
             _pending_flash_pulses = _rng.randi_range(1, 3)
             _next_flash_delay = _rng.randf_range(0.02, 0.18)
-            _reset_lightning_schedule(_storm_factor)
+            _reset_lightning_schedule(_lightning_activity)
             weather_state_changed.emit()
         elif changed:
             weather_state_changed.emit()
@@ -137,8 +147,9 @@ class WeatherRuntime extends RefCounted:
                 _observer_position
             )
 
-        var next_storm_input := clampf(maxf(next_global, next_local) * lightning_multiplier, 0.0, 1.0)
+        var next_storm_input := clampf(maxf(next_global, next_local), 0.0, 1.0)
         var next_storm := _compute_storm_factor(next_storm_input)
+        var next_lightning_activity := clampf(next_storm * lightning_multiplier, 0.0, 1.0)
         var next_shelter := 0.0
         if next_global > 0.0001 and next_local < next_global:
             next_shelter = clampf((next_global - next_local) / next_global, 0.0, 1.0)
@@ -148,6 +159,7 @@ class WeatherRuntime extends RefCounted:
             absf(_global_precipitation - next_global) > 0.0001
             or absf(_local_precipitation - next_local) > 0.0001
             or absf(_storm_factor - next_storm) > 0.0001
+            or absf(_lightning_activity - next_lightning_activity) > 0.0001
             or absf(_shelter_factor - next_shelter) > 0.0001
             or absf(_local_emission_scale - next_local_emission_scale) > 0.0001
         )
@@ -155,6 +167,7 @@ class WeatherRuntime extends RefCounted:
         _global_precipitation = next_global
         _local_precipitation = next_local
         _storm_factor = next_storm
+        _lightning_activity = next_lightning_activity
         _shelter_factor = next_shelter
         _local_emission_scale = next_local_emission_scale
 
@@ -187,6 +200,7 @@ class WeatherRuntime extends RefCounted:
         _next_lightning_burst = _rng.randf_range(min_interval, max_interval)
 
 static var _rain_volumes_by_world: Dictionary = {}
+static var _rain_volume_revision_by_world: Dictionary = {}
 static var _visible_rain_probe_fields_by_world: Dictionary = {}
 static var _visible_rain_probe_configs_by_world: Dictionary = {}
 static var _weather_runtime_by_world: Dictionary = {}
@@ -201,6 +215,7 @@ static func add_rain_volume(world_3d: World3D, volume_rid: RID, volume: RainVolu
     var world_bucket: Dictionary = _rain_volumes_by_world.get(world_id, {})
     world_bucket[volume_rid.get_id()] = volume
     _rain_volumes_by_world[world_id] = world_bucket
+    _notify_rain_volumes_changed(world_3d)
 
 
 static func remove_rain_volume(world_3d: World3D, volume_rid: RID) -> void:
@@ -217,6 +232,18 @@ static func remove_rain_volume(world_3d: World3D, volume_rid: RID) -> void:
         _rain_volumes_by_world.erase(world_id)
     else:
         _rain_volumes_by_world[world_id] = world_bucket
+    _notify_rain_volumes_changed(world_3d)
+
+
+static func mark_rain_volumes_changed(world_3d: World3D) -> void:
+    _notify_rain_volumes_changed(world_3d)
+
+
+static func get_rain_volume_revision(world_3d: World3D) -> int:
+    if world_3d == null:
+        return 0
+
+    return int(_rain_volume_revision_by_world.get(world_3d.get_instance_id(), 0))
 
 
 static func configure_visible_rain_probe_field(
@@ -274,7 +301,9 @@ static func clear_weather_runtime(world_3d: World3D) -> void:
     if world_3d == null:
         return
 
-    _weather_runtime_by_world.erase(world_3d.get_instance_id())
+    var world_id := world_3d.get_instance_id()
+    _weather_runtime_by_world.erase(world_id)
+    _rain_volume_revision_by_world.erase(world_id)
     _apply_weather_controlled_wind(null)
 
 
@@ -525,8 +554,15 @@ static func get_rain_lightning_multiplier_for_volumes(
     volumes: Array,
     world_position: Vector3
 ) -> float:
+    return _get_rain_lightning_multiplier_for_sorted_volumes(_sort_rain_volumes(volumes), world_position)
+
+
+static func _get_rain_lightning_multiplier_for_sorted_volumes(
+    sorted_volumes: Array,
+    world_position: Vector3
+) -> float:
     var multiplier := 1.0
-    for volume in _sort_rain_volumes(volumes):
+    for volume in sorted_volumes:
         var blend: float = volume.get_precipitation_blend(world_position)
         if blend <= 0.0:
             continue
@@ -540,8 +576,16 @@ static func get_rain_participation_strength_for_volumes(
     world_position: Vector3,
     base_strength: float
 ) -> float:
+    return _get_rain_participation_strength_for_sorted_volumes(_sort_rain_volumes(volumes), world_position, base_strength)
+
+
+static func _get_rain_participation_strength_for_sorted_volumes(
+    sorted_volumes: Array,
+    world_position: Vector3,
+    base_strength: float
+) -> float:
     var intensity: float = clampf(base_strength, 0.0, 1.0)
-    for volume in _sort_rain_volumes(volumes):
+    for volume in sorted_volumes:
         var blend: float = volume.get_precipitation_blend(world_position)
         if blend <= 0.0:
             continue
@@ -550,6 +594,29 @@ static func get_rain_participation_strength_for_volumes(
         var precipitation_multiplier: float = lerpf(1.0, volume.get_precipitation_multiplier(), blend)
         intensity = clampf((intensity + precipitation_delta) * precipitation_multiplier, 0.0, 1.0)
     return intensity
+
+
+static func _get_rain_participation_strength_for_volumes_footprint_min(
+    sorted_volumes: Array,
+    world_position: Vector3,
+    base_strength: float,
+    footprint_half_extent: float
+) -> float:
+    var min_intensity := 1.0
+
+    for sample_offset_scale in RAIN_FIELD_FOOTPRINT_OFFSETS:
+        min_intensity = minf(
+            min_intensity,
+            _get_rain_participation_strength_for_sorted_volumes(
+                sorted_volumes,
+                world_position + sample_offset_scale * footprint_half_extent,
+                base_strength
+            )
+        )
+        if min_intensity <= 0.001:
+            return 0.0
+
+    return clampf(min_intensity, 0.0, 1.0)
 
 
 static func get_rain_render_field_state(
@@ -597,6 +664,19 @@ static func get_rain_render_field_state(
     var cache: Dictionary = _ensure_rain_render_field_cache(world_3d, cache_key, layer_key, max_count)
     var positions: PackedVector3Array = cache.get("positions", PackedVector3Array())
     var custom_data: PackedColorArray = cache.get("custom_data", PackedColorArray())
+    var last_refresh_time_msec: int = int(cache.get("last_refresh_time_msec", 0))
+    var cached_active_count: int = int(cache.get("active_count", 0))
+    var current_time_msec: int = Time.get_ticks_msec()
+    if (
+        last_refresh_time_msec > 0
+        and current_time_msec - last_refresh_time_msec < RAIN_FIELD_RESAMPLE_INTERVAL_MSEC
+    ):
+        return {
+            "count": cached_active_count,
+            "positions": positions,
+            "custom_data": custom_data,
+        }
+
     var jitter_amount: float = clampf(jitter_ratio, 0.0, 1.0) * spacing * 0.5
     var snapped_grid_x: int = int(floor(view_origin.x / spacing))
     var snapped_grid_z: int = int(floor(view_origin.z / spacing))
@@ -631,27 +711,35 @@ static func get_rain_render_field_state(
                 continue
 
             var sample_position := Vector3(world_x, sample_y, world_z)
-            var intensity: float = get_rain_participation_strength_for_volumes(
+            var intensity: float = _get_rain_participation_strength_for_volumes_footprint_min(
                 active_volumes,
                 sample_position,
-                clamped_strength
+                clamped_strength,
+                spacing * 0.45
+            )
+            var feather_mask := _get_rain_field_feather_render_mask_for_volumes(
+                active_volumes,
+                sample_position,
+                clamped_strength,
+                spacing * 0.45
             )
             if not probe_layout.is_empty() and not probe_values.is_empty():
-                var probe_intensity := _sample_visible_rain_probe_layout_nearest(
+                var probe_intensity := _sample_visible_rain_probe_layout_footprint_min(
                     view_transform,
                     probe_layout,
                     sample_position,
+                    spacing * 0.45,
                     probe_values
                 )
                 if probe_intensity >= 0.0:
                     intensity = minf(intensity, probe_intensity)
-            if intensity <= 0.001:
+            if intensity <= 0.001 or feather_mask <= RAIN_FIELD_FEATHER_RENDER_CUTOFF:
                 continue
 
             positions[active_count] = Vector3(world_x, layer_center_y, world_z)
             custom_data[active_count] = Color(
                 _get_rain_field_phase(grid_x, grid_z),
-                intensity,
+                _get_rain_field_instance_alpha(intensity) * _normalize_rain_field_feather_mask(feather_mask),
                 _get_rain_field_variation(grid_x, grid_z),
                 _hash_to_unit_float(grid_x, grid_z, 313)
             )
@@ -659,6 +747,8 @@ static func get_rain_render_field_state(
 
     cache["positions"] = positions
     cache["custom_data"] = custom_data
+    cache["active_count"] = active_count
+    cache["last_refresh_time_msec"] = current_time_msec
     _store_rain_render_field_cache(world_3d, cache_key, layer_key, cache)
     return {
         "count": active_count,
@@ -772,7 +862,7 @@ static func get_visible_rain_probe_field_state(
             field_scale,
             probe_index
         )
-        values[probe_index] = get_rain_participation_strength_for_volumes(
+        values[probe_index] = _get_rain_participation_strength_for_sorted_volumes(
             active_volumes,
             probe_position,
             clamped_strength
@@ -938,6 +1028,16 @@ static func _get_active_rain_volumes(world_3d: World3D) -> Array:
     return _sort_rain_volumes(volumes)
 
 
+static func _notify_rain_volumes_changed(world_3d: World3D) -> void:
+    if world_3d == null:
+        return
+
+    var world_id := world_3d.get_instance_id()
+    _rain_volume_revision_by_world[world_id] = int(_rain_volume_revision_by_world.get(world_id, 0)) + 1
+    _visible_rain_probe_fields_by_world.erase(world_id)
+    _rain_render_fields_by_world.erase(world_id)
+
+
 static func _sort_rain_volumes(volumes: Array) -> Array:
     var sorted_volumes: Array = []
     for volume in volumes:
@@ -1021,6 +1121,8 @@ static func _ensure_rain_render_field_cache(
         custom_data.resize(max_count)
         cache = {
             "max_count": max_count,
+            "active_count": 0,
+            "last_refresh_time_msec": 0,
             "positions": positions,
             "custom_data": custom_data,
         }
@@ -1174,7 +1276,7 @@ static func _get_visible_rain_probe_values_for_layout(
             field_scale,
             probe_index
         )
-        values[probe_index] = get_rain_participation_strength_for_volumes(
+        values[probe_index] = _get_rain_participation_strength_for_sorted_volumes(
             active_volumes,
             probe_position,
             base_strength
@@ -1230,6 +1332,96 @@ static func _sample_visible_rain_probe_layout_nearest(
     if probe_index < 0 or probe_index >= values.size():
         return -1.0
     return values[probe_index]
+
+
+static func _sample_visible_rain_probe_layout_footprint_min(
+    view_transform: Transform3D,
+    layout: Dictionary,
+    world_position: Vector3,
+    footprint_half_extent: float,
+    values: PackedFloat32Array
+) -> float:
+    var min_value := INF
+    var has_sample := false
+
+    for sample_offset_scale in RAIN_FIELD_FOOTPRINT_OFFSETS:
+        var sample_value := _sample_visible_rain_probe_layout_nearest(
+            view_transform,
+            layout,
+            world_position + sample_offset_scale * footprint_half_extent,
+            values
+        )
+        if sample_value < 0.0:
+            continue
+        min_value = minf(min_value, sample_value)
+        has_sample = true
+        if min_value <= 0.001:
+            return 0.0
+
+    if not has_sample:
+        return -1.0
+    return min_value
+
+
+static func _get_rain_field_feather_render_mask_for_volumes(
+    sorted_volumes: Array,
+    world_position: Vector3,
+    base_strength: float,
+    footprint_half_extent: float
+) -> float:
+    var min_mask := 1.0
+
+    for sample_offset_scale in RAIN_FIELD_FOOTPRINT_OFFSETS:
+        min_mask = minf(
+            min_mask,
+            _get_rain_field_feather_render_mask_at_position(
+                sorted_volumes,
+                world_position + sample_offset_scale * footprint_half_extent,
+                base_strength
+            )
+        )
+        if min_mask <= 0.0:
+            return 0.0
+
+    return clampf(min_mask, 0.0, 1.0)
+
+
+static func _get_rain_field_feather_render_mask_at_position(
+    sorted_volumes: Array,
+    world_position: Vector3,
+    base_strength: float
+) -> float:
+    var intensity: float = clampf(base_strength, 0.0, 1.0)
+    var render_mask := 1.0
+
+    for volume in sorted_volumes:
+        var blend: float = volume.get_precipitation_blend(world_position)
+        if blend <= 0.0:
+            continue
+
+        var full_intensity: float = clampf(
+            (intensity + volume.get_precipitation_delta()) * volume.get_precipitation_multiplier(),
+            0.0,
+            1.0
+        )
+        var blended_intensity: float = clampf(
+            (intensity + volume.get_precipitation_delta() * blend)
+            * lerpf(1.0, volume.get_precipitation_multiplier(), blend),
+            0.0,
+            1.0
+        )
+        if full_intensity < intensity - 0.0001:
+            var suppression_strength := clampf(
+                (intensity - full_intensity) / maxf(intensity, 0.0001),
+                0.0,
+                1.0
+            )
+            var feather_visibility := 1.0 - smoothstep(0.08, 0.62, blend)
+            render_mask *= lerpf(1.0, feather_visibility, suppression_strength)
+
+        intensity = blended_intensity
+
+    return clampf(render_mask, 0.0, 1.0)
 
 
 static func _get_visible_rain_probe_field_max(values: PackedFloat32Array) -> float:
@@ -1295,6 +1487,18 @@ static func _get_rain_field_jitter(grid_x: int, grid_z: int, seed: int) -> float
 
 static func _get_rain_field_phase(grid_x: int, grid_z: int) -> float:
     return _hash_to_unit_float(grid_x, grid_z, 101)
+
+
+static func _get_rain_field_instance_alpha(intensity: float) -> float:
+    return pow(clampf(intensity, 0.0, 1.0), 1.65)
+
+
+static func _normalize_rain_field_feather_mask(feather_mask: float) -> float:
+    return clampf(
+        (feather_mask - RAIN_FIELD_FEATHER_RENDER_CUTOFF) / maxf(1.0 - RAIN_FIELD_FEATHER_RENDER_CUTOFF, 0.0001),
+        0.0,
+        1.0
+    )
 
 
 static func _get_rain_field_variation(grid_x: int, grid_z: int) -> float:

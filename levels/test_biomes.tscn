@@ -346,10 +346,10 @@ shader_moon_eclipse_size = 1.531
 shader_cloud_time_scale = 30.0
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.456251, 2.132822, 0.020937324)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
-storm_threshold = 0.189
 precipitation_wind_strength = 10.0
 wind_influence = 0.52
 follow_height = 0.855
@@ -376,9 +376,8 @@ script = ExtResource("18_hx8ph")
 pause_target_path = NodePath("../UP_FPSController_Prefab")
 metadata/_custom_type_script = "uid://b21dp6stblt2g"
 
-[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=860038656]
+[node name="Music" type="AudioStreamPlayer" parent="." unique_id=860038656]
 stream = ExtResource("34_flr7s")
-autoplay = true
 bus = &"Music"
 
 [node name="OldWell" parent="." unique_id=2097428027 instance=ExtResource("34_pbujr")]

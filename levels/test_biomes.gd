@@ -167,6 +167,7 @@ func _on_weather_thunder(strength):
 
 
 func _on_weather_rain_strength_changed(strength):
+    print("weather rain str chg ", strength)
     if strength > 0.4:
         if $Rain2.playing:
             $Rain2.stop()
@@ -179,10 +180,17 @@ func _on_weather_rain_strength_changed(strength):
         if not $Rain2.playing:
             $Rain2.play()
         $Rain2.volume_db = ((strength * 3)-1)*2 -1
-
     else:
-        $Rain1.stop()
-        $Rain2.stop()
+        print("Stopping rain")
+        if $Rain1.playing:
+            $Rain1.stop()
+        if $Rain2.playing:
+            $Rain2.stop()
+        if $Thunder1.playing:
+            $Thunder1.stop()
+        if $Thunder2.playing:
+            $Thunder2.stop()
+
 
 
 func _on_weather_rain_local_strength_changed(strength: float) -> void:

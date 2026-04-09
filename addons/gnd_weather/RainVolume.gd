@@ -7,22 +7,63 @@ enum VolumeShape {
 }
 
 @export_group("Rain")
-@export var volume_enabled: bool = true
-@export var volume_priority: int = 0
-@export_range(-10.0, 10.0, 0.01) var precipitation_delta: float = -1.0
-@export_range(0.0, 2.0, 0.01) var precipitation_multiplier: float = 1.0
-@export_range(0.0, 4.0, 0.01) var lightning_multiplier: float = 1.0
+@export var volume_enabled: bool = true:
+    set(value):
+        if volume_enabled == value:
+            return
+        volume_enabled = value
+        _notify_weather_server_changed()
+@export var volume_priority: int = 0:
+    set(value):
+        if volume_priority == value:
+            return
+        volume_priority = value
+        _notify_weather_server_changed()
+@export_range(-10.0, 10.0, 0.01) var precipitation_delta: float = -1.0:
+    set(value):
+        var next_value := clampf(value, -10.0, 10.0)
+        if is_equal_approx(precipitation_delta, next_value):
+            return
+        precipitation_delta = next_value
+        _notify_weather_server_changed()
+@export_range(0.0, 2.0, 0.01) var precipitation_multiplier: float = 1.0:
+    set(value):
+        var next_value := maxf(value, 0.0)
+        if is_equal_approx(precipitation_multiplier, next_value):
+            return
+        precipitation_multiplier = next_value
+        _notify_weather_server_changed()
+@export_range(0.0, 4.0, 0.01) var lightning_multiplier: float = 1.0:
+    set(value):
+        var next_value := maxf(value, 0.0)
+        if is_equal_approx(lightning_multiplier, next_value):
+            return
+        lightning_multiplier = next_value
+        _notify_weather_server_changed()
 
 @export_group("Volume")
-@export var shape: VolumeShape = VolumeShape.BOX
+@export var shape: VolumeShape = VolumeShape.BOX:
+    set(value):
+        if shape == value:
+            return
+        shape = value
+        _notify_weather_server_changed()
 @export var size: Vector3 = Vector3(4.0, 2.0, 4.0):
     set(value):
-        size = Vector3(absf(value.x), absf(value.y), absf(value.z))
+        var next_size := Vector3(absf(value.x), absf(value.y), absf(value.z))
+        if size.is_equal_approx(next_size):
+            return
+        size = next_size
         _refresh_cached_volume_shape()
+        _notify_weather_server_changed()
 @export_range(0.0, 8.0, 0.01) var edge_feather: float = 0.6:
     set(value):
-        edge_feather = maxf(value, 0.0)
+        var next_value := maxf(value, 0.0)
+        if is_equal_approx(edge_feather, next_value):
+            return
+        edge_feather = next_value
         _refresh_cached_volume_shape()
+        _notify_weather_server_changed()
 
 var _registered_world: World3D
 var _registered_volume_rid: RID
@@ -33,15 +74,15 @@ var _cached_edge_feather: float = 0.6
 
 func _notification(what: int) -> void:
     if what == NOTIFICATION_READY:
+        set_notify_transform(true)
         _refresh_cached_volume_shape()
-
-    if Engine.is_editor_hint():
-        return
 
     if what == NOTIFICATION_ENTER_WORLD:
         _register_in_weather_server()
     elif what == NOTIFICATION_EXIT_WORLD:
         _unregister_from_weather_server()
+    elif what == NOTIFICATION_TRANSFORM_CHANGED:
+        _notify_weather_server_changed()
 
 
 func is_rain_volume_enabled() -> bool:
@@ -143,3 +184,10 @@ func _refresh_cached_volume_shape() -> void:
     _cached_edge_feather = maxf(edge_feather, 0.0)
     var feather_offset := Vector3.ONE * _cached_edge_feather
     _cached_outer_half_size = _cached_half_size + feather_offset
+
+
+func _notify_weather_server_changed() -> void:
+    var world_3d := _registered_world
+    if world_3d == null:
+        return
+    WeatherServer.mark_rain_volumes_changed(world_3d)

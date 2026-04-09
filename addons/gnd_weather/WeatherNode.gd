@@ -1,3 +1,4 @@
+@tool
 class_name WeatherNode
 extends Node3D
 
@@ -8,6 +9,7 @@ signal rain_local_strength_changed(strength: float)
 const RAIN_STREAK_SHADER := preload("res://scenery/shaders/rain_streak.gdshader")
 const NEAR_FIELD_NAME := "RainNear"
 const MID_FIELD_NAME := "RainMid"
+const RAIN_FIELD_RUNTIME_REFRESH_INTERVAL_MSEC := 250
 
 @export_group("Nodes")
 @export_node_path("Node") var skydome_path: NodePath
@@ -24,12 +26,14 @@ const MID_FIELD_NAME := "RainMid"
         if is_inside_tree():
             _push_weather_server_settings()
             _sync_weather_state(true)
+            _refresh_editor_preview()
 @export_range(0.0, 1.0, 0.001) var storm_threshold: float = 0.82:
     set(value):
         storm_threshold = clampf(value, 0.0, 1.0)
         if is_inside_tree():
             _push_weather_server_settings()
             _sync_weather_state(true)
+            _refresh_editor_preview()
 
 @export_group("Wind")
 @export var use_global_wind: bool = true
@@ -42,6 +46,7 @@ const MID_FIELD_NAME := "RainMid"
         precipitation_wind_strength = maxf(value, 0.0)
         if is_inside_tree():
             _push_weather_server_settings()
+            _refresh_editor_preview()
 @export_range(0.0, 1.0, 0.01) var wind_influence: float = 0.35
 
 @export_group("Rain")
@@ -60,14 +65,17 @@ const MID_FIELD_NAME := "RainMid"
         if is_inside_tree():
             _push_weather_server_settings()
             _sync_weather_state(true)
+            _refresh_editor_preview()
 @export var near_rain_color: Color = Color(0.72, 0.74, 0.76, 0.08):
     set(value):
         near_rain_color = value
         _sync_rain_materials()
+        _refresh_editor_preview()
 @export var mid_rain_color: Color = Color(0.66, 0.68, 0.72, 0.055):
     set(value):
         mid_rain_color = value
         _sync_rain_materials()
+        _refresh_editor_preview()
 
 @export_group("Rain Field")
 @export_range(0.1, 4.0, 0.05) var near_field_spacing: float = 0.8
@@ -81,11 +89,13 @@ const MID_FIELD_NAME := "RainMid"
         rain_probe_max_count = maxi(value, 1)
         if is_inside_tree():
             _push_rain_probe_config()
+            _refresh_editor_preview()
 @export_range(0.1, 100.0, 0.1) var rain_probe_distance: float = 8.0:
     set(value):
         rain_probe_distance = maxf(value, 0.1)
         if is_inside_tree():
             _push_rain_probe_config()
+            _refresh_editor_preview()
 
 @export_group("Storm")
 @export var lightning_enabled: bool = true:
@@ -94,27 +104,34 @@ const MID_FIELD_NAME := "RainMid"
         if is_inside_tree():
             _push_weather_server_settings()
             _sync_weather_state(true)
+            _refresh_editor_preview()
 @export_range(0.1, 30.0, 0.1) var lightning_min_interval: float = 3.2:
     set(value):
         lightning_min_interval = maxf(value, 0.1)
         if is_inside_tree():
             _push_weather_server_settings()
             _sync_weather_state(true)
+            _refresh_editor_preview()
 @export_range(0.1, 30.0, 0.1) var lightning_max_interval: float = 9.5:
     set(value):
         lightning_max_interval = maxf(value, 0.1)
         if is_inside_tree():
             _push_weather_server_settings()
             _sync_weather_state(true)
+            _refresh_editor_preview()
 @export_range(0.1, 20.0, 0.01) var lightning_flash_decay: float = 4.8:
     set(value):
         lightning_flash_decay = maxf(value, 0.1)
         if is_inside_tree():
             _push_weather_server_settings()
             _sync_weather_state(true)
+            _refresh_editor_preview()
 
 var _near_rain_field: MultiMeshInstance3D
 var _mid_rain_field: MultiMeshInstance3D
+var _near_rain_debug_material: StandardMaterial3D
+var _mid_rain_debug_material: StandardMaterial3D
+var _rain_mesh_debug_preview_enabled: bool = false
 var _environment: Environment
 var _current_global_precipitation: float = 0.0
 var _current_local_precipitation: float = 0.0
@@ -129,6 +146,23 @@ var _last_applied_lightning_flash: float = -1.0
 var _last_applied_local_emission_scale: float = -1.0
 var _last_emitted_rain_strength: float = -1.0
 var _last_emitted_local_rain_strength: float = -1.0
+var _editor_preview_camera_id: int = 0
+var _editor_preview_camera_transform: Transform3D = Transform3D.IDENTITY
+var _editor_preview_camera_transform_valid: bool = false
+var _rain_mesh_debug_near_tint: Color = Color.BLACK
+var _rain_mesh_debug_mid_tint: Color = Color.BLACK
+var _near_rain_field_state_cache: Dictionary = {}
+var _mid_rain_field_state_cache: Dictionary = {}
+
+
+func _notification(what: int) -> void:
+    if what == NOTIFICATION_ENTER_WORLD:
+        _refresh_environment_cache()
+        if Engine.is_editor_hint():
+            call_deferred("_refresh_editor_preview")
+    elif what == NOTIFICATION_POST_ENTER_TREE:
+        if Engine.is_editor_hint():
+            call_deferred("_refresh_editor_preview")
 
 
 func _ready() -> void:
@@ -143,6 +177,7 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
     _disconnect_weather_runtime()
+    _invalidate_rain_field_state_cache()
     WeatherServer.clear_weather_observer_sample(get_world_3d())
     WeatherServer.clear_weather_runtime(get_world_3d())
     WeatherServer.clear_visible_rain_participation_cache(get_world_3d(), get_instance_id())
@@ -168,6 +203,15 @@ func set_precipitation_intensity(value: float) -> void:
 
 func apply_now() -> void:
     _sync_weather_state(true)
+    _apply_weather_state(true)
+
+
+func _refresh_editor_preview() -> void:
+    if not Engine.is_editor_hint() or not is_inside_tree():
+        return
+    _invalidate_rain_field_state_cache()
+    _push_weather_server_settings()
+    _push_rain_probe_config()
     _apply_weather_state(true)
 
 
@@ -236,6 +280,7 @@ func _push_rain_probe_config() -> void:
         rain_probe_max_count,
         rain_probe_distance
     )
+    _invalidate_rain_field_state_cache()
 
 
 func _connect_weather_runtime() -> void:
@@ -304,7 +349,6 @@ func _apply_weather_state_snapshot(state: Dictionary) -> void:
 func _get_fallback_weather_state() -> Dictionary:
     var global_precipitation := _get_global_precipitation_setting()
     var local_precipitation := global_precipitation
-    var lightning_multiplier := 1.0
     var follow_target := _get_follow_target()
     if follow_target != null:
         local_precipitation = WeatherServer.get_rain_participation_strength(
@@ -312,16 +356,12 @@ func _get_fallback_weather_state() -> Dictionary:
             follow_target.global_position,
             global_precipitation
         )
-        lightning_multiplier = WeatherServer.get_rain_lightning_multiplier(
-            get_world_3d(),
-            follow_target.global_position
-        )
 
     var shelter_factor := 0.0
     if global_precipitation > 0.0001 and local_precipitation < global_precipitation:
         shelter_factor = clampf((global_precipitation - local_precipitation) / global_precipitation, 0.0, 1.0)
 
-    var storm_input := clampf(maxf(global_precipitation, local_precipitation) * lightning_multiplier, 0.0, 1.0)
+    var storm_input := clampf(maxf(global_precipitation, local_precipitation), 0.0, 1.0)
 
     return {
         "global_precipitation": global_precipitation,
@@ -355,6 +395,11 @@ func _on_weather_server_thunder(strength: float) -> void:
 
 
 func _get_follow_target() -> Node3D:
+    if Engine.is_editor_hint() and _editor_preview_camera_id != 0:
+        var editor_camera := instance_from_id(_editor_preview_camera_id) as Camera3D
+        if editor_camera != null:
+            return editor_camera
+
     var viewport := get_viewport()
     if viewport != null:
         var camera := viewport.get_camera_3d()
@@ -408,6 +453,79 @@ func _ensure_rain_field_node(node_name: String, tint: Color) -> MultiMeshInstanc
 func _sync_rain_materials() -> void:
     _set_rain_field_tint(_near_rain_field, near_rain_color)
     _set_rain_field_tint(_mid_rain_field, mid_rain_color)
+
+
+func set_rain_mesh_debug_preview(enabled: bool, near_tint: Color, mid_tint: Color) -> void:
+    _ensure_rain_field_nodes()
+    var changed := (
+        _rain_mesh_debug_preview_enabled != enabled
+        or not _rain_mesh_debug_near_tint.is_equal_approx(near_tint)
+        or not _rain_mesh_debug_mid_tint.is_equal_approx(mid_tint)
+    )
+    if not changed:
+        return
+
+    _rain_mesh_debug_preview_enabled = enabled
+    _rain_mesh_debug_near_tint = near_tint
+    _rain_mesh_debug_mid_tint = mid_tint
+    if enabled:
+        _ensure_rain_debug_materials(near_tint, mid_tint)
+        if _near_rain_field != null:
+            _near_rain_field.material_override = _near_rain_debug_material
+        if _mid_rain_field != null:
+            _mid_rain_field.material_override = _mid_rain_debug_material
+    else:
+        if _near_rain_field != null:
+            _near_rain_field.material_override = null
+        if _mid_rain_field != null:
+            _mid_rain_field.material_override = null
+
+    if Engine.is_editor_hint() and is_inside_tree():
+        _refresh_editor_preview()
+
+
+func set_editor_preview_camera(camera: Camera3D) -> void:
+    var next_camera_id := camera.get_instance_id() if camera != null else 0
+    var next_transform := camera.global_transform if camera != null else Transform3D.IDENTITY
+    var changed := _editor_preview_camera_id != next_camera_id
+    if not changed and camera != null:
+        changed = (
+            not _editor_preview_camera_transform_valid
+            or not _editor_preview_camera_transform.is_equal_approx(next_transform)
+        )
+    elif not changed and camera == null:
+        changed = _editor_preview_camera_transform_valid
+
+    if not changed:
+        return
+
+    _editor_preview_camera_id = next_camera_id
+    _editor_preview_camera_transform = next_transform
+    _editor_preview_camera_transform_valid = camera != null
+    if Engine.is_editor_hint() and is_inside_tree():
+        _refresh_editor_preview()
+
+
+func _ensure_rain_debug_materials(near_tint: Color, mid_tint: Color) -> void:
+    if _near_rain_debug_material == null:
+        _near_rain_debug_material = StandardMaterial3D.new()
+        _near_rain_debug_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        _near_rain_debug_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        _near_rain_debug_material.no_depth_test = false
+        _near_rain_debug_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    if _mid_rain_debug_material == null:
+        _mid_rain_debug_material = StandardMaterial3D.new()
+        _mid_rain_debug_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        _mid_rain_debug_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        _mid_rain_debug_material.no_depth_test = false
+        _mid_rain_debug_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+    _near_rain_debug_material.albedo_color = near_tint
+    _near_rain_debug_material.emission_enabled = true
+    _near_rain_debug_material.emission = near_tint
+    _mid_rain_debug_material.albedo_color = mid_tint
+    _mid_rain_debug_material.emission_enabled = true
+    _mid_rain_debug_material.emission = mid_tint
 
 
 func _set_rain_field_tint(rain_field: MultiMeshInstance3D, tint: Color) -> void:
@@ -465,14 +583,13 @@ func _update_rain_rendering() -> void:
         return
 
     var view_transform := camera.global_transform
+    var rain_basis: Basis = _get_rain_field_basis(rain_direction, view_transform.basis)
     var near_card_height: float = _get_rain_field_card_height(near_emission_extents, near_layer_intensity, false)
     var near_spacing: float = _get_rain_field_spacing(near_field_spacing, camera)
-    var near_state: Dictionary = WeatherServer.get_rain_render_field_state(
-        get_world_3d(),
-        get_instance_id(),
+    var near_state: Dictionary = _get_rain_render_field_state_cached(
         &"near",
-        view_transform,
         camera,
+        view_transform,
         follow_target.global_position,
         sample_y,
         _get_rain_field_center_y(follow_target.global_position.y, near_card_height),
@@ -486,7 +603,7 @@ func _update_rain_rendering() -> void:
         near_state,
         near_layer_intensity,
         false,
-        rain_direction,
+        rain_basis,
         near_layer_speed_multiplier,
         near_emission_extents,
         near_spacing
@@ -498,12 +615,10 @@ func _update_rain_rendering() -> void:
 
     var mid_card_height: float = _get_rain_field_card_height(mid_emission_extents, mid_layer_intensity, true)
     var mid_spacing: float = _get_rain_field_spacing(mid_field_spacing, camera)
-    var mid_state: Dictionary = WeatherServer.get_rain_render_field_state(
-        get_world_3d(),
-        get_instance_id(),
+    var mid_state: Dictionary = _get_rain_render_field_state_cached(
         &"mid",
-        view_transform,
         camera,
+        view_transform,
         follow_target.global_position,
         sample_y,
         _get_rain_field_center_y(follow_target.global_position.y, mid_card_height),
@@ -517,7 +632,7 @@ func _update_rain_rendering() -> void:
         mid_state,
         mid_layer_intensity,
         true,
-        rain_direction,
+        rain_basis,
         mid_layer_speed_multiplier,
         mid_emission_extents,
         mid_spacing
@@ -529,7 +644,7 @@ func _update_rain_field_layer(
     field_state: Dictionary,
     layer_intensity: float,
     is_mid_layer: bool,
-    rain_direction: Vector3,
+    rain_basis: Basis,
     speed_multiplier: float,
     extents: Vector3,
     field_spacing: float
@@ -553,12 +668,11 @@ func _update_rain_field_layer(
     var card_height: float = _get_rain_field_card_height(extents, layer_intensity, is_mid_layer)
     _update_rain_field_visuals(rain_field, layer_intensity, is_mid_layer, speed_multiplier, card_height, extents, field_spacing)
 
-    var base_basis: Basis = _get_rain_field_basis(rain_direction)
     for index in range(visible_count):
         var instance_position: Vector3 = positions[index] - global_position
         var instance_custom: Color = custom_data[index]
         var variation_scale: float = lerpf(0.85, 1.15, instance_custom.b)
-        var instance_basis: Basis = base_basis.scaled(Vector3.ONE * variation_scale)
+        var instance_basis: Basis = rain_basis.scaled(Vector3.ONE * variation_scale)
         multimesh.set_instance_transform(index, Transform3D(instance_basis, instance_position))
         multimesh.set_instance_custom_data(index, instance_custom)
 
@@ -567,6 +681,109 @@ func _clear_rain_field_layer(rain_field: MultiMeshInstance3D) -> void:
     if rain_field == null or rain_field.multimesh == null:
         return
     rain_field.multimesh.visible_instance_count = 0
+
+
+func _invalidate_rain_field_state_cache() -> void:
+    _near_rain_field_state_cache = {}
+    _mid_rain_field_state_cache = {}
+
+
+func _get_rain_render_field_state_cached(
+    layer_key: StringName,
+    camera: Camera3D,
+    view_transform: Transform3D,
+    view_origin: Vector3,
+    sample_y: float,
+    layer_center_y: float,
+    base_strength: float,
+    half_extents: Vector3,
+    cell_spacing: float,
+    jitter_ratio: float
+) -> Dictionary:
+    if Engine.is_editor_hint():
+        return WeatherServer.get_rain_render_field_state(
+            get_world_3d(),
+            get_instance_id(),
+            layer_key,
+            view_transform,
+            camera,
+            view_origin,
+            sample_y,
+            layer_center_y,
+            base_strength,
+            half_extents,
+            cell_spacing,
+            jitter_ratio
+        )
+
+    var cache := _get_rain_render_field_state_cache(layer_key)
+    var volume_revision: int = WeatherServer.get_rain_volume_revision(get_world_3d())
+    var needs_refresh := not bool(cache.get("ready", false))
+
+    if not needs_refresh:
+        var last_view_transform: Transform3D = cache.get("view_transform", Transform3D.IDENTITY)
+        var last_volume_revision: int = int(cache.get("volume_revision", -1))
+        var last_base_strength: float = float(cache.get("base_strength", -1.0))
+        var last_sample_y: float = float(cache.get("sample_y", INF))
+        var last_layer_center_y: float = float(cache.get("layer_center_y", INF))
+        var last_cell_spacing: float = float(cache.get("cell_spacing", -1.0))
+        var last_half_extents: Vector3 = cache.get("half_extents", Vector3.ZERO)
+
+        needs_refresh = (
+            last_volume_revision != volume_revision
+            or not last_view_transform.is_equal_approx(view_transform)
+            or absf(last_base_strength - base_strength) > 0.0001
+            or absf(last_sample_y - sample_y) > 0.0001
+            or absf(last_layer_center_y - layer_center_y) > 0.0001
+            or absf(last_cell_spacing - cell_spacing) > 0.0001
+            or not last_half_extents.is_equal_approx(half_extents)
+        )
+    if not needs_refresh:
+        return cache.get("state", {})
+
+    var current_time_msec: int = Time.get_ticks_msec()
+    var last_refresh_time_msec: int = int(cache.get("last_refresh_time_msec", 0))
+    if last_refresh_time_msec > 0 and current_time_msec - last_refresh_time_msec < RAIN_FIELD_RUNTIME_REFRESH_INTERVAL_MSEC:
+        return cache.get("state", {})
+
+    var field_state: Dictionary = WeatherServer.get_rain_render_field_state(
+        get_world_3d(),
+        get_instance_id(),
+        layer_key,
+        view_transform,
+        camera,
+        view_origin,
+        sample_y,
+        layer_center_y,
+        base_strength,
+        half_extents,
+        cell_spacing,
+        jitter_ratio
+    )
+    _store_rain_render_field_state_cache(layer_key, {
+        "ready": true,
+        "state": field_state,
+        "last_refresh_time_msec": current_time_msec,
+        "view_transform": view_transform,
+        "volume_revision": volume_revision,
+        "base_strength": base_strength,
+        "sample_y": sample_y,
+        "layer_center_y": layer_center_y,
+        "cell_spacing": cell_spacing,
+        "half_extents": half_extents,
+    })
+    return field_state
+
+
+func _get_rain_render_field_state_cache(layer_key: StringName) -> Dictionary:
+    return _near_rain_field_state_cache if layer_key == &"near" else _mid_rain_field_state_cache
+
+
+func _store_rain_render_field_state_cache(layer_key: StringName, cache: Dictionary) -> void:
+    if layer_key == &"near":
+        _near_rain_field_state_cache = cache
+        return
+    _mid_rain_field_state_cache = cache
 
 
 func _emit_rain_strength_changed(strength: float) -> void:
@@ -607,15 +824,17 @@ func _get_layer_intensity(intensity: float, is_mid_layer: bool) -> float:
     return pow(clampf(intensity, 0.0, 1.0), 0.9)
 
 
-func _get_rain_field_basis(rain_direction: Vector3) -> Basis:
+func _get_rain_field_basis(rain_direction: Vector3, camera_basis: Basis) -> Basis:
     var down_axis := rain_direction.normalized()
-    var reference_up := Vector3.UP
-    if absf(down_axis.dot(reference_up)) > 0.98:
-        reference_up = Vector3.FORWARD
-    var right_axis := reference_up.cross(down_axis).normalized()
+    var camera_forward := (-camera_basis.z).normalized()
+    var right_axis := camera_forward.cross(down_axis).normalized()
+    if right_axis.length_squared() <= 0.0001:
+        right_axis = camera_basis.x.normalized()
     if right_axis.length_squared() <= 0.0001:
         right_axis = Vector3.RIGHT
-    var normal_axis := down_axis.cross(right_axis).normalized()
+    var normal_axis := right_axis.cross(down_axis).normalized()
+    if normal_axis.length_squared() <= 0.0001:
+        normal_axis = Vector3.FORWARD
     return Basis(right_axis, down_axis, normal_axis).orthonormalized()
 
 
@@ -634,11 +853,7 @@ func _update_rain_field_visuals(
         return
 
     var base_color := mid_rain_color if is_mid_layer else near_rain_color
-    var target_width := (
-        lerpf(0.006, 0.0105, layer_intensity)
-        if not is_mid_layer
-        else lerpf(0.005, 0.009, layer_intensity)
-    )
+    var target_width := _get_rain_field_visual_width(layer_intensity, is_mid_layer, field_spacing)
     mesh.size = Vector2(target_width, card_height)
 
     var alpha_strength := pow(clampf(layer_intensity, 0.0, 1.0), rain_streak_alpha_curve_exponent)
@@ -658,7 +873,7 @@ func _update_rain_field_visuals(
         (base_fall_speed / 26.0) * lerpf(20.0, 12.0, clampf(layer_intensity, 0.0, 1.0)) * maxf(speed_multiplier, 0.1)
     )
     material.set_shader_parameter("travel_distance", card_height)
-    material.set_shader_parameter("respawn_spread", field_spacing * 0.45)
+    material.set_shader_parameter("respawn_spread", _get_rain_field_respawn_spread(field_spacing))
     material.set_shader_parameter(
         "streak_length_scale",
         lerpf(0.18, 1.0, pow(clampf(layer_intensity, 0.0, 1.0), 0.85))
@@ -669,6 +884,25 @@ func _update_rain_field_visuals(
         Vector3(-extents.x - 4.0, -local_height * 0.5, -extents.z - 4.0),
         Vector3((extents.x + 4.0) * 2.0, local_height, (extents.z + 4.0) * 2.0)
     )
+
+
+func _get_rain_field_visual_width(layer_intensity: float, is_mid_layer: bool, field_spacing: float) -> float:
+    var streak_width := (
+        lerpf(0.006, 0.0105, layer_intensity)
+        if not is_mid_layer
+        else lerpf(0.005, 0.009, layer_intensity)
+    )
+    if not _rain_mesh_debug_preview_enabled:
+        return streak_width
+
+    var debug_width_scale := 0.82 if not is_mid_layer else 0.74
+    return maxf(streak_width, field_spacing * debug_width_scale)
+
+
+func _get_rain_field_respawn_spread(field_spacing: float) -> float:
+    if _rain_mesh_debug_preview_enabled:
+        return 0.0
+    return minf(field_spacing * 0.14, 0.08)
 
 
 func _get_rain_field_card_height(extents: Vector3, layer_intensity: float, is_mid_layer: bool) -> float:
