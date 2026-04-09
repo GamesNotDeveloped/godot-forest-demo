@@ -1,11 +1,28 @@
 class_name WeatherServer
 extends RefCounted
 
+const WIND_DIRECTION_GLOBAL := &"gnd_wind_direction"
+const WIND_SPEED_GLOBAL := &"gnd_wind_speed"
+const WIND_TIME_GLOBAL := &"gnd_wind_time"
+const WIND_DIRECTION_SETTING := &"shader_globals/gnd_wind_direction"
+const WIND_SPEED_SETTING := &"shader_globals/gnd_wind_speed"
+const WIND_STRENGTH_SETTING := &"shader_globals/gnd_wind_strength"
+const WIND_TIME_SETTING := &"shader_globals/gnd_wind_time"
+const WIND_TURBULENCE_SETTING := &"shader_globals/gnd_wind_turbulence"
+const WIND_PATTERN_SETTING := &"shader_globals/gnd_wind_pattern"
+const WIND_DIRECTION_VALUE_SETTING := &"shader_globals/gnd_wind_direction/value"
+const WIND_SPEED_VALUE_SETTING := &"shader_globals/gnd_wind_speed/value"
+const WIND_STRENGTH_VALUE_SETTING := &"shader_globals/gnd_wind_strength/value"
+const WIND_TIME_VALUE_SETTING := &"shader_globals/gnd_wind_time/value"
+const WIND_TURBULENCE_VALUE_SETTING := &"shader_globals/gnd_wind_turbulence/value"
+const WIND_PATTERN_VALUE_SETTING := &"shader_globals/gnd_wind_pattern/value"
+
 class WeatherRuntime extends RefCounted:
     signal weather_state_changed
     signal thunder(strength: float)
 
     var precipitation_intensity: float = 0.0
+    var precipitation_wind_strength: float = 4.0
     var storm_threshold: float = 0.82
     var sheltered_volumetric_emission_scale: float = 0.0
     var lightning_enabled: bool = true
@@ -21,6 +38,7 @@ class WeatherRuntime extends RefCounted:
     var _lightning_flash: float = 0.0
     var _shelter_factor: float = 0.0
     var _local_emission_scale: float = 1.0
+    var _wind_time: float = 0.0
     var _pending_flash_pulses: int = 0
     var _next_flash_delay: float = 0.0
     var _next_lightning_burst: float = 0.0
@@ -31,6 +49,7 @@ class WeatherRuntime extends RefCounted:
 
     func configure(
         next_precipitation_intensity: float,
+        next_precipitation_wind_strength: float,
         next_storm_threshold: float,
         next_sheltered_volumetric_emission_scale: float,
         next_lightning_enabled: bool,
@@ -39,6 +58,7 @@ class WeatherRuntime extends RefCounted:
         next_lightning_flash_decay: float
     ) -> void:
         precipitation_intensity = clampf(next_precipitation_intensity, 0.0, 1.0)
+        precipitation_wind_strength = maxf(next_precipitation_wind_strength, 0.0)
         storm_threshold = clampf(next_storm_threshold, 0.0, 1.0)
         sheltered_volumetric_emission_scale = clampf(next_sheltered_volumetric_emission_scale, 0.0, 1.0)
         lightning_enabled = next_lightning_enabled
@@ -56,6 +76,8 @@ class WeatherRuntime extends RefCounted:
 
     func update(world_3d: World3D, delta: float) -> void:
         var changed := _refresh_precipitation_state(world_3d)
+        if delta > 0.0:
+            _wind_time += delta * WeatherServer._get_weather_controlled_wind_speed_for_runtime(self, 1.0)
 
         var next_flash := move_toward(_lightning_flash, 0.0, delta * lightning_flash_decay)
         if absf(next_flash - _lightning_flash) > 0.0001:
@@ -254,11 +276,13 @@ static func clear_weather_runtime(world_3d: World3D) -> void:
         return
 
     _weather_runtime_by_world.erase(world_3d.get_instance_id())
+    _apply_weather_controlled_wind(null)
 
 
 static func configure_weather_state(
     world_3d: World3D,
     precipitation_intensity: float,
+    precipitation_wind_strength: float,
     storm_threshold: float,
     sheltered_volumetric_emission_scale: float,
     lightning_enabled: bool,
@@ -272,6 +296,7 @@ static func configure_weather_state(
 
     runtime.configure(
         precipitation_intensity,
+        precipitation_wind_strength,
         storm_threshold,
         sheltered_volumetric_emission_scale,
         lightning_enabled,
@@ -279,6 +304,7 @@ static func configure_weather_state(
         lightning_max_interval,
         lightning_flash_decay
     )
+    _apply_weather_controlled_wind(world_3d)
 
 
 static func set_weather_observer_sample(world_3d: World3D, world_position: Vector3) -> void:
@@ -300,6 +326,7 @@ static func update_weather_state(world_3d: World3D, delta: float) -> void:
     if runtime == null:
         return
     runtime.update(world_3d, delta)
+    _apply_weather_controlled_wind(world_3d)
 
 
 static func get_weather_state(world_3d: World3D) -> Dictionary:
@@ -307,6 +334,106 @@ static func get_weather_state(world_3d: World3D) -> Dictionary:
     if runtime == null:
         return {}
     return runtime.get_weather_state()
+
+
+static func ensure_wind_project_settings() -> void:
+    var dirty := false
+
+    if not ProjectSettings.has_setting(String(WIND_DIRECTION_SETTING)):
+        ProjectSettings.set_setting(String(WIND_DIRECTION_SETTING), {
+            "type": "vec2",
+            "value": Vector2(0.8, 0.3),
+        })
+        dirty = true
+
+    if not ProjectSettings.has_setting(String(WIND_SPEED_SETTING)):
+        ProjectSettings.set_setting(String(WIND_SPEED_SETTING), {
+            "type": "float",
+            "value": 1.0,
+        })
+        dirty = true
+
+    if not ProjectSettings.has_setting(String(WIND_STRENGTH_SETTING)):
+        ProjectSettings.set_setting(String(WIND_STRENGTH_SETTING), {
+            "type": "float",
+            "value": 4.0,
+        })
+        dirty = true
+
+    if not ProjectSettings.has_setting(String(WIND_TIME_SETTING)):
+        ProjectSettings.set_setting(String(WIND_TIME_SETTING), {
+            "type": "float",
+            "value": 0.0,
+        })
+        dirty = true
+
+    if not ProjectSettings.has_setting(String(WIND_TURBULENCE_SETTING)):
+        ProjectSettings.set_setting(String(WIND_TURBULENCE_SETTING), {
+            "type": "float",
+            "value": 1.0,
+        })
+        dirty = true
+
+    if not ProjectSettings.has_setting(String(WIND_PATTERN_SETTING)):
+        ProjectSettings.set_setting(String(WIND_PATTERN_SETTING), {
+            "type": "sampler2D",
+            "value": "res://grass/wind_pattern.png",
+        })
+        dirty = true
+
+    if dirty and Engine.is_editor_hint():
+        ProjectSettings.save()
+
+
+static func get_global_wind_direction(fallback: Vector2 = Vector2(0.8, 0.3)) -> Vector2:
+    ensure_wind_project_settings()
+    var direction := fallback
+    if ProjectSettings.has_setting(String(WIND_DIRECTION_VALUE_SETTING)):
+        direction = ProjectSettings.get_setting(String(WIND_DIRECTION_VALUE_SETTING), direction)
+    if direction.length_squared() <= 0.0001:
+        return Vector2(0.8, 0.3)
+    return direction.normalized()
+
+
+static func get_global_wind_speed(fallback: float = 1.0) -> float:
+    ensure_wind_project_settings()
+    if ProjectSettings.has_setting(String(WIND_SPEED_VALUE_SETTING)):
+        return maxf(float(ProjectSettings.get_setting(String(WIND_SPEED_VALUE_SETTING), fallback)), 0.0)
+    return maxf(fallback, 0.0)
+
+
+static func get_precipitation_wind_strength(fallback: float = 4.0) -> float:
+    ensure_wind_project_settings()
+    if ProjectSettings.has_setting(String(WIND_STRENGTH_VALUE_SETTING)):
+        return maxf(float(ProjectSettings.get_setting(String(WIND_STRENGTH_VALUE_SETTING), fallback)), 0.0)
+    return maxf(fallback, 0.0)
+
+
+static func get_weather_controlled_wind_speed(world_3d: World3D, fallback: float = 1.0) -> float:
+    var base_speed := get_global_wind_speed(fallback)
+    var precipitation_boost := 0.0
+    if world_3d != null:
+        var runtime := _weather_runtime_by_world.get(world_3d.get_instance_id()) as WeatherRuntime
+        if runtime != null:
+            precipitation_boost = clampf(runtime.precipitation_intensity, 0.0, 1.0) * runtime.precipitation_wind_strength
+    return maxf(base_speed + precipitation_boost, 0.0)
+
+
+static func get_weather_controlled_wind_time(world_3d: World3D) -> float:
+    if world_3d == null:
+        return 0.0
+    var runtime := _weather_runtime_by_world.get(world_3d.get_instance_id()) as WeatherRuntime
+    if runtime == null:
+        return 0.0
+    return runtime._wind_time
+
+
+static func _get_weather_controlled_wind_speed_for_runtime(runtime: WeatherRuntime, fallback: float = 1.0) -> float:
+    if runtime == null:
+        return get_global_wind_speed(fallback)
+    var base_speed := get_global_wind_speed(fallback)
+    var precipitation_boost := clampf(runtime.precipitation_intensity, 0.0, 1.0) * runtime.precipitation_wind_strength
+    return maxf(base_speed + precipitation_boost, 0.0)
 
 
 static func get_configured_visible_rain_probe_field_layout(
@@ -818,6 +945,19 @@ static func _ensure_visible_rain_probe_field_cache(world_3d: World3D, cache_key:
         _visible_rain_probe_fields_by_world[world_id] = world_fields
 
     return cache
+
+
+static func _apply_weather_controlled_wind(world_3d: World3D) -> void:
+    ensure_wind_project_settings()
+    RenderingServer.global_shader_parameter_set(StringName(WIND_DIRECTION_GLOBAL), get_global_wind_direction())
+    RenderingServer.global_shader_parameter_set(
+        StringName(WIND_SPEED_GLOBAL),
+        get_weather_controlled_wind_speed(world_3d)
+    )
+    RenderingServer.global_shader_parameter_set(
+        StringName(WIND_TIME_GLOBAL),
+        get_weather_controlled_wind_time(world_3d)
+    )
 
 
 static func _store_visible_rain_probe_field_cache(world_3d: World3D, cache_key: int, cache: Dictionary) -> void:

@@ -85,6 +85,7 @@ uniform mat3 celestial_matrix = mat3(1.0);
 uniform float cloud_time = 0.0;
 uniform vec2 cloud_wind_direction = vec2(0.8, 0.3);
 uniform float cloud_wind_speed = 1.0;
+uniform float cloud_motion_time = 0.0;
 uniform float cloud_motion_scale = 0.12;
 
 vec2 dir_to_cloud_plane_uv(vec3 dir, float plane_height, float curve) {
@@ -160,7 +161,7 @@ void sky() {
 
 	vec2 cloud_uv = dir_to_cloud_plane_uv(dir, cloud_plane_height, cloud_plane_curve);
 	vec2 wind_dir = normalize(max(abs(cloud_wind_direction.x) + abs(cloud_wind_direction.y), 0.0001) * cloud_wind_direction);
-	float motion_time = (cloud_time + TIME * 0.05) * cloud_wind_speed * cloud_motion_scale;
+	float motion_time = cloud_motion_time;
 	vec2 scroll_a = wind_dir * length(cloud_scroll_a);
 	vec2 scroll_b = wind_dir * length(cloud_scroll_b) * 1.35;
 	vec2 warp_scroll = wind_dir * 0.0034;

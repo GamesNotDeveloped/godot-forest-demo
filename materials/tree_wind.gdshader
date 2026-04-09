@@ -4,6 +4,7 @@ render_mode blend_mix, depth_prepass_alpha, cull_disabled, diffuse_burley, specu
 global uniform vec2 gnd_wind_direction;
 global uniform float gnd_wind_speed;
 global uniform float gnd_wind_strength;
+global uniform float gnd_wind_time;
 
 uniform sampler2D albedo_texture : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform bool use_albedo_texture = true;
@@ -48,12 +49,12 @@ void vertex() {
     vec2 wind_dir = normalize(max(abs(gnd_wind_direction.x) + abs(gnd_wind_direction.y), 0.0001) * gnd_wind_direction);
     vec3 world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
     float height_factor = smoothstep(height_start, height_end, VERTEX.y);
-    float speed = gnd_wind_speed * wind_speed;
+    float phase_time = gnd_wind_time * wind_speed;
     float strength = gnd_wind_strength * wind_strength;
 
-    float primary = sin(dot(world_pos.xz, wind_dir * branch_frequency) + TIME * speed);
-    float secondary = sin(dot(world_pos.xz, vec2(-wind_dir.y, wind_dir.x) * detail_frequency) + TIME * (speed * 1.73));
-    float gust = sin(dot(world_pos.xz, vec2(0.19, 0.27)) + TIME * (speed * 0.41));
+    float primary = sin(dot(world_pos.xz, wind_dir * branch_frequency) + phase_time);
+    float secondary = sin(dot(world_pos.xz, vec2(-wind_dir.y, wind_dir.x) * detail_frequency) + phase_time * 1.73);
+    float gust = sin(dot(world_pos.xz, vec2(0.19, 0.27)) + phase_time * 0.41);
     float sway = primary + secondary * 0.35 + gust * 0.2;
     float bend = mix(trunk_strength, strength, height_factor) * sway;
 

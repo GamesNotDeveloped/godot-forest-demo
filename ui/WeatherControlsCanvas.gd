@@ -16,8 +16,6 @@ const WIND_DIRECTION_OPTIONS := [
 const GND_WIND_DIRECTION_SETTING := "shader_globals/gnd_wind_direction/value"
 const GND_WIND_SPEED_SETTING := "shader_globals/gnd_wind_speed/value"
 const GND_WIND_STRENGTH_SETTING := "shader_globals/gnd_wind_strength/value"
-const SGT_WIND_DIRECTION_SETTING := "shader_globals/sgt_wind_direction/value"
-const SGT_WIND_STRENGTH_SETTING := "shader_globals/sgt_wind_strength/value"
 
 var _weather: WeatherNode
 var _skydome: Skydome
@@ -147,16 +145,10 @@ func _apply_wind_controls(strength_ratio: float, direction: Vector2) -> void:
     var normalized_direction := direction.normalized()
     var gnd_speed := lerpf(0.15, 3.0, strength_ratio)
     var gnd_strength := lerpf(0.4, 5.0, strength_ratio)
-    var sgt_strength := lerpf(0.04, 0.42, strength_ratio)
-    var sgt_direction := Vector3(normalized_direction.x, 0.0, normalized_direction.y)
-    var time_now := Time.get_ticks_msec() * 0.001
 
     _set_runtime_wind_value(GND_WIND_DIRECTION_SETTING, normalized_direction, "gnd_wind_direction")
     _set_runtime_wind_value(GND_WIND_SPEED_SETTING, gnd_speed, "gnd_wind_speed")
     _set_runtime_wind_value(GND_WIND_STRENGTH_SETTING, gnd_strength, "gnd_wind_strength")
-    _set_runtime_wind_value(SGT_WIND_DIRECTION_SETTING, sgt_direction, "sgt_wind_direction")
-    _set_runtime_wind_value(SGT_WIND_STRENGTH_SETTING, sgt_strength, "sgt_wind_strength")
-    RenderingServer.global_shader_parameter_set("sgt_wind_movement", Vector3(time_now * gnd_speed * 0.08, time_now * (0.85 + strength_ratio), 0.0))
 
     if _weather != null:
         _weather.apply_now()

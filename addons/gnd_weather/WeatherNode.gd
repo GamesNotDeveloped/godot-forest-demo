@@ -37,6 +37,11 @@ const MID_FIELD_NAME := "RainMid"
 @export var wind_speed_project_setting: StringName = &"shader_globals/gnd_wind_speed/value"
 @export var wind_direction: Vector2 = Vector2(0.8, 0.3)
 @export_range(0.0, 8.0, 0.01) var wind_speed: float = 1.0
+@export_range(0.0, 16.0, 0.01) var precipitation_wind_strength: float = 4.0:
+    set(value):
+        precipitation_wind_strength = maxf(value, 0.0)
+        if is_inside_tree():
+            _push_weather_server_settings()
 @export_range(0.0, 1.0, 0.01) var wind_influence: float = 0.35
 
 @export_group("Rain")
@@ -265,6 +270,7 @@ func _push_weather_server_settings() -> void:
     WeatherServer.configure_weather_state(
         get_world_3d(),
         precipitation_intensity,
+        precipitation_wind_strength,
         storm_threshold,
         sheltered_volumetric_emission_scale,
         lightning_enabled,
@@ -453,7 +459,7 @@ func _update_rain_rendering() -> void:
         _clear_rain_field_layer(_mid_rain_field)
         return
 
-    var rain_direction := _get_rain_direction(_get_wind_speed())
+    var rain_direction := _get_rain_direction(_get_wind_speed(), render_intensity)
     var near_layer_intensity: float = _get_layer_intensity(render_intensity, false)
     var mid_layer_intensity: float = _get_layer_intensity(render_intensity, true)
     var sample_y: float = follow_target.global_position.y + 1.0
@@ -579,9 +585,14 @@ func _smooth_factor(value: float, start: float, end: float) -> float:
     return t * t * (3.0 - 2.0 * t)
 
 
-func _get_rain_direction(wind_speed_value: float) -> Vector3:
+func _get_rain_direction(wind_speed_value: float, rain_intensity: float) -> Vector3:
     var wind_dir := _get_wind_direction()
-    var lateral_strength := clampf(wind_speed_value * wind_influence * 0.22, 0.0, 0.82)
+    var wind_tilt := maxf(wind_speed_value * wind_influence, 0.0)
+    var rain_tilt_factor := _smooth_factor(rain_intensity, 0.18, 0.9)
+    var lateral_strength := minf(
+        pow(wind_tilt, 1.1) * lerpf(0.05, 0.14, rain_tilt_factor),
+        0.32
+    )
     return Vector3(wind_dir.x * lateral_strength, -1.0, wind_dir.y * lateral_strength).normalized()
 
 
@@ -670,24 +681,17 @@ func _get_rain_field_spacing(base_spacing: float) -> float:
 
 
 func _get_wind_direction() -> Vector2:
-    var direction := wind_direction
-    if use_global_wind and _has_project_setting(wind_direction_project_setting):
-        direction = ProjectSettings.get_setting(String(wind_direction_project_setting), direction)
-
-    if direction.length_squared() <= 0.0001:
+    if use_global_wind:
+        return WeatherServer.get_global_wind_direction(wind_direction)
+    if wind_direction.length_squared() <= 0.0001:
         return Vector2(0.8, 0.3)
-    return direction.normalized()
+    return wind_direction.normalized()
 
 
 func _get_wind_speed() -> float:
-    var speed := wind_speed
-    if use_global_wind and _has_project_setting(wind_speed_project_setting):
-        speed = float(ProjectSettings.get_setting(String(wind_speed_project_setting), speed))
-    return maxf(speed, 0.0)
-
-
-func _has_project_setting(setting_name: StringName) -> bool:
-    return setting_name != &"" and ProjectSettings.has_setting(String(setting_name))
+    if use_global_wind:
+        return WeatherServer.get_weather_controlled_wind_speed(get_world_3d(), wind_speed)
+    return maxf(wind_speed, 0.0)
 
 
 func _push_weather_state(force: bool = false) -> void:

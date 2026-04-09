@@ -100,23 +100,15 @@ sgt_motion_texture={
 "type": "sampler2D",
 "value": "res://grass/motion.png"
 }
-sgt_wind_direction={
-"type": "vec3",
-"value": Vector3(1, 0, 0)
-}
-sgt_wind_movement={
-"type": "vec3",
-"value": Vector2(0, 0)
-}
-sgt_wind_strength={
+gnd_wind_time={
 "type": "float",
-"value": 0.15
+"value": 0.0
 }
-sgt_wind_turbulence={
+gnd_wind_turbulence={
 "type": "float",
 "value": 1.0
 }
-sgt_wind_pattern={
+gnd_wind_pattern={
 "type": "sampler2D",
 "value": "res://grass/wind_pattern.png"
 }

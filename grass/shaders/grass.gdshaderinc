@@ -57,11 +57,11 @@ global uniform vec3 sgt_player_position = vec3(100000.0);
 global uniform vec3 sgt_player_mov = vec3(0.0);
 global uniform sampler2D sgt_normal_displacement : repeat_disable, filter_nearest, hint_normal;
 global uniform sampler2D sgt_motion_texture : repeat_disable, filter_nearest, hint_default_black;
-global uniform vec3 sgt_wind_direction = vec3(1.0, 0.0, 0.0);
-global uniform float sgt_wind_strength = 0.15;
-global uniform float sgt_wind_turbulence = 1.0;
-global uniform vec3 sgt_wind_movement = vec3(0.0, 0.0, 0.0);
-global uniform sampler2D sgt_wind_pattern : source_color, repeat_enable, filter_linear, hint_default_white;
+global uniform vec2 gnd_wind_direction = vec2(1.0, 0.0);
+global uniform float gnd_wind_strength = 0.15;
+global uniform float gnd_wind_turbulence = 1.0;
+global uniform float gnd_wind_time = 0.0;
+global uniform sampler2D gnd_wind_pattern : source_color, repeat_enable, filter_linear, hint_default_white;
 
 varying vec2 uv_align;
 varying vec2 uv_scale;
@@ -91,24 +91,29 @@ float wrap(float value, float min, float max) {
 
 
 void vertex() {
-	float lev = pow(abs((VERTEX.y - NODE_POSITION_WORLD.y) / grass_size_y), 1.7 + sgt_wind_strength);
+	float grass_wind_strength = gnd_wind_strength * 0.001;
+	float lev = pow(abs((VERTEX.y - NODE_POSITION_WORLD.y) / grass_size_y), 1.7 + grass_wind_strength);
 	float rand = wrap(dot(NODE_POSITION_WORLD, NODE_POSITION_WORLD * 10.0), 0.0, 256.0);
 	float randf = fract(rand);
 	int randi = int(randf * 10.0);
+	vec2 wind_dir_2d = normalize(max(abs(gnd_wind_direction.x) + abs(gnd_wind_direction.y), 0.0001) * gnd_wind_direction);
+	vec3 wind_dir = vec3(wind_dir_2d.x, 0.0, wind_dir_2d.y);
+	vec2 wind_scroll = wind_dir_2d * (gnd_wind_time * 0.08);
+	float wind_wave = gnd_wind_time * 0.85;
 
 	uv_align = vec2(float(randi % int(texture_frames.x)), float(int(randf * 100.0) % int(texture_frames.y)));
 	uv_align /= texture_frames;
 	uv_scale = vec2(1.0 / texture_frames.x, 1.0 / texture_frames.y);
 
-	float text_wind = texture(sgt_wind_pattern, (vec2(NODE_POSITION_WORLD.x, NODE_POSITION_WORLD.z) * 0.005) - sgt_wind_movement.xz).r;
-	VERTEX.x += text_wind * lev * sgt_wind_strength * sgt_wind_direction.x * (1.0 - grass_strength);
-	VERTEX.z += text_wind * lev * sgt_wind_strength * sgt_wind_direction.z * (1.0 - grass_strength);
-	VERTEX.x += sin(rand + sgt_wind_movement.y) * lev * ((1.0 - grass_strength) / 10.0);
-	VERTEX.x += sgt_wind_direction.x * lev * (sgt_wind_strength + (sin(TIME + rand) * 0.2 * (1.0 - grass_strength) * min(1.0, sgt_wind_turbulence))) * (1.0 - grass_strength);
-	VERTEX.y += sin(rand + sgt_wind_movement.y) * lev * ((1.0 - grass_strength) / 10.0) * sgt_wind_direction.y;
-	VERTEX.y += sgt_wind_direction.y * lev * (sgt_wind_strength + (sin(TIME + rand) * 0.2 * (1.0 - grass_strength) * min(1.0, sgt_wind_turbulence))) * (1.0 - grass_strength);
-	VERTEX.z += cos(rand + sgt_wind_movement.y) * lev * ((1.0 - grass_strength) / 10.0);
-	VERTEX.z += sgt_wind_direction.z * lev * (sgt_wind_strength + (sin(TIME + rand) * 0.2 * (1.0 - grass_strength) * min(1.0, sgt_wind_turbulence))) * (1.0 - grass_strength);
+	float text_wind = texture(gnd_wind_pattern, (vec2(NODE_POSITION_WORLD.x, NODE_POSITION_WORLD.z) * 0.005) - wind_scroll).r;
+	VERTEX.x += text_wind * lev * grass_wind_strength * wind_dir.x * (1.0 - grass_strength);
+	VERTEX.z += text_wind * lev * grass_wind_strength * wind_dir.z * (1.0 - grass_strength);
+	VERTEX.x += sin(rand + wind_wave) * lev * ((1.0 - grass_strength) / 10.0);
+	VERTEX.x += wind_dir.x * lev * (grass_wind_strength + (sin(gnd_wind_time + rand) * 0.2 * (1.0 - grass_strength) * min(1.0, gnd_wind_turbulence))) * (1.0 - grass_strength);
+	VERTEX.y += sin(rand + wind_wave) * lev * ((1.0 - grass_strength) / 10.0) * wind_dir.y;
+	VERTEX.y += wind_dir.y * lev * (grass_wind_strength + (sin(gnd_wind_time + rand) * 0.2 * (1.0 - grass_strength) * min(1.0, gnd_wind_turbulence))) * (1.0 - grass_strength);
+	VERTEX.z += cos(rand + wind_wave) * lev * ((1.0 - grass_strength) / 10.0);
+	VERTEX.z += wind_dir.z * lev * (grass_wind_strength + (sin(gnd_wind_time + rand) * 0.2 * (1.0 - grass_strength) * min(1.0, gnd_wind_turbulence))) * (1.0 - grass_strength);
 
 	vec3 align = VERTEX - NODE_POSITION_WORLD;
 	float scale_rand = ((float(randi % 5) / 5.0) * scale_var);

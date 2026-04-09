@@ -13,6 +13,7 @@ var _time_transition_wrapped: bool = false
 var _time_transition_target_total_hours: float = 0.0
 var _time_transition_target_unwrapped_time: float = 0.0
 var _time_transition_speed_hours_per_second: float = 0.0
+var _cloud_motion_time: float = 0.0
 
 const SUN_SHAFTS_EFFECT_SCRIPT := preload("res://addons/gnd_skydome/SunShaftsCompositorEffect.gd")
 
@@ -295,24 +296,24 @@ var _weather_local_emission_scale: float = 1.0
 @export_group("Sky Shader: Atmosphere")
 @export var shader_atmosphere_horizon_level: float = -0.035:
     set(v):
-        shader_atmosphere_horizon_level = v
-        _set_shader_param("atmosphere_horizon_level", v)
+        shader_atmosphere_horizon_level = clampf(v, -0.2, 0.2)
+        _set_shader_param("atmosphere_horizon_level", shader_atmosphere_horizon_level)
 @export var shader_atmosphere_height: float = 0.24:
     set(v):
-        shader_atmosphere_height = v
-        _set_shader_param("atmosphere_height", v)
+        shader_atmosphere_height = clampf(v, 0.02, 0.6)
+        _set_shader_param("atmosphere_height", shader_atmosphere_height)
 @export var shader_atmosphere_density: float = 0.46:
     set(v):
-        shader_atmosphere_density = v
-        _set_shader_param("atmosphere_density", v)
+        shader_atmosphere_density = clampf(v, 0.0, 2.0)
+        _set_shader_param("atmosphere_density", shader_atmosphere_density)
 @export var shader_atmosphere_sun_scatter: float = 0.34:
     set(v):
-        shader_atmosphere_sun_scatter = v
-        _set_shader_param("atmosphere_sun_scatter", v)
+        shader_atmosphere_sun_scatter = clampf(v, 0.0, 2.0)
+        _set_shader_param("atmosphere_sun_scatter", shader_atmosphere_sun_scatter)
 @export var shader_atmosphere_sunset_boost: float = 1.35:
     set(v):
-        shader_atmosphere_sunset_boost = v
-        _set_shader_param("atmosphere_sunset_boost", v)
+        shader_atmosphere_sunset_boost = clampf(v, 0.0, 3.0)
+        _set_shader_param("atmosphere_sunset_boost", shader_atmosphere_sunset_boost)
 
 @export_group("Sky Shader: Sunset")
 @export var shader_sunset_bottom_color: Color = Color(1.0, 0.5, 0.2, 1):
@@ -555,6 +556,7 @@ func _ready() -> void:
     set_process(true)
 
 func _process(_delta: float) -> void:
+    _advance_cloud_motion(_delta)
     _advance_time_transition(_delta)
     _update_effect()
 
@@ -705,6 +707,7 @@ func _sync_shader_params() -> void:
     _sky_material.set_shader_parameter("sun_cloud_occlusion", shader_sun_cloud_occlusion)
 
     _sky_material.set_shader_parameter("cloud_time", _get_cloud_time_value())
+    _sky_material.set_shader_parameter("cloud_motion_time", _cloud_motion_time)
     _sky_material.set_shader_parameter("cloud_motion_scale", shader_cloud_motion_scale)
     _apply_cloud_wind_params()
 
@@ -716,22 +719,26 @@ func _update_cloud_time() -> void:
     _set_shader_param("cloud_time", _get_cloud_time_value())
 
 
+func _advance_cloud_motion(delta: float) -> void:
+    if delta <= 0.0:
+        return
+    _cloud_motion_time += delta * _get_global_wind_speed() * shader_cloud_motion_scale
+    _set_shader_param("cloud_motion_time", _cloud_motion_time)
+
+
 func _get_global_wind_direction() -> Vector2:
-    var direction := shader_cloud_wind_direction
-    if shader_cloud_use_global_wind and _has_project_setting(wind_direction_project_setting):
-        direction = ProjectSettings.get_setting(String(wind_direction_project_setting), direction)
-    return direction
+    if shader_cloud_use_global_wind:
+        return WeatherServer.get_global_wind_direction(shader_cloud_wind_direction)
+    return shader_cloud_wind_direction
 
 
 func _get_global_wind_speed() -> float:
     var speed := 1.0
-    if shader_cloud_use_global_wind and _has_project_setting(wind_speed_project_setting):
-        speed = float(ProjectSettings.get_setting(String(wind_speed_project_setting), speed))
+    if shader_cloud_use_global_wind:
+        var viewport := get_viewport()
+        var world_3d := viewport.get_world_3d() if viewport != null else null
+        speed = WeatherServer.get_weather_controlled_wind_speed(world_3d, speed)
     return speed * shader_cloud_wind_speed_multiplier
-
-
-func _has_project_setting(setting_name: StringName) -> bool:
-    return setting_name != &"" and ProjectSettings.has_setting(String(setting_name))
 
 
 func _apply_cloud_wind_params() -> void:
