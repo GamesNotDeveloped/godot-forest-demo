@@ -3,6 +3,7 @@ class_name GndMaskPainterPanel
 extends VBoxContainer
 
 signal create_mask_requested
+signal clear_requested
 signal paint_toggled(enabled: bool)
 signal channel_selected(channel: int)
 
@@ -17,6 +18,7 @@ var brush_hardness: SpinBox
 var brush_opacity: SpinBox
 var resolution_option: OptionButton
 var create_button: Button
+var clear_button: Button
 var status_label: Label
 var section_label: Label
 
@@ -96,6 +98,13 @@ func _build() -> void:
     )
     create_row.add_child(create_button)
 
+    clear_button = Button.new()
+    clear_button.text = "Clear Channel"
+    clear_button.pressed.connect(func() -> void:
+        clear_requested.emit()
+    )
+    create_row.add_child(clear_button)
+
     status_label = Label.new()
     status_label.text = "Select a supported node to edit its mask."
     add_child(status_label)
@@ -108,6 +117,7 @@ func set_mask_label(mask_name: String) -> void:
     section_label.text = normalized
     paint_toggle.text = "Paint %s" % normalized
     create_button.text = "Create %s PNG" % normalized
+    clear_button.text = "Clear %s Channel" % normalized
 
 
 func set_controls_enabled(enabled: bool, busy: bool) -> void:
@@ -120,6 +130,7 @@ func set_controls_enabled(enabled: bool, busy: bool) -> void:
     brush_opacity.editable = editable
     resolution_option.disabled = not editable
     create_button.disabled = not editable
+    clear_button.disabled = not editable
 
 
 func clear_target_state() -> void:

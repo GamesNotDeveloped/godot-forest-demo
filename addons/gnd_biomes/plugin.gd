@@ -28,6 +28,7 @@ var _status_label: Label
 var _save_dialog: FileDialog
 var _billboard_dir_dialog: FileDialog
 var _overwrite_dialog: ConfirmationDialog
+var _clear_channel_dialog: ConfirmationDialog
 var _overwrite_mode_option: OptionButton
 var _stroke_active := false
 var _stroke_before_image: Image
@@ -46,6 +47,7 @@ func _enter_tree() -> void:
     _build_panel()
     _build_file_dialog()
     _build_overwrite_dialog()
+    _build_clear_channel_dialog()
     set_input_event_forwarding_always_enabled()
     set_force_draw_over_forwarding_enabled()
 
@@ -63,6 +65,8 @@ func _exit_tree() -> void:
         _billboard_dir_dialog.queue_free()
     if _overwrite_dialog != null:
         _overwrite_dialog.queue_free()
+    if _clear_channel_dialog != null:
+        _clear_channel_dialog.queue_free()
 
 
 func _handles(object: Object) -> bool:
@@ -131,6 +135,7 @@ func _build_panel() -> void:
     _mask_panel = MASK_PAINTER_PANEL_SCRIPT.new()
     _mask_panel.paint_toggled.connect(_on_paint_toggled)
     _mask_panel.create_mask_requested.connect(_on_create_mask_pressed)
+    _mask_panel.clear_requested.connect(_on_clear_channel_pressed)
     _mask_panel.channel_selected.connect(_on_mask_channel_selected)
     _panel.add_child(_mask_panel)
 
@@ -215,6 +220,22 @@ func _build_overwrite_dialog() -> void:
     get_editor_interface().get_base_control().add_child(_overwrite_dialog)
 
 
+func _build_clear_channel_dialog() -> void:
+    _clear_channel_dialog = ConfirmationDialog.new()
+    _clear_channel_dialog.title = "Clear Mask Channel"
+    _clear_channel_dialog.ok_button_text = "Clear"
+    _clear_channel_dialog.min_size = Vector2i(360, 0)
+    _clear_channel_dialog.confirmed.connect(_on_clear_channel_confirmed)
+
+    var label := Label.new()
+    label.name = "Message"
+    label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    label.custom_minimum_size = Vector2(320.0, 0.0)
+    _clear_channel_dialog.add_child(label)
+
+    get_editor_interface().get_base_control().add_child(_clear_channel_dialog)
+
+
 func _refresh_panel_state() -> void:
     if _panel == null:
         return
@@ -292,6 +313,15 @@ func _on_mask_channel_selected(channel: int) -> void:
     _refresh_panel_state()
 
 
+func _on_clear_channel_pressed() -> void:
+    if _current_paint_target == null:
+        return
+    var message := _clear_channel_dialog.get_node("Message") as Label
+    if message != null:
+        message.text = "Clear %s channel from the current mask? This affects the whole texture." % _channel_name(_get_current_mask_channel())
+    _clear_channel_dialog.popup_centered_clamped(Vector2i(380, 120))
+
+
 func _begin_stroke() -> bool:
     if not _can_paint():
         return false
@@ -319,6 +349,7 @@ func _end_stroke() -> void:
     undo_redo.add_do_method(_current_paint_target, "set_mask_image", _stroke_working_image, true)
     undo_redo.add_undo_method(_current_paint_target, "set_mask_image", _stroke_before_image, true)
     undo_redo.commit_action()
+    _refresh_current_mask_texture.call_deferred()
 
 
 func _paint_at_screen_position(camera: Camera3D, screen_position: Vector2) -> void:
@@ -361,6 +392,10 @@ func _intersect_mask_plane(camera: Camera3D, screen_position: Vector2) -> Varian
 
     var ray_origin := camera.project_ray_origin(screen_position)
     var ray_direction := camera.project_ray_normal(screen_position)
+    var terrain_hit := _intersect_current_target_surface(ray_origin, ray_direction)
+    if terrain_hit != null:
+        return terrain_hit
+
     var plane_origin := _current_paint_target.global_transform.origin
     var plane_normal := (_current_paint_target.global_transform.basis.orthonormalized() * Vector3.UP).normalized()
     var denominator := plane_normal.dot(ray_direction)
@@ -372,6 +407,31 @@ func _intersect_mask_plane(camera: Camera3D, screen_position: Vector2) -> Varian
         return null
 
     return ray_origin + ray_direction * distance
+
+
+func _intersect_current_target_surface(ray_origin: Vector3, ray_direction: Vector3) -> Variant:
+    if _current_paint_target == null:
+        return null
+    if _current_paint_target.get_script() != TERRAIN_PATCH_SCRIPT:
+        return null
+
+    var world_3d := _current_paint_target.get_world_3d()
+    if world_3d == null:
+        return null
+
+    var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_direction * 4096.0)
+    query.collide_with_areas = false
+    query.collide_with_bodies = true
+    var result := world_3d.direct_space_state.intersect_ray(query)
+    if result.is_empty():
+        return null
+
+    var collider := result.get("collider") as Node
+    if collider == null:
+        return null
+    if collider != _current_paint_target and not _current_paint_target.is_ancestor_of(collider):
+        return null
+    return result.get("position")
 
 
 func _on_create_mask_pressed() -> void:
@@ -395,6 +455,26 @@ func _on_mask_file_selected(path: String) -> void:
         _mask_panel.set_status("Failed to create mask at %s" % path)
 
 
+func _on_clear_channel_confirmed() -> void:
+    if _current_paint_target == null:
+        return
+    var before_image := _current_paint_target.call("get_mask_image_copy") as Image
+    if before_image == null or before_image.is_empty():
+        return
+    var after_image := before_image.duplicate()
+    _clear_channel_in_image(after_image, _get_current_mask_channel())
+    if before_image.get_data() == after_image.get_data():
+        return
+
+    var undo_redo := get_undo_redo()
+    undo_redo.create_action("Clear Mask Channel")
+    undo_redo.add_do_method(_current_paint_target, "set_mask_image", after_image, true)
+    undo_redo.add_undo_method(_current_paint_target, "set_mask_image", before_image, true)
+    undo_redo.commit_action()
+    _refresh_current_mask_texture.call_deferred()
+    _refresh_panel_state()
+
+
 func _import_and_assign_mask(path: String) -> void:
     if _current_paint_target == null:
         return
@@ -409,6 +489,24 @@ func _import_and_assign_mask(path: String) -> void:
     _current_paint_target.call("assign_mask_texture", texture, true)
     _pending_mask_path = ""
     _mask_panel.set_status("Created mask %s" % path)
+    _refresh_panel_state()
+
+
+func _refresh_current_mask_texture() -> void:
+    if _current_paint_target == null:
+        return
+    var path := _current_paint_target.call("get_mask_texture_path") as String
+    if path.is_empty():
+        return
+
+    await _rescan_filesystem()
+
+    var texture := ResourceLoader.load(path, "Texture2D", ResourceLoader.CACHE_MODE_REPLACE) as Texture2D
+    if texture == null:
+        _mask_panel.set_status("Mask refresh failed for %s" % path)
+        return
+
+    _current_paint_target.call("assign_mask_texture", texture, true)
     _refresh_panel_state()
 
 
@@ -910,3 +1008,23 @@ func _set_current_mask_channel(channel: int) -> void:
             _current_paint_target.call("set_mask_paint_channel", clamped_channel)
             return
         _current_paint_target.set("grass_mask_channel", clamped_channel)
+
+
+func _clear_channel_in_image(image: Image, channel: int) -> void:
+    for y in range(image.get_height()):
+        for x in range(image.get_width()):
+            var color := image.get_pixel(x, y)
+            match channel:
+                Biomes.MaskChannel.RED:
+                    color.r = 0.0
+                Biomes.MaskChannel.GREEN:
+                    color.g = 0.0
+                Biomes.MaskChannel.BLUE:
+                    color.b = 0.0
+                Biomes.MaskChannel.ALPHA:
+                    color.a = 0.0
+                Biomes.MaskChannel.LUMINANCE:
+                    color.r = 0.0
+                    color.g = 0.0
+                    color.b = 0.0
+            image.set_pixel(x, y, color)

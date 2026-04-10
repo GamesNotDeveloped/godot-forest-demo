@@ -17,7 +17,6 @@ uniform float base_ao_light_affect : hint_range(0.0, 1.0) = 0.0;
 uniform sampler2D puddle_mask_texture : source_color, filter_nearest, repeat_disable;
 uniform bool puddle_enabled = false;
 uniform int puddle_mask_channel = 2;
-uniform vec2 puddle_mask_uv_scale = vec2(1.0);
 uniform float puddle_mask_threshold : hint_range(0.0, 1.0) = 0.08;
 uniform float puddle_mask_softness : hint_range(0.0, 1.0) = 0.08;
 uniform float puddle_surface_roughness : hint_range(0.0, 1.0) = 0.08;
@@ -93,11 +92,9 @@ float ripple_height(vec2 uv, float time_value) {
 
     return height * puddle_ripple_intensity * rain_mask * 0.12;
 }
-
-
 void fragment() {
     vec2 base_uv = UV * base_uv_scale;
-    vec2 puddle_uv = (UV2 - vec2(0.5)) * puddle_mask_uv_scale + vec2(0.5);
+    vec2 puddle_uv = UV2;
 
     vec4 base_albedo_sample = texture(base_albedo_texture, base_uv) * base_albedo_color;
     vec3 base_albedo = base_albedo_sample.rgb * base_albedo_boost;

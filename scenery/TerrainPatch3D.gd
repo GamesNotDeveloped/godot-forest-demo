@@ -86,16 +86,19 @@ var _terrain_puddles_material: ShaderMaterial
         terrain_puddles_enabled = value
         _refresh_process_state()
         _apply_terrain_material_override()
+        _queue_regenerate()
 
 @export var terrain_puddles_use_grass_mask_texture := true:
     set(value):
         terrain_puddles_use_grass_mask_texture = value
         _apply_terrain_material_override()
+        _queue_regenerate()
 
 @export var terrain_puddles_mask_texture: Texture2D:
     set(value):
         terrain_puddles_mask_texture = value
         _apply_terrain_material_override()
+        _queue_regenerate()
 
 @export_enum("Red", "Green", "Blue", "Alpha", "Luminance") var terrain_puddles_mask_channel: int = MaskChannel.BLUE:
     set(value):
@@ -173,11 +176,13 @@ var _terrain_puddles_material: ShaderMaterial
         _grass_dirty = true
         if terrain_puddles_enabled and terrain_puddles_use_grass_mask_texture:
             _apply_terrain_material_override()
+            _queue_regenerate()
 
 @export var grass_mask_area_size: Vector2 = Vector2.ZERO:
     set(value):
         grass_mask_area_size = value
         _grass_dirty = true
+        _queue_regenerate()
 
 @export_enum("Red", "Green", "Blue", "Alpha", "Luminance") var grass_mask_channel: int = MaskChannel.RED:
     set(value):
@@ -333,6 +338,7 @@ func _generate() -> void:
     var half_size := size * 0.5
     var step_x := size.x / float(subdivisions_x)
     var step_z := size.y / float(subdivisions_z)
+    var mask_area_size := grass_mask_area_size if grass_mask_area_size != Vector2.ZERO else size
 
     var vertices := PackedVector3Array()
     var uvs := PackedVector2Array()
@@ -355,10 +361,7 @@ func _generate() -> void:
                 (float(x) / float(subdivisions_x)) * uv_scale,
                 (float(z) / float(subdivisions_z)) * uv_scale
             )
-            uv2s[vertex_index] = Vector2(
-                float(x) / float(subdivisions_x),
-                float(z) / float(subdivisions_z)
-            )
+            uv2s[vertex_index] = _grass_local_to_mask_uv(local_x, local_z, mask_area_size)
             normals_accum[vertex_index] = Vector3.ZERO
 
     var collision_faces := PackedVector3Array()
@@ -487,7 +490,6 @@ func _sync_terrain_puddles_material() -> void:
     shader_material.set_shader_parameter("puddle_mask_texture", _resolve_puddles_mask_texture())
     shader_material.set_shader_parameter("puddle_enabled", terrain_puddles_enabled)
     shader_material.set_shader_parameter("puddle_mask_channel", terrain_puddles_mask_channel)
-    shader_material.set_shader_parameter("puddle_mask_uv_scale", _resolve_puddles_mask_uv_scale())
     shader_material.set_shader_parameter("puddle_mask_threshold", clampf(terrain_puddles_mask_threshold, 0.0, 1.0))
     shader_material.set_shader_parameter("puddle_mask_softness", clampf(terrain_puddles_mask_softness, 0.0, 1.0))
     shader_material.set_shader_parameter("puddle_surface_roughness", clampf(terrain_puddles_surface_roughness, 0.01, 1.0))
@@ -505,16 +507,6 @@ func _resolve_puddles_mask_texture() -> Texture2D:
     if terrain_puddles_use_grass_mask_texture and grass_mask_texture != null:
         return grass_mask_texture
     return terrain_puddles_mask_texture
-
-
-func _resolve_puddles_mask_uv_scale() -> Vector2:
-    var mask_area_size := size
-    if terrain_puddles_use_grass_mask_texture and grass_mask_area_size != Vector2.ZERO:
-        mask_area_size = grass_mask_area_size
-    return Vector2(
-        size.x / maxf(mask_area_size.x, 0.0001),
-        size.y / maxf(mask_area_size.y, 0.0001)
-    )
 
 
 func _update_terrain_puddles(delta: float) -> void:
