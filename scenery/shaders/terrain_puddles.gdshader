@@ -116,12 +116,13 @@ void fragment() {
     float threshold_end = min(puddle_mask_threshold + max(puddle_mask_softness, 0.0001), 1.0);
     float puddle_mask = smoothstep(puddle_mask_threshold, threshold_end, clamp(raw_puddle_mask, 0.0, 1.0));
 
+    vec2 ripple_uv = puddle_uv * base_uv_scale;
     float t = TIME;
     float eps = 0.004;
-    float h_l = ripple_height(base_uv + vec2(-eps, 0.0), t);
-    float h_r = ripple_height(base_uv + vec2(eps, 0.0), t);
-    float h_d = ripple_height(base_uv + vec2(0.0, -eps), t);
-    float h_u = ripple_height(base_uv + vec2(0.0, eps), t);
+    float h_l = ripple_height(ripple_uv + vec2(-eps, 0.0), t);
+    float h_r = ripple_height(ripple_uv + vec2(eps, 0.0), t);
+    float h_d = ripple_height(ripple_uv + vec2(0.0, -eps), t);
+    float h_u = ripple_height(ripple_uv + vec2(0.0, eps), t);
 
     float slope_strength = max(puddle_normal_strength, 0.0) * 3.2;
     vec3 puddle_tangent_normal = normalize(vec3((h_l - h_r) * slope_strength, (h_d - h_u) * slope_strength, 0.55));

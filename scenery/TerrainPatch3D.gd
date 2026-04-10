@@ -86,19 +86,16 @@ var _terrain_puddles_material: ShaderMaterial
         terrain_puddles_enabled = value
         _refresh_process_state()
         _apply_terrain_material_override()
-        _queue_regenerate()
 
 @export var terrain_puddles_use_grass_mask_texture := true:
     set(value):
         terrain_puddles_use_grass_mask_texture = value
         _apply_terrain_material_override()
-        _queue_regenerate()
 
 @export var terrain_puddles_mask_texture: Texture2D:
     set(value):
         terrain_puddles_mask_texture = value
         _apply_terrain_material_override()
-        _queue_regenerate()
 
 @export_enum("Red", "Green", "Blue", "Alpha", "Luminance") var terrain_puddles_mask_channel: int = MaskChannel.BLUE:
     set(value):
@@ -176,7 +173,6 @@ var _terrain_puddles_material: ShaderMaterial
         _grass_dirty = true
         if terrain_puddles_enabled and terrain_puddles_use_grass_mask_texture:
             _apply_terrain_material_override()
-            _queue_regenerate()
 
 @export var grass_mask_area_size: Vector2 = Vector2.ZERO:
     set(value):
@@ -338,7 +334,7 @@ func _generate() -> void:
     var half_size := size * 0.5
     var step_x := size.x / float(subdivisions_x)
     var step_z := size.y / float(subdivisions_z)
-    var mask_area_size := grass_mask_area_size if grass_mask_area_size != Vector2.ZERO else size
+    var mask_area_size := _get_mask_area_size()
 
     var vertices := PackedVector3Array()
     var uvs := PackedVector2Array()
@@ -361,6 +357,7 @@ func _generate() -> void:
                 (float(x) / float(subdivisions_x)) * uv_scale,
                 (float(z) / float(subdivisions_z)) * uv_scale
             )
+            # UV2 carries baked mask-space coordinates shared by grass and terrain puddles.
             uv2s[vertex_index] = _grass_local_to_mask_uv(local_x, local_z, mask_area_size)
             normals_accum[vertex_index] = Vector3.ZERO
 
@@ -644,7 +641,7 @@ func _start_grass_build(camera_local: Vector3) -> void:
         "noise": noise_copy,
         "grass_mask_enabled": grass_mask_enabled,
         "grass_mask_image": grass_mask_copy,
-        "grass_mask_area_size": grass_mask_area_size if grass_mask_area_size != Vector2.ZERO else size,
+        "grass_mask_area_size": _get_mask_area_size(),
         "grass_mask_channel": grass_mask_channel,
         "grass_mask_threshold": grass_mask_threshold,
         "grass_mask_inverse": grass_mask_inverse,
@@ -811,6 +808,10 @@ func _grass_local_to_mask_uv(local_x: float, local_z: float, mask_area_size: Vec
     )
 
 
+func _get_mask_area_size() -> Vector2:
+    return grass_mask_area_size if grass_mask_area_size != Vector2.ZERO else size
+
+
 func _sample_mask_channel(color: Color, channel: int) -> float:
     match channel:
         MaskChannel.RED:
@@ -841,8 +842,7 @@ func get_mask_image_copy() -> Image:
 
 
 func local_to_mask_uv(local_position: Vector3) -> Vector2:
-    var area_size := grass_mask_area_size if grass_mask_area_size != Vector2.ZERO else size
-    return _grass_local_to_mask_uv(local_position.x, local_position.z, area_size)
+    return _grass_local_to_mask_uv(local_position.x, local_position.z, _get_mask_area_size())
 
 
 func get_mask_paint_channel() -> int:
@@ -988,7 +988,7 @@ func _save_grass_mask_image_to_disk(image: Image) -> void:
 
 
 func _world_radius_to_mask_pixel_radius(radius_world: float, width: int, height: int) -> int:
-    var area_size := grass_mask_area_size if grass_mask_area_size != Vector2.ZERO else size
+    var area_size := _get_mask_area_size()
     var world_per_pixel_x := area_size.x / maxf(float(width), 1.0)
     var world_per_pixel_y := area_size.y / maxf(float(height), 1.0)
     var world_per_pixel := maxf(minf(world_per_pixel_x, world_per_pixel_y), 0.0001)

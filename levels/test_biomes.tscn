@@ -199,9 +199,9 @@ script = ExtResource("35_quality")
 [node name="WeatherControlsCanvas" parent="." unique_id=1325048792 instance=ExtResource("36_weather_ui")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(-0.1434846, 0.9605521, -0.2382264, 0, 0.24071719, 0.97059536, 0.9896526, 0.13926548, -0.03453921, 0, 0.5193932, -0.2882359)
-light_color = Color(0.8346124, 0.8079282, 0.78305745, 1)
-light_energy = 1.3189027
+transform = Transform3D(0.3799939, 0.6217247, -0.68488175, 0, 0.74042153, 0.67214286, 0.924989, -0.25541016, 0.28135565, 0, 0.5193932, -0.2882359)
+light_color = Color(0.3708452, 0.42023686, 0.4761585, 1)
+light_energy = 0.1659391
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
 light_angular_distance = 3.6
@@ -260,8 +260,8 @@ metadata/_custom_type_script = "uid://eb0v7nc1t8o3"
 
 [node name="Terrain" type="Node3D" parent="." unique_id=371551466]
 script = ExtResource("2_terrain")
-subdivisions_x = 160
-subdivisions_z = 160
+subdivisions_x = 320
+subdivisions_z = 320
 height_scale = 18.93
 uv_scale = 2.0
 terrain_surface_albedo_texture = ExtResource("37_2o85u")
@@ -273,8 +273,9 @@ terrain_surface_normal_scale = 1.15
 terrain_puddles_enabled = true
 terrain_puddles_use_grass_mask_texture = false
 terrain_puddles_mask_texture = ExtResource("6_2omi8")
-terrain_puddles_mask_threshold = 0.1
+terrain_puddles_mask_threshold = 0.52
 terrain_puddles_ripple_speed = 1.88
+terrain_puddles_normal_strength = 1.34
 noise = SubResource("FastNoiseLite_terrain")
 grass_enabled = true
 grass_mesh = ExtResource("18_mh1bx")
@@ -308,7 +309,7 @@ tween_duration = 1.5
 script = ExtResource("19_shafts")
 time_transition_duration = 1.0
 day_of_year = 154
-time_of_day = 12.995
+time_of_day = 20.746
 latitude = 21.0
 sun_light_energy = 1.685
 moon_light_color = Color(0.23498535, 0.29047748, 0.34375, 1)
@@ -347,7 +348,7 @@ weather_volumetric_fog_density_target = 0.12
 weather_volumetric_fog_sky_affect_target = 1.0
 weather_volumetric_fog_emission_color = Color(1, 1, 1, 1)
 weather_volumetric_fog_emission_energy = 0.28
-moon_phase_debug = 0.2333714301839933
+moon_phase_debug = 0.24430804831245023
 shader_zenith_color = Color(0.11514282, 0.20309141, 0.3828125, 1)
 shader_sky_energy = 0.532
 shader_horizon_height = 0.178
@@ -364,7 +365,7 @@ shader_moon_eclipse_size = 1.531
 shader_cloud_time_scale = 30.0
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.285484, 4.6024804, 14.613271)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.969287, 1.9258641, 2.4373903)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
