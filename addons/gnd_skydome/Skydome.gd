@@ -149,10 +149,6 @@ var current_vol_fog_max_density: float = 0.0
         sky_material = v
         _refresh()
 
-@export_group("Wind Globals")
-@export var wind_direction_project_setting: StringName = &"shader_globals/gnd_wind_direction/value"
-@export var wind_speed_project_setting: StringName = &"shader_globals/gnd_wind_speed/value"
-
 @export_group("Sunshafts")
 @export var sunshafts_enabled: bool = true:
     set(v):
@@ -446,14 +442,6 @@ var _weather_local_emission_scale: float = 1.0
     set(v):
         shader_cloud_time_scale = v
         _update_cloud_time()
-@export var shader_cloud_use_global_wind: bool = true:
-    set(v):
-        shader_cloud_use_global_wind = v
-        _update_cloud_wind()
-@export var shader_cloud_wind_direction: Vector2 = Vector2(0.8, 0.3):
-    set(v):
-        shader_cloud_wind_direction = v
-        _update_cloud_wind()
 @export var shader_cloud_wind_speed_multiplier: float = 1.0:
     set(v):
         shader_cloud_wind_speed_multiplier = v
@@ -727,17 +715,13 @@ func _advance_cloud_motion(delta: float) -> void:
 
 
 func _get_global_wind_direction() -> Vector2:
-    if shader_cloud_use_global_wind:
-        return WeatherServer.get_global_wind_direction(shader_cloud_wind_direction)
-    return shader_cloud_wind_direction
+    return WeatherServer.get_global_wind_direction()
 
 
 func _get_global_wind_speed() -> float:
-    var speed := 1.0
-    if shader_cloud_use_global_wind:
-        var viewport := get_viewport()
-        var world_3d := viewport.get_world_3d() if viewport != null else null
-        speed = WeatherServer.get_weather_controlled_wind_speed(world_3d, speed)
+    var viewport := get_viewport()
+    var world_3d := viewport.get_world_3d() if viewport != null else null
+    var speed := WeatherServer.get_weather_controlled_wind_speed(world_3d)
     return speed * shader_cloud_wind_speed_multiplier
 
 

@@ -14,30 +14,17 @@ const PROBE_OFFSETS: Array[Vector2] = [
 @export var mask_texture: Texture2D
 @export var surface_size: Vector2 = Vector2(3.495, 2.2)
 @export_range(0.0, 0.2, 0.001) var surface_height_offset: float = 0.078
+@export_range(0.0, 500.0, 0.1) var visibility_range_begin: float = 6.0
+@export_range(0.0, 500.0, 0.1) var visibility_range_end: float = 10.0
 @export_range(0.1, 5.0, 0.05) var probe_interval_sec: float = 0.4
 @export_range(0.0, 2.0, 0.01) var probe_height: float = 0.12
 @export_range(0.1, 20.0, 0.05) var rain_smoothing_speed: float = 10.35
 @export_range(0.0, 1.0, 0.01) var rain_ripple_threshold: float = 0.31
-@export_range(0.0, 1.0, 0.01) var rain_wave_threshold: float = 0.22
-@export_range(0.0, 1.0, 0.01) var roughness_dry: float = 0.68
-@export_range(0.0, 1.0, 0.01) var roughness_wet: float = 0.64
 @export_range(0.0, 1.0, 0.01) var specular_wet: float = 0.75
-@export var shallow_color: Color = Color(0.11, 0.15, 0.13, 1.0)
-@export var deep_color: Color = Color(0.03, 0.06, 0.07, 1.0)
-@export var foam_color: Color = Color(0.84, 0.88, 0.82, 1.0)
-@export_range(0.0, 8.0, 0.01) var depth_absorption: float = 1.35
 @export_range(0.0, 0.1, 0.0005) var refraction_strength: float = 0.014
-@export_range(0.0, 1.0, 0.01) var fresnel_strength: float = 0.72
-@export_range(0.5, 8.0, 0.05) var fresnel_power: float = 5.0
+@export_range(0.0, 1.0, 0.01) var refraction_mix: float = 1.0
 @export_range(0.0, 1.0, 0.01) var surface_roughness: float = 0.04
 @export_range(0.0, 1.0, 0.01) var ripple_roughness_reduction: float = 0.02
-@export_range(0.0, 1.0, 0.01) var specular_strength: float = 0.75
-@export_range(0.1, 20.0, 0.1) var wave_speed: float = 0.35
-@export_range(0.1, 20.0, 0.1) var wave_scale: float = 0.1
-@export_range(0.0, 2.0, 0.01) var wave_intensity: float = 0.24
-@export_range(0.1, 20.0, 0.1) var secondary_wave_speed: float = 0.55
-@export_range(0.1, 20.0, 0.1) var secondary_wave_scale: float = 2.8
-@export_range(0.0, 2.0, 0.01) var secondary_wave_intensity: float = 0.05
 @export_range(0.1, 4.0, 0.01) var ripple_speed: float = 0.67
 @export_range(0.1, 10.0, 0.01) var ripple_scale: float = 0.1
 @export_range(0.0, 5.0, 0.01) var ripple_max_radius: float = 1.0
@@ -121,35 +108,20 @@ func _sync_render_state() -> void:
     RenderingServer.instance_set_transform(_instance_rid, render_transform)
 
     _material.set_shader_parameter("mask_texture", mask_texture)
-    _material.set_shader_parameter("shallow_color", shallow_color)
-    _material.set_shader_parameter("deep_color", deep_color)
-    _material.set_shader_parameter("foam_color", foam_color)
     _material.set_shader_parameter("rain_strength", _current_rain_strength)
     _material.set_shader_parameter("rain_ripple_threshold", rain_ripple_threshold)
-    _material.set_shader_parameter("rain_wave_threshold", rain_wave_threshold)
     _material.set_shader_parameter("puddle_alpha_cutoff", puddle_alpha_cutoff)
-    _material.set_shader_parameter("depth_absorption", depth_absorption)
+    _material.set_shader_parameter("visibility_range_begin", visibility_range_begin)
+    _material.set_shader_parameter("visibility_range_end", maxf(visibility_range_end, visibility_range_begin + 0.001))
     _material.set_shader_parameter("refraction_strength", refraction_strength)
-    _material.set_shader_parameter("fresnel_strength", fresnel_strength)
-    _material.set_shader_parameter("fresnel_power", fresnel_power)
-    var effective_surface_roughness := clampf(
-        lerpf(roughness_dry, roughness_wet, _current_rain_strength) * 0.06,
-        0.01,
-        0.18
-    )
-    _material.set_shader_parameter("surface_roughness", maxf(surface_roughness, effective_surface_roughness))
+    _material.set_shader_parameter("refraction_mix", refraction_mix)
+    _material.set_shader_parameter("surface_roughness", clampf(surface_roughness, 0.01, 0.18))
     _material.set_shader_parameter("ripple_roughness_reduction", ripple_roughness_reduction)
     _material.set_shader_parameter("specular_strength", specular_wet)
     _material.set_shader_parameter("ripple_intensity", ripple_intensity)
     _material.set_shader_parameter("ripple_scale", ripple_scale)
     _material.set_shader_parameter("ripple_speed", ripple_speed)
     _material.set_shader_parameter("ripple_max_radius", ripple_max_radius)
-    _material.set_shader_parameter("wave_intensity", wave_intensity)
-    _material.set_shader_parameter("wave_scale", wave_scale)
-    _material.set_shader_parameter("wave_speed", wave_speed)
-    _material.set_shader_parameter("secondary_wave_intensity", secondary_wave_intensity)
-    _material.set_shader_parameter("secondary_wave_scale", secondary_wave_scale)
-    _material.set_shader_parameter("secondary_wave_speed", secondary_wave_speed)
     _material.set_shader_parameter("edge_foam_strength", edge_foam_strength)
     _material.set_shader_parameter("normal_strength", normal_strength)
 

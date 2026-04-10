@@ -38,11 +38,6 @@ const RAIN_FIELD_WIDTH_SCALE := 1.5
             _refresh_editor_preview()
 
 @export_group("Wind")
-@export var use_global_wind: bool = true
-@export var wind_direction_project_setting: StringName = &"shader_globals/gnd_wind_direction/value"
-@export var wind_speed_project_setting: StringName = &"shader_globals/gnd_wind_speed/value"
-@export var wind_direction: Vector2 = Vector2(0.8, 0.3)
-@export_range(0.0, 8.0, 0.01) var wind_speed: float = 1.0
 @export_range(0.0, 16.0, 0.01) var precipitation_wind_strength: float = 4.0:
     set(value):
         precipitation_wind_strength = maxf(value, 0.0)
@@ -1041,17 +1036,11 @@ func _get_rain_field_spacing(base_spacing: float, camera: Camera3D = null) -> fl
 
 
 func _get_wind_direction() -> Vector2:
-    if use_global_wind:
-        return WeatherServer.get_global_wind_direction(wind_direction)
-    if wind_direction.length_squared() <= 0.0001:
-        return Vector2(0.8, 0.3)
-    return wind_direction.normalized()
+    return WeatherServer.get_global_wind_direction()
 
 
 func _get_wind_speed() -> float:
-    if use_global_wind:
-        return WeatherServer.get_weather_controlled_wind_speed(get_world_3d(), wind_speed)
-    return maxf(wind_speed, 0.0)
+    return WeatherServer.get_weather_controlled_wind_speed(get_world_3d())
 
 
 func _push_weather_state(force: bool = false) -> void:
