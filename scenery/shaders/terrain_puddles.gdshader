@@ -54,12 +54,24 @@ float sample_mask_channel(vec4 value, int channel_index) {
 }
 
 
+bool puddle_uv_in_bounds(vec2 uv) {
+    return uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0;
+}
+
+
 float sample_puddle_mask_raw(vec2 uv) {
-    bool puddle_uv_in_bounds = uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0;
-    if (!puddle_enabled || !puddle_uv_in_bounds) {
+    if (!puddle_enabled || !puddle_uv_in_bounds(uv)) {
         return 0.0;
     }
     return sample_mask_channel(textureLod(puddle_mask_texture, uv, 0.0), puddle_mask_channel);
+}
+
+
+float sample_puddle_mask_weight(vec2 uv) {
+    if (!puddle_enabled || !puddle_uv_in_bounds(uv)) {
+        return 0.0;
+    }
+    return 1.0;
 }
 
 
@@ -132,39 +144,55 @@ void fragment() {
     vec2 blur_step = max(feather_uv, puddle_texel);
     vec2 blur_half_step = max(blur_step * 0.5, puddle_texel);
     float blurred_raw_puddle_mask = raw_puddle_mask * 0.14;
-    float blurred_raw_puddle_weight = 0.14;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv + vec2(blur_half_step.x, 0.0)) * 0.10;
-    blurred_raw_puddle_weight += 0.10;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv - vec2(blur_half_step.x, 0.0)) * 0.10;
-    blurred_raw_puddle_weight += 0.10;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv + vec2(0.0, blur_half_step.y)) * 0.10;
-    blurred_raw_puddle_weight += 0.10;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv - vec2(0.0, blur_half_step.y)) * 0.10;
-    blurred_raw_puddle_weight += 0.10;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv + vec2(blur_step.x, 0.0)) * 0.09;
-    blurred_raw_puddle_weight += 0.09;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv - vec2(blur_step.x, 0.0)) * 0.09;
-    blurred_raw_puddle_weight += 0.09;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv + vec2(0.0, blur_step.y)) * 0.09;
-    blurred_raw_puddle_weight += 0.09;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv - vec2(0.0, blur_step.y)) * 0.09;
-    blurred_raw_puddle_weight += 0.09;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv + blur_half_step) * 0.05;
-    blurred_raw_puddle_weight += 0.05;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv - blur_half_step) * 0.05;
-    blurred_raw_puddle_weight += 0.05;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv + vec2(blur_half_step.x, -blur_half_step.y)) * 0.05;
-    blurred_raw_puddle_weight += 0.05;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv + vec2(-blur_half_step.x, blur_half_step.y)) * 0.05;
-    blurred_raw_puddle_weight += 0.05;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv + blur_step) * 0.03;
-    blurred_raw_puddle_weight += 0.03;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv - blur_step) * 0.03;
-    blurred_raw_puddle_weight += 0.03;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv + vec2(blur_step.x, -blur_step.y)) * 0.03;
-    blurred_raw_puddle_weight += 0.03;
-    blurred_raw_puddle_mask += sample_puddle_mask_raw(puddle_uv + vec2(-blur_step.x, blur_step.y)) * 0.03;
-    blurred_raw_puddle_weight += 0.03;
+    float blurred_raw_puddle_weight = sample_puddle_mask_weight(puddle_uv) * 0.14;
+    vec2 sample_uv = puddle_uv + vec2(blur_half_step.x, 0.0);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.10;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.10;
+    sample_uv = puddle_uv - vec2(blur_half_step.x, 0.0);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.10;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.10;
+    sample_uv = puddle_uv + vec2(0.0, blur_half_step.y);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.10;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.10;
+    sample_uv = puddle_uv - vec2(0.0, blur_half_step.y);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.10;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.10;
+    sample_uv = puddle_uv + vec2(blur_step.x, 0.0);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.09;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.09;
+    sample_uv = puddle_uv - vec2(blur_step.x, 0.0);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.09;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.09;
+    sample_uv = puddle_uv + vec2(0.0, blur_step.y);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.09;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.09;
+    sample_uv = puddle_uv - vec2(0.0, blur_step.y);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.09;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.09;
+    sample_uv = puddle_uv + blur_half_step;
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.05;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.05;
+    sample_uv = puddle_uv - blur_half_step;
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.05;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.05;
+    sample_uv = puddle_uv + vec2(blur_half_step.x, -blur_half_step.y);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.05;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.05;
+    sample_uv = puddle_uv + vec2(-blur_half_step.x, blur_half_step.y);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.05;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.05;
+    sample_uv = puddle_uv + blur_step;
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.03;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.03;
+    sample_uv = puddle_uv - blur_step;
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.03;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.03;
+    sample_uv = puddle_uv + vec2(blur_step.x, -blur_step.y);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.03;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.03;
+    sample_uv = puddle_uv + vec2(-blur_step.x, blur_step.y);
+    blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.03;
+    blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.03;
     blurred_raw_puddle_mask = clamp(blurred_raw_puddle_mask / max(blurred_raw_puddle_weight, 0.0001), 0.0, 1.0);
     float wet_edge_start = max(puddle_mask_threshold - puddle_wet_edge_width, 0.0);
     float wet_edge_end = min(threshold_end + puddle_wet_edge_width, 1.0);
