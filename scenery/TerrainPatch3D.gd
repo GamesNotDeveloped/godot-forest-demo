@@ -104,6 +104,9 @@ var _terrain_puddles_material: ShaderMaterial
 
 @export_range(0.0, 1.0, 0.01) var terrain_puddles_mask_threshold: float = 0.08
 @export_range(0.0, 1.0, 0.01) var terrain_puddles_mask_softness: float = 0.08
+@export_range(0.0, 0.5, 0.005) var terrain_puddles_wet_edge_width: float = 0.06
+@export_range(0.0, 4.0, 0.01) var terrain_puddles_wet_edge_feather_world: float = 0.75
+@export_range(0.0, 1.0, 0.01) var terrain_puddles_wet_darkening: float = 0.08
 @export_range(0.1, 5.0, 0.05) var terrain_puddles_probe_interval_sec: float = 0.4
 @export_range(0.0, 2.0, 0.01) var terrain_puddles_probe_height: float = 0.12
 @export_range(0.1, 20.0, 0.05) var terrain_puddles_rain_smoothing_speed: float = 10.0
@@ -489,6 +492,10 @@ func _sync_terrain_puddles_material() -> void:
     shader_material.set_shader_parameter("puddle_mask_channel", terrain_puddles_mask_channel)
     shader_material.set_shader_parameter("puddle_mask_threshold", clampf(terrain_puddles_mask_threshold, 0.0, 1.0))
     shader_material.set_shader_parameter("puddle_mask_softness", clampf(terrain_puddles_mask_softness, 0.0, 1.0))
+    shader_material.set_shader_parameter("puddle_wet_edge_width", clampf(terrain_puddles_wet_edge_width, 0.0, 0.5))
+    shader_material.set_shader_parameter("puddle_wet_edge_feather_world", maxf(terrain_puddles_wet_edge_feather_world, 0.0))
+    shader_material.set_shader_parameter("puddle_wet_darkening", clampf(terrain_puddles_wet_darkening, 0.0, 1.0))
+    shader_material.set_shader_parameter("puddle_mask_world_size", _get_mask_area_size())
     shader_material.set_shader_parameter("puddle_surface_roughness", clampf(terrain_puddles_surface_roughness, 0.01, 1.0))
     shader_material.set_shader_parameter("puddle_specular", clampf(terrain_puddles_specular, 0.0, 1.0))
     shader_material.set_shader_parameter("puddle_rain_strength", _terrain_puddles_current_rain_strength)
