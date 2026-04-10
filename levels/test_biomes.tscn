@@ -200,8 +200,8 @@ script = ExtResource("35_quality")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
 transform = Transform3D(-0.22426848, 0.57415843, -0.78742987, 0, 0.80801207, 0.589166, 0.9745274, 0.13213137, -0.18121162, 0, 0.5193932, -0.2882359)
-light_color = Color(0.8346124, 0.8079282, 0.78305745, 1)
-light_energy = 1.3189027
+light_color = Color(0.83461237, 0.8079288, 0.78305906, 1)
+light_energy = 1.3189197
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
 light_angular_distance = 3.6
@@ -274,6 +274,7 @@ terrain_puddles_enabled = true
 terrain_puddles_use_grass_mask_texture = false
 terrain_puddles_mask_texture = ExtResource("6_2omi8")
 terrain_puddles_mask_threshold = 0.52
+terrain_puddles_wet_edge_feather_world = 2.29
 terrain_puddles_wet_darkening = 0.0
 terrain_puddles_specular = 0.05
 terrain_puddles_ripple_speed = 1.88
@@ -367,7 +368,7 @@ shader_moon_eclipse_size = 1.531
 shader_cloud_time_scale = 30.0
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.522484, 1.8006368, 1.1462274)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.098074, 2.1857243, 0.8829365)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")

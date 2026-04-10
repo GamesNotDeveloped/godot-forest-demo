@@ -194,15 +194,22 @@ void fragment() {
     blurred_raw_puddle_mask += sample_puddle_mask_raw(sample_uv) * 0.03;
     blurred_raw_puddle_weight += sample_puddle_mask_weight(sample_uv) * 0.03;
     blurred_raw_puddle_mask = clamp(blurred_raw_puddle_mask / max(blurred_raw_puddle_weight, 0.0001), 0.0, 1.0);
-    float wet_edge_start = max(puddle_mask_threshold - puddle_wet_edge_width, 0.0);
-    float wet_edge_end = min(threshold_end + puddle_wet_edge_width, 1.0);
-    float wet_mask = smoothstep(wet_edge_start, wet_edge_end, clamp(blurred_raw_puddle_mask, 0.0, 1.0));
+    float clamped_blurred_raw_puddle_mask = clamp(blurred_raw_puddle_mask, 0.0, 1.0);
+    float rough_edge_width = max(puddle_wet_edge_width, 0.0001);
+    float blurred_puddle_mask = smoothstep(
+        puddle_mask_threshold,
+        threshold_end,
+        clamped_blurred_raw_puddle_mask
+    );
+    float wet_edge_start = max(puddle_mask_threshold - rough_edge_width, 0.0);
+    float wet_edge_end = min(threshold_end + rough_edge_width, 1.0);
+    float wet_mask = smoothstep(wet_edge_start, wet_edge_end, clamped_blurred_raw_puddle_mask);
     wet_mask = pow(clamp(wet_mask, 0.0, 1.0), 0.75);
     wet_mask = max(wet_mask, puddle_mask);
     float surface_wet_mask = smoothstep(
-        max(wet_edge_start - puddle_wet_edge_width, 0.0),
-        min(wet_edge_end + puddle_wet_edge_width, 1.0),
-        clamp(blurred_raw_puddle_mask, 0.0, 1.0)
+        max(wet_edge_start - rough_edge_width, 0.0),
+        min(wet_edge_end + rough_edge_width, 1.0),
+        clamped_blurred_raw_puddle_mask
     );
     surface_wet_mask = pow(clamp(surface_wet_mask, 0.0, 1.0), 0.6);
     surface_wet_mask = max(surface_wet_mask, wet_mask);
@@ -237,5 +244,23 @@ void fragment() {
     float puddle_rough = puddle_surface_roughness - ripple_energy * 0.025;
     puddle_rough += ndotv * 0.08;
     puddle_rough += wet_edge * 0.12;
-    ROUGHNESS = clamp(mix(base_rough, puddle_rough, surface_wet_mask), 0.03, 1.0);
+
+    // Feather roughness from both sides of the seam so wet and dry regions meet gradually.
+    float dry_edge_roughness_blend = smoothstep(
+        wet_edge_start,
+        puddle_mask_threshold,
+        clamped_blurred_raw_puddle_mask
+    ) * (1.0 - blurred_puddle_mask);
+    float wet_edge_roughness_blend = (
+        1.0 - smoothstep(
+            threshold_end,
+            wet_edge_end,
+            clamped_blurred_raw_puddle_mask
+        )
+    ) * blurred_puddle_mask;
+
+    float dry_side_roughness = mix(base_rough, puddle_rough, dry_edge_roughness_blend);
+    float wet_side_roughness = mix(puddle_rough, base_rough, wet_edge_roughness_blend);
+    float blended_roughness = mix(dry_side_roughness, wet_side_roughness, blurred_puddle_mask);
+    ROUGHNESS = clamp(blended_roughness, 0.03, 1.0);
 }
