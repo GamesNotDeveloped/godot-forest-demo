@@ -131,6 +131,7 @@ func _build_panel() -> void:
     _mask_panel = MASK_PAINTER_PANEL_SCRIPT.new()
     _mask_panel.paint_toggled.connect(_on_paint_toggled)
     _mask_panel.create_mask_requested.connect(_on_create_mask_pressed)
+    _mask_panel.channel_selected.connect(_on_mask_channel_selected)
     _panel.add_child(_mask_panel)
 
     _billboard_separator = HSeparator.new()
@@ -224,6 +225,7 @@ func _refresh_panel_state() -> void:
     if _mask_panel != null:
         _mask_panel.set_controls_enabled(has_target, _billboard_generation_running)
         _mask_panel.set_mask_label("Mask" if has_biomes else "Grass Mask")
+        _mask_panel.set_selected_channel(_get_current_mask_channel())
     if _billboard_resolution_option != null:
         _billboard_resolution_option.disabled = not has_biomes or _billboard_generation_running
     if _billboard_output_dir_edit != null:
@@ -259,7 +261,7 @@ func _refresh_panel_state() -> void:
     if path.is_empty():
         _mask_panel.set_status("No mask asset yet. Create one to enable 3D painting.")
     else:
-        var channel: int = _current_biomes.mask_channel if has_biomes else int(_current_paint_target.get("grass_mask_channel"))
+        var channel := _get_current_mask_channel()
         _mask_panel.set_status("Painting %s on %s" % [_channel_name(channel), path])
 
 
@@ -281,6 +283,13 @@ func _on_paint_toggled(enabled: bool) -> void:
         if _stroke_active:
             _end_stroke()
     update_overlays()
+
+
+func _on_mask_channel_selected(channel: int) -> void:
+    if _current_paint_target == null:
+        return
+    _set_current_mask_channel(channel)
+    _refresh_panel_state()
 
 
 func _begin_stroke() -> bool:
@@ -879,3 +888,25 @@ func _channel_name(channel: int) -> String:
         Biomes.MaskChannel.LUMINANCE:
             return "Luminance"
     return "Unknown"
+
+
+func _get_current_mask_channel() -> int:
+    if _current_biomes != null:
+        return int(_current_biomes.mask_channel)
+    if _current_paint_target != null:
+        if _current_paint_target.has_method("get_mask_paint_channel"):
+            return int(_current_paint_target.call("get_mask_paint_channel"))
+        return int(_current_paint_target.get("grass_mask_channel"))
+    return 0
+
+
+func _set_current_mask_channel(channel: int) -> void:
+    var clamped_channel := clampi(channel, 0, 4)
+    if _current_biomes != null:
+        _current_biomes.mask_channel = clamped_channel
+        return
+    if _current_paint_target != null:
+        if _current_paint_target.has_method("set_mask_paint_channel"):
+            _current_paint_target.call("set_mask_paint_channel", clamped_channel)
+            return
+        _current_paint_target.set("grass_mask_channel", clamped_channel)

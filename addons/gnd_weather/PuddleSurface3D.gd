@@ -12,7 +12,12 @@ const PROBE_OFFSETS: Array[Vector2] = [
 ]
 
 @export var mask_texture: Texture2D
-@export var surface_size: Vector2 = Vector2(3.495, 2.2)
+@export var mesh: Mesh:
+    set(value):
+        mesh = value
+        if is_inside_tree():
+            _ensure_render_resources()
+            _sync_render_state()
 @export_range(0.0, 0.2, 0.001) var surface_height_offset: float = 0.078
 @export_range(0.0, 500.0, 0.1) var visibility_range_begin: float = 6.0
 @export_range(0.0, 500.0, 0.1) var visibility_range_end: float = 10.0
@@ -37,7 +42,6 @@ var _probe_timer := 0.0
 var _target_rain_strength := 0.0
 var _current_rain_strength := 0.0
 
-var _mesh: PlaneMesh
 var _material: ShaderMaterial
 var _instance_rid: RID
 
@@ -78,27 +82,31 @@ func _notification(what: int) -> void:
 
 
 func _ensure_render_resources() -> void:
-    if _mesh == null:
-        _mesh = PlaneMesh.new()
-        _mesh.orientation = PlaneMesh.FACE_Y
-    _mesh.size = Vector2(maxf(surface_size.x, 0.1), maxf(surface_size.y, 0.1))
-
     if _material == null:
         _material = ShaderMaterial.new()
         _material.shader = PUDDLE_SURFACE_SHADER
 
     if not _instance_rid.is_valid():
         _instance_rid = RenderingServer.instance_create()
-        RenderingServer.instance_set_base(_instance_rid, _mesh.get_rid())
         RenderingServer.instance_geometry_set_material_override(_instance_rid, _material.get_rid())
+
+    var render_mesh := _get_render_mesh()
+    if render_mesh != null:
+        RenderingServer.instance_set_base(_instance_rid, render_mesh.get_rid())
+    else:
+        RenderingServer.instance_set_base(_instance_rid, RID())
 
 
 func _sync_render_state() -> void:
-    if _mesh == null or _material == null or not _instance_rid.is_valid():
+    if _material == null or not _instance_rid.is_valid():
         return
 
-    _mesh.orientation = PlaneMesh.FACE_Y
-    _mesh.size = Vector2(maxf(surface_size.x, 0.1), maxf(surface_size.y, 0.1))
+    var render_mesh := _get_render_mesh()
+    if render_mesh == null:
+        RenderingServer.instance_set_base(_instance_rid, RID())
+        return
+
+    RenderingServer.instance_set_base(_instance_rid, render_mesh.get_rid())
 
     var world_3d := get_world_3d()
     if world_3d != null:
@@ -127,6 +135,9 @@ func _sync_render_state() -> void:
 
 
 func _sample_local_rain() -> void:
+    if mesh == null:
+        _target_rain_strength = 0.0
+        return
     var world_3d := get_world_3d()
     if world_3d == null:
         _target_rain_strength = 0.0
@@ -146,10 +157,24 @@ func _sample_local_rain() -> void:
 
 func _get_probe_world_position(offset: Vector2) -> Vector3:
     var basis := global_transform.basis.orthonormalized()
-    var half_width := maxf(surface_size.x, 0.1) * 0.5
-    var half_depth := maxf(surface_size.y, 0.1) * 0.5
+    var footprint := _get_probe_footprint_size()
+    var half_width := footprint.x * 0.5
+    var half_depth := footprint.y * 0.5
     var world_position := global_transform.origin
     world_position += basis.x * (offset.x * half_width)
     world_position += basis.z * (offset.y * half_depth)
     world_position.y += probe_height + surface_height_offset
     return world_position
+
+
+func _get_render_mesh() -> Mesh:
+    return mesh
+
+
+func _get_probe_footprint_size() -> Vector2:
+    if mesh == null:
+        return Vector2(0.1, 0.1)
+    var aabb := mesh.get_aabb()
+    var width := maxf(absf(aabb.size.x), 0.1)
+    var depth := maxf(absf(aabb.size.z), 0.1)
+    return Vector2(width, depth)

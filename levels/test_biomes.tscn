@@ -30,16 +30,18 @@
 [ext_resource type="PackedScene" uid="uid://dutdm74b0brla" path="res://generated/biomes_billboards/plants2/00_flower-1/billboard.tscn" id="20_2xaht"]
 [ext_resource type="PackedScene" uid="uid://wevxi0ut6m5p" path="res://objects/flower-2.2.tscn" id="20_80swb"]
 [ext_resource type="Texture2D" uid="uid://68h8xse5rqd3" path="res://levels/flowers_mask.png" id="21_80swb"]
-[ext_resource type="Material" uid="uid://b563p0dw1mx6t" path="res://textures/Ground020_1K-JPG/M_ground.tres" id="25_0f0wj"]
 [ext_resource type="Texture2D" uid="uid://bu2dcb4gb4xgf" path="res://textures/beautiful-glowing-gray-full-moon.jpg" id="31_8echa"]
 [ext_resource type="PackedScene" uid="uid://cb8t3x6gvytl7" path="res://objects/old_house.tscn" id="34_0f0wj"]
 [ext_resource type="AudioStream" uid="uid://cho50y1ngfmfy" path="res://music/sigmamusicart-tension-tension-music-503993.mp3" id="34_flr7s"]
 [ext_resource type="PackedScene" uid="uid://ctwu0ey7hgcm1" path="res://objects/old-well.tscn" id="34_pbujr"]
 [ext_resource type="Script" uid="uid://dv1xopie6t4q2" path="res://ui/QualityProfilesCanvas.gd" id="35_quality"]
 [ext_resource type="PackedScene" uid="uid://cwasdc7ndk8lf" path="res://ui/WeatherControlsCanvas.tscn" id="36_weather_ui"]
+[ext_resource type="Texture2D" uid="uid://c1crknyc5l80g" path="res://textures/Ground020_1K-JPG/Ground020_1K_Color.jpg" id="37_2o85u"]
 [ext_resource type="Script" uid="uid://sdanr78joiow" path="res://addons/gnd_quality_profiles/quality_profiles_manager.gd" id="37_8echa"]
 [ext_resource type="Script" uid="uid://cdn2kmll4nqlk" path="res://addons/gnd_quality_profiles/quality_profile.gd" id="38_3k2hm"]
+[ext_resource type="Texture2D" uid="uid://crwspa7n1ej4e" path="res://textures/Ground020_1K-JPG/Ground020_1K_NormalGL.jpg" id="38_88um7"]
 [ext_resource type="Environment" uid="uid://nisddm6dgh86" path="res://materials/environment_filmic.tres" id="39_jt4jh"]
+[ext_resource type="Texture2D" uid="uid://bdgrvha11igfp" path="res://textures/Ground020_1K-JPG/Ground020_1K_AmbientOcclusion.jpg" id="39_kf4y5"]
 [ext_resource type="Environment" uid="uid://cak7d6jocsmjr" path="res://materials/environment_high.tres" id="40_bluus"]
 [ext_resource type="Environment" uid="uid://c03gy32a1t6n7" path="res://materials/environment_mid.tres" id="41_j5vua"]
 [ext_resource type="Environment" uid="uid://0gabw6jt7o71" path="res://materials/environment_low.tres" id="42_w6gka"]
@@ -176,6 +178,11 @@ _limits = [0.0, 0.8292372, 0.0, 1.0]
 _data = [Vector2(0, 0), 0.0, 0.024778249, 0, 0, Vector2(0.71364653, 0.019491553), 0.0, 0.0, 0, 0, Vector2(1, 0.62368476), 4.6162915, 3.0039914, 0, 0]
 point_count = 3
 
+[sub_resource type="PlaneMesh" id="PlaneMesh_a3p2h"]
+size = Vector2(2.055, 2.595)
+subdivide_width = 10
+subdivide_depth = 10
+
 [node name="TestBiomes" type="Node3D" unique_id=1245326294]
 script = ExtResource("1_flr7s")
 
@@ -193,8 +200,8 @@ script = ExtResource("35_quality")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
 transform = Transform3D(-0.1434846, 0.9605521, -0.2382264, 0, 0.24071719, 0.97059536, 0.9896526, 0.13926548, -0.03453921, 0, 0.5193932, -0.2882359)
-light_color = Color(1, 0.93, 0.85, 1)
-light_energy = 1.685
+light_color = Color(0.8636424, 0.8293551, 0.7948077, 1)
+light_energy = 1.3716304
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
 light_angular_distance = 3.6
@@ -257,7 +264,16 @@ subdivisions_x = 160
 subdivisions_z = 160
 height_scale = 18.93
 uv_scale = 2.0
-terrain_material = ExtResource("25_0f0wj")
+terrain_surface_albedo_texture = ExtResource("37_2o85u")
+terrain_surface_normal_texture = ExtResource("38_88um7")
+terrain_surface_ao_texture = ExtResource("39_kf4y5")
+terrain_surface_albedo_color = Color(0.54296875, 0.52018344, 0.3435974, 1)
+terrain_surface_uv_scale = Vector2(50.71, 50.71)
+terrain_surface_normal_scale = 1.15
+terrain_puddles_enabled = true
+terrain_puddles_use_grass_mask_texture = false
+terrain_puddles_mask_texture = ExtResource("6_2omi8")
+terrain_puddles_mask_threshold = 0.1
 noise = SubResource("FastNoiseLite_terrain")
 grass_enabled = true
 grass_mesh = ExtResource("18_mh1bx")
@@ -347,10 +363,11 @@ shader_moon_eclipse_size = 1.531
 shader_cloud_time_scale = 30.0
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7392588, 1.5979714, -0.071208)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.267942, 3.4648004, 17.296001)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
+precipitation_intensity = 0.82
 storm_threshold = 0.845
 precipitation_wind_strength = 10.0
 wind_influence = 0.52
@@ -424,9 +441,9 @@ stream = ExtResource("54_8l7hv")
 bus = &"Rain"
 
 [node name="PuddleSurface3D" type="Node3D" parent="." unique_id=2131158692]
-transform = Transform3D(0.90699464, 0.003002563, 0.42113143, -0.0035291607, 0.9999936, 0.00047107972, -0.42112738, -0.0019135084, 0.9069994, -0.5945897, -0.030384593, 1.2639784)
+transform = Transform3D(0.90699464, 0.003002563, 0.42113143, -0.0035291607, 0.9999936, 0.00047107972, -0.42112738, -0.0019135084, 0.9069994, -0.7142539, -0.03051845, 1.006255)
 script = ExtResource("56_aty88")
-surface_size = Vector2(2.145, 3.37)
+mesh = SubResource("PlaneMesh_a3p2h")
 surface_height_offset = 0.072
 rain_ripple_threshold = 0.4
 specular_wet = 0.01

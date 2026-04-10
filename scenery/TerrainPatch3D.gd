@@ -10,12 +10,20 @@ enum MaskChannel {
     LUMINANCE
 }
 
+const TERRAIN_PUDDLES_SHADER := preload("res://scenery/shaders/terrain_puddles.gdshader")
 const MESH_NODE_NAME := "__terrain_mesh"
 const BODY_NODE_NAME := "__terrain_body"
 const SHAPE_NODE_NAME := "__terrain_shape"
 const GRASS_NODE_NAME := "__terrain_grass"
 const GENERATED_META_KEY := "_terrain_patch_generated"
 const EDITOR_REGENERATE_DEBOUNCE_SEC := 0.5
+const WEATHER_PROBE_OFFSETS: Array[Vector2] = [
+    Vector2.ZERO,
+    Vector2(-0.35, -0.35),
+    Vector2(0.35, -0.35),
+    Vector2(-0.35, 0.35),
+    Vector2(0.35, 0.35),
+]
 
 var _regenerate_queued := false
 var _editor_debounce_deadline_msec := 0
@@ -29,6 +37,11 @@ var _grass_build_request_id := 0
 var _grass_pending_camera_local := Vector3.INF
 var _grass_mask_image_cache: Image
 var _grass_mask_cache_key := ""
+var _mask_paint_channel := -1
+var _terrain_puddles_probe_timer := 0.0
+var _terrain_puddles_target_rain_strength := 0.0
+var _terrain_puddles_current_rain_strength := 0.0
+var _terrain_puddles_material: ShaderMaterial
 
 @export_group("Terrain")
 @export var size: Vector2 = Vector2(200.0, 200.0):
@@ -56,10 +69,52 @@ var _grass_mask_cache_key := ""
         uv_scale = maxf(value, 0.01)
         _queue_regenerate()
 
-@export var terrain_material: Material:
+@export_group("Terrain Surface")
+@export var terrain_surface_albedo_texture: Texture2D
+@export var terrain_surface_normal_texture: Texture2D
+@export var terrain_surface_ao_texture: Texture2D
+@export var terrain_surface_albedo_color: Color = Color.WHITE
+@export_range(0.0, 4.0, 0.01) var terrain_surface_albedo_boost: float = 1.0
+@export var terrain_surface_uv_scale: Vector2 = Vector2.ONE
+@export_range(0.0, 4.0, 0.01) var terrain_surface_normal_scale: float = 1.0
+@export_range(0.0, 1.0, 0.01) var terrain_surface_roughness: float = 1.0
+@export_range(0.0, 1.0, 0.01) var terrain_surface_ao_light_affect: float = 0.0
+
+@export_group("Terrain Puddles")
+@export var terrain_puddles_enabled := false:
     set(value):
-        terrain_material = value
+        terrain_puddles_enabled = value
+        _refresh_process_state()
         _apply_terrain_material_override()
+
+@export var terrain_puddles_use_grass_mask_texture := true:
+    set(value):
+        terrain_puddles_use_grass_mask_texture = value
+        _apply_terrain_material_override()
+
+@export var terrain_puddles_mask_texture: Texture2D:
+    set(value):
+        terrain_puddles_mask_texture = value
+        _apply_terrain_material_override()
+
+@export_enum("Red", "Green", "Blue", "Alpha", "Luminance") var terrain_puddles_mask_channel: int = MaskChannel.BLUE:
+    set(value):
+        terrain_puddles_mask_channel = clampi(value, MaskChannel.RED, MaskChannel.LUMINANCE)
+        _apply_terrain_material_override()
+
+@export_range(0.0, 1.0, 0.01) var terrain_puddles_mask_threshold: float = 0.08
+@export_range(0.0, 1.0, 0.01) var terrain_puddles_mask_softness: float = 0.08
+@export_range(0.1, 5.0, 0.05) var terrain_puddles_probe_interval_sec: float = 0.4
+@export_range(0.0, 2.0, 0.01) var terrain_puddles_probe_height: float = 0.12
+@export_range(0.1, 20.0, 0.05) var terrain_puddles_rain_smoothing_speed: float = 10.0
+@export_range(0.0, 1.0, 0.01) var terrain_puddles_surface_roughness: float = 0.08
+@export_range(0.0, 1.0, 0.01) var terrain_puddles_specular: float = 0.18
+@export_range(0.0, 1.0, 0.01) var terrain_puddles_ripple_threshold: float = 0.08
+@export_range(0.0, 2.0, 0.01) var terrain_puddles_ripple_intensity: float = 0.9
+@export_range(0.1, 10.0, 0.01) var terrain_puddles_ripple_scale: float = 0.1
+@export_range(0.1, 4.0, 0.01) var terrain_puddles_ripple_speed: float = 0.67
+@export_range(0.0, 5.0, 0.01) var terrain_puddles_ripple_max_radius: float = 1.0
+@export_range(0.0, 8.0, 0.01) var terrain_puddles_normal_strength: float = 1.0
 
 @export_group("Noise")
 @export var noise: FastNoiseLite:
@@ -116,6 +171,8 @@ var _grass_mask_cache_key := ""
         grass_mask_texture = value
         _invalidate_grass_mask_cache()
         _grass_dirty = true
+        if terrain_puddles_enabled and terrain_puddles_use_grass_mask_texture:
+            _apply_terrain_material_override()
 
 @export var grass_mask_area_size: Vector2 = Vector2.ZERO:
     set(value):
@@ -221,6 +278,7 @@ func _ready() -> void:
     if not Engine.is_editor_hint():
         _queue_regenerate()
         call_deferred("_bootstrap_grass_after_start")
+    _terrain_puddles_probe_timer = 0.0
 
 
 func _exit_tree() -> void:
@@ -230,13 +288,14 @@ func _exit_tree() -> void:
         _grass_build_thread.wait_to_finish()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
     if Engine.is_editor_hint():
         if _editor_debounce_deadline_msec > 0 and Time.get_ticks_msec() >= _editor_debounce_deadline_msec:
             _editor_debounce_deadline_msec = 0
             if not _regenerate_queued:
                 _regenerate_queued = true
                 call_deferred("_deferred_regenerate")
+    _update_terrain_puddles(delta)
     _flush_grass_build_if_ready()
     _update_grass_if_needed()
 
@@ -277,10 +336,12 @@ func _generate() -> void:
 
     var vertices := PackedVector3Array()
     var uvs := PackedVector2Array()
+    var uv2s := PackedVector2Array()
     var indices := PackedInt32Array()
     var normals_accum: Array[Vector3] = []
     vertices.resize(vertex_count_x * vertex_count_z)
     uvs.resize(vertex_count_x * vertex_count_z)
+    uv2s.resize(vertex_count_x * vertex_count_z)
     normals_accum.resize(vertex_count_x * vertex_count_z)
 
     for z in range(vertex_count_z):
@@ -293,6 +354,10 @@ func _generate() -> void:
             uvs[vertex_index] = Vector2(
                 (float(x) / float(subdivisions_x)) * uv_scale,
                 (float(z) / float(subdivisions_z)) * uv_scale
+            )
+            uv2s[vertex_index] = Vector2(
+                float(x) / float(subdivisions_x),
+                float(z) / float(subdivisions_z)
             )
             normals_accum[vertex_index] = Vector3.ZERO
 
@@ -328,6 +393,7 @@ func _generate() -> void:
     arrays[Mesh.ARRAY_VERTEX] = vertices
     arrays[Mesh.ARRAY_NORMAL] = normals
     arrays[Mesh.ARRAY_TEX_UV] = uvs
+    arrays[Mesh.ARRAY_TEX_UV2] = uv2s
     arrays[Mesh.ARRAY_INDEX] = indices
 
     var mesh := ArrayMesh.new()
@@ -387,8 +453,118 @@ func _apply_terrain_material_override() -> void:
     var mesh_instance := get_node_or_null(MESH_NODE_NAME) as MeshInstance3D
     if mesh_instance == null:
         return
-    mesh_instance.material_override = terrain_material
+    var puddles_material := _get_or_create_terrain_puddles_material()
+    if puddles_material == null:
+        return
+    _sync_terrain_puddles_material()
+    mesh_instance.material_override = puddles_material
     mesh_instance.material_overlay = null
+
+
+func _get_or_create_terrain_puddles_material() -> ShaderMaterial:
+    if _terrain_puddles_material == null:
+        _terrain_puddles_material = ShaderMaterial.new()
+        _terrain_puddles_material.shader = TERRAIN_PUDDLES_SHADER
+    return _terrain_puddles_material
+
+
+func _sync_terrain_puddles_material() -> void:
+    var shader_material := _get_or_create_terrain_puddles_material()
+    if shader_material == null:
+        return
+
+    shader_material.set_shader_parameter("base_albedo_texture", terrain_surface_albedo_texture)
+    shader_material.set_shader_parameter("base_normal_texture", terrain_surface_normal_texture)
+    shader_material.set_shader_parameter("base_ao_texture", terrain_surface_ao_texture)
+    shader_material.set_shader_parameter("base_has_normal", terrain_surface_normal_texture != null)
+    shader_material.set_shader_parameter("base_has_ao", terrain_surface_ao_texture != null)
+    shader_material.set_shader_parameter("base_albedo_color", terrain_surface_albedo_color)
+    shader_material.set_shader_parameter("base_albedo_boost", maxf(terrain_surface_albedo_boost, 0.0))
+    shader_material.set_shader_parameter("base_uv_scale", terrain_surface_uv_scale)
+    shader_material.set_shader_parameter("base_normal_scale", terrain_surface_normal_scale)
+    shader_material.set_shader_parameter("base_roughness", clampf(terrain_surface_roughness, 0.0, 1.0))
+    shader_material.set_shader_parameter("base_ao_light_affect", clampf(terrain_surface_ao_light_affect, 0.0, 1.0))
+    shader_material.set_shader_parameter("puddle_mask_texture", _resolve_puddles_mask_texture())
+    shader_material.set_shader_parameter("puddle_enabled", terrain_puddles_enabled)
+    shader_material.set_shader_parameter("puddle_mask_channel", terrain_puddles_mask_channel)
+    shader_material.set_shader_parameter("puddle_mask_uv_scale", _resolve_puddles_mask_uv_scale())
+    shader_material.set_shader_parameter("puddle_mask_threshold", clampf(terrain_puddles_mask_threshold, 0.0, 1.0))
+    shader_material.set_shader_parameter("puddle_mask_softness", clampf(terrain_puddles_mask_softness, 0.0, 1.0))
+    shader_material.set_shader_parameter("puddle_surface_roughness", clampf(terrain_puddles_surface_roughness, 0.01, 1.0))
+    shader_material.set_shader_parameter("puddle_specular", clampf(terrain_puddles_specular, 0.0, 1.0))
+    shader_material.set_shader_parameter("puddle_rain_strength", _terrain_puddles_current_rain_strength)
+    shader_material.set_shader_parameter("puddle_ripple_threshold", terrain_puddles_ripple_threshold)
+    shader_material.set_shader_parameter("puddle_ripple_intensity", terrain_puddles_ripple_intensity)
+    shader_material.set_shader_parameter("puddle_ripple_scale", terrain_puddles_ripple_scale)
+    shader_material.set_shader_parameter("puddle_ripple_speed", terrain_puddles_ripple_speed)
+    shader_material.set_shader_parameter("puddle_ripple_max_radius", terrain_puddles_ripple_max_radius)
+    shader_material.set_shader_parameter("puddle_normal_strength", terrain_puddles_normal_strength)
+
+
+func _resolve_puddles_mask_texture() -> Texture2D:
+    if terrain_puddles_use_grass_mask_texture and grass_mask_texture != null:
+        return grass_mask_texture
+    return terrain_puddles_mask_texture
+
+
+func _resolve_puddles_mask_uv_scale() -> Vector2:
+    var mask_area_size := size
+    if terrain_puddles_use_grass_mask_texture and grass_mask_area_size != Vector2.ZERO:
+        mask_area_size = grass_mask_area_size
+    return Vector2(
+        size.x / maxf(mask_area_size.x, 0.0001),
+        size.y / maxf(mask_area_size.y, 0.0001)
+    )
+
+
+func _update_terrain_puddles(delta: float) -> void:
+    if not terrain_puddles_enabled:
+        if _terrain_puddles_current_rain_strength != 0.0 or _terrain_puddles_target_rain_strength != 0.0:
+            _terrain_puddles_current_rain_strength = 0.0
+            _terrain_puddles_target_rain_strength = 0.0
+            _sync_terrain_puddles_material()
+        return
+
+    _terrain_puddles_probe_timer -= delta
+    if _terrain_puddles_probe_timer <= 0.0:
+        _terrain_puddles_probe_timer = maxf(terrain_puddles_probe_interval_sec, 0.1)
+        _sample_terrain_puddles_rain()
+
+    _terrain_puddles_current_rain_strength = move_toward(
+        _terrain_puddles_current_rain_strength,
+        _terrain_puddles_target_rain_strength,
+        maxf(terrain_puddles_rain_smoothing_speed, 0.1) * delta
+    )
+    _sync_terrain_puddles_material()
+
+
+func _sample_terrain_puddles_rain() -> void:
+    var world_3d := get_world_3d()
+    if world_3d == null:
+        _terrain_puddles_target_rain_strength = 0.0
+        return
+
+    var weather_state := WeatherServer.get_weather_state(world_3d)
+    var base_strength: float = clampf(float(weather_state.get("global_precipitation", 0.0)), 0.0, 1.0)
+    var total := 0.0
+    for probe_offset in WEATHER_PROBE_OFFSETS:
+        total += WeatherServer.get_rain_participation_strength(
+            world_3d,
+            _get_weather_probe_world_position(probe_offset, terrain_puddles_probe_height),
+            base_strength
+        )
+    _terrain_puddles_target_rain_strength = clampf(total / float(WEATHER_PROBE_OFFSETS.size()), 0.0, 1.0)
+
+
+func _get_weather_probe_world_position(offset: Vector2, height_offset: float) -> Vector3:
+    var basis := global_transform.basis.orthonormalized()
+    var half_width := maxf(size.x, 0.1) * 0.5
+    var half_depth := maxf(size.y, 0.1) * 0.5
+    var world_position := global_transform.origin
+    world_position += basis.x * (offset.x * half_width)
+    world_position += basis.z * (offset.y * half_depth)
+    world_position.y += height_offset
+    return world_position
 
 
 func _ensure_grass_instance() -> MultiMeshInstance3D:
@@ -420,7 +596,7 @@ func _remove_grass_instance() -> void:
 
 
 func _refresh_process_state() -> void:
-    set_process(Engine.is_editor_hint() or grass_enabled)
+    set_process(Engine.is_editor_hint() or grass_enabled or terrain_puddles_enabled)
 
 
 func _bootstrap_grass_after_start() -> void:
@@ -677,6 +853,16 @@ func local_to_mask_uv(local_position: Vector3) -> Vector2:
     return _grass_local_to_mask_uv(local_position.x, local_position.z, area_size)
 
 
+func get_mask_paint_channel() -> int:
+    if _mask_paint_channel < 0:
+        return grass_mask_channel
+    return _mask_paint_channel
+
+
+func set_mask_paint_channel(channel: int) -> void:
+    _mask_paint_channel = clampi(channel, MaskChannel.RED, MaskChannel.LUMINANCE)
+
+
 func preview_mask_image(image: Image) -> void:
     _set_grass_mask_cache_from_image(image)
     _grass_dirty = true
@@ -820,7 +1006,7 @@ func _world_radius_to_mask_pixel_radius(radius_world: float, width: int, height:
 func _apply_mask_paint(color: Color, value: float, influence: float) -> Color:
     var clamped_value := clampf(value, 0.0, 1.0)
     var clamped_influence := clampf(influence, 0.0, 1.0)
-    match grass_mask_channel:
+    match get_mask_paint_channel():
         MaskChannel.RED:
             color.r = lerpf(color.r, clamped_value, clamped_influence)
         MaskChannel.GREEN:

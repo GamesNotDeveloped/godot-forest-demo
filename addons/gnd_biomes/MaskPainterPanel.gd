@@ -4,11 +4,14 @@ extends VBoxContainer
 
 signal create_mask_requested
 signal paint_toggled(enabled: bool)
+signal channel_selected(channel: int)
 
 const RESOLUTION_PRESETS := [256, 512, 1024]
+const CHANNEL_NAMES := ["Red", "Green", "Blue", "Alpha", "Luminance"]
 
 var paint_toggle: CheckButton
 var mode_option: OptionButton
+var channel_option: OptionButton
 var brush_size: SpinBox
 var brush_hardness: SpinBox
 var brush_opacity: SpinBox
@@ -42,6 +45,14 @@ func _build() -> void:
     mode_option.add_item("Paint")
     mode_option.add_item("Erase")
     actions_row.add_child(mode_option)
+
+    channel_option = OptionButton.new()
+    for index in range(CHANNEL_NAMES.size()):
+        channel_option.add_item(CHANNEL_NAMES[index], index)
+    channel_option.item_selected.connect(func(index: int) -> void:
+        channel_selected.emit(channel_option.get_item_id(index))
+    )
+    actions_row.add_child(channel_option)
 
     brush_size = SpinBox.new()
     brush_size.min_value = 0.1
@@ -103,6 +114,7 @@ func set_controls_enabled(enabled: bool, busy: bool) -> void:
     var editable := enabled and not busy
     paint_toggle.disabled = not editable
     mode_option.disabled = not editable
+    channel_option.disabled = not editable
     brush_size.editable = editable
     brush_hardness.editable = editable
     brush_opacity.editable = editable
@@ -140,3 +152,10 @@ func get_resolution() -> int:
 
 func set_status(text: String) -> void:
     status_label.text = text
+
+
+func set_selected_channel(channel: int) -> void:
+    if channel_option == null:
+        return
+    var clamped_channel := clampi(channel, 0, CHANNEL_NAMES.size() - 1)
+    channel_option.select(clamped_channel)
