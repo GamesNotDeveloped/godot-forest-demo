@@ -1021,7 +1021,7 @@ func _apply_weather_overrides(env: Environment, light: DirectionalLight3D) -> vo
     if _weather_cloud_density >= 0.0:
         base_cloud_density = _weather_cloud_density
     var cloud_mix := clampf(precipitation * 0.8 + storm_factor * 0.55, 0.0, 1.0)
-    var cloud_darkening := clampf(precipitation * 0.45 + storm_factor * 0.35, 0.0, 1.0)
+    var cloud_darkening := clampf(storm_factor * 0.78 + precipitation * 0.12, 0.0, 1.0)
     var weather_override_strength := maxf(weather_overcast_intensity, 0.0)
     var overcast_cooling := clampf((precipitation * 0.78 + storm_factor * 0.4) * weather_override_strength, 0.0, 1.0)
 

@@ -113,6 +113,7 @@ func _on_rain_changed(value: float) -> void:
     _rain_value_label.text = "%d%%" % int(round(value * 100.0))
     if _weather != null:
         _weather.set_precipitation_intensity(value)
+        _weather.set_storm_intensity(value)
 
 
 func _on_cloud_density_changed(value: float) -> void:

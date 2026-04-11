@@ -36,6 +36,7 @@ class WeatherRuntime extends RefCounted:
 
     var precipitation_intensity: float = 0.0
     var cloud_density: float = 0.15
+    var storm_intensity: float = 0.0
     var precipitation_wind_strength: float = 4.0
     var storm_threshold: float = 0.82
     var sheltered_volumetric_emission_scale: float = 0.0
@@ -65,6 +66,7 @@ class WeatherRuntime extends RefCounted:
     func configure(
         next_precipitation_intensity: float,
         next_cloud_density: float,
+        next_storm_intensity: float,
         next_precipitation_wind_strength: float,
         next_storm_threshold: float,
         next_sheltered_volumetric_emission_scale: float,
@@ -75,6 +77,7 @@ class WeatherRuntime extends RefCounted:
     ) -> void:
         precipitation_intensity = clampf(next_precipitation_intensity, 0.0, 1.0)
         cloud_density = clampf(next_cloud_density, 0.0, 1.0)
+        storm_intensity = clampf(next_storm_intensity, 0.0, 1.0)
         precipitation_wind_strength = maxf(next_precipitation_wind_strength, 0.0)
         storm_threshold = clampf(next_storm_threshold, 0.0, 1.0)
         sheltered_volumetric_emission_scale = clampf(next_sheltered_volumetric_emission_scale, 0.0, 1.0)
@@ -132,6 +135,7 @@ class WeatherRuntime extends RefCounted:
         return {
             "global_precipitation": _global_precipitation,
             "cloud_density": cloud_density,
+            "storm_intensity_input": storm_intensity,
             "local_precipitation": _local_precipitation,
             "storm_factor": _storm_factor,
             "lightning_flash": _lightning_flash,
@@ -155,7 +159,8 @@ class WeatherRuntime extends RefCounted:
             )
 
         var next_storm_input := clampf(maxf(next_global, next_local), 0.0, 1.0)
-        var next_storm := _compute_storm_factor(next_storm_input)
+        var derived_storm := _compute_storm_factor(next_storm_input)
+        var next_storm := maxf(clampf(storm_intensity, 0.0, 1.0), derived_storm)
         var next_lightning_activity := clampf(next_storm * lightning_multiplier, 0.0, 1.0)
         var next_shelter := 0.0
         if next_global > 0.0001 and next_local < next_global:
@@ -318,6 +323,7 @@ static func configure_weather_state(
     world_3d: World3D,
     precipitation_intensity: float,
     cloud_density: float,
+    storm_intensity: float,
     precipitation_wind_strength: float,
     storm_threshold: float,
     sheltered_volumetric_emission_scale: float,
@@ -333,6 +339,7 @@ static func configure_weather_state(
     runtime.configure(
         precipitation_intensity,
         cloud_density,
+        storm_intensity,
         precipitation_wind_strength,
         storm_threshold,
         sheltered_volumetric_emission_scale,
