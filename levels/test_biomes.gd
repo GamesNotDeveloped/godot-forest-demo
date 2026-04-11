@@ -13,7 +13,6 @@ const DEFAULT_WORLD_TIME_SCALE := 1.0
 @onready var _quality_profiles_manager: QualityProfilesManager = $QualityProfilesManager
 @onready var _directional_light: DirectionalLight3D = $DirectionalLight3D
 @onready var _terrain: TerrainPatch3D = $Terrain
-@onready var _auto_biomes_fog: AutoBiomesFog = $AutoBiomesFog
 @onready var _sun_shafts_controller: Skydome = $Skydome
 @onready var _weather: WeatherNode = $Weather
 
@@ -37,7 +36,6 @@ func _on_quality_profiles_manager_profile_changed() -> void:
     var light_settings: Dictionary = settings["light"]
     var terrain_settings: Dictionary = settings["terrain"]
     _apply_sun_shafts_profile(settings["sun_shafts_enabled"])
-    _apply_fog_profile(settings["fog_controller_max_density"])
     _apply_light_profile(light_settings)
     _apply_terrain_profile(terrain_settings)
     if _sun_shafts_controller != null:
@@ -120,10 +118,6 @@ func _apply_sun_shafts_profile(enabled: bool) -> void:
     if _sun_shafts_controller != null:
         _sun_shafts_controller.sunshafts_enabled = enabled
 
-
-func _apply_fog_profile(max_density: float) -> void:
-    if _auto_biomes_fog != null:
-        _auto_biomes_fog.max_density = max_density
 
 
 func _apply_light_profile(settings: Dictionary) -> void:

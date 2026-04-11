@@ -12,6 +12,10 @@ const MID_FIELD_NAME := "RainMid"
 const RAIN_FIELD_RUNTIME_REFRESH_INTERVAL_MSEC := 250
 const RAIN_FIELD_COUNT_REDUCTION_SPACING_SCALE := 2.0
 const RAIN_FIELD_WIDTH_SCALE := 1.5
+const LIGHTNING_ROLL_INTERVAL_SEC := 0.1
+const GND_WIND_DIRECTION_SETTING := "shader_globals/gnd_wind_direction/value"
+const GND_WIND_SPEED_SETTING := "shader_globals/gnd_wind_speed/value"
+const GND_WIND_STRENGTH_SETTING := "shader_globals/gnd_wind_strength/value"
 
 @export_group("Nodes")
 @export_node_path("Node") var skydome_path: NodePath
@@ -27,42 +31,35 @@ const RAIN_FIELD_WIDTH_SCALE := 1.5
         precipitation_intensity = clampf(value, 0.0, 1.0)
         if is_inside_tree():
             _push_weather_server_settings()
-            _sync_weather_state(true)
+            _apply_weather_state(true)
             _refresh_editor_preview()
 @export_range(0.0, 1.0, 0.001) var cloud_density: float = 0.0:
     set(value):
         cloud_density = clampf(value, 0.0, 1.0)
         if is_inside_tree():
             _push_weather_server_settings()
-            _sync_weather_state(true)
+            _apply_weather_state(true)
             _refresh_editor_preview()
 @export_range(0.0, 1.0, 0.001) var cloud_overcast_intensity: float = 0.0:
     set(value):
         cloud_overcast_intensity = clampf(value, 0.0, 1.0)
         if is_inside_tree():
             _push_weather_server_settings()
-            _sync_weather_state(true)
+            _apply_weather_state(true)
             _refresh_editor_preview()
 @export_range(0.0, 1.0, 0.001) var storm_intensity: float = 0.0:
     set(value):
         storm_intensity = clampf(value, 0.0, 1.0)
         if is_inside_tree():
             _push_weather_server_settings()
-            _sync_weather_state(true)
+            _apply_weather_state(true)
             _refresh_editor_preview()
 @export_range(0.0, 1.0, 0.001) var storm_fog_intensity: float = 0.0:
     set(value):
         storm_fog_intensity = clampf(value, 0.0, 1.0)
         if is_inside_tree():
             _push_weather_server_settings()
-            _sync_weather_state(true)
-            _refresh_editor_preview()
-@export_range(0.0, 1.0, 0.001) var storm_threshold: float = 0.82:
-    set(value):
-        storm_threshold = clampf(value, 0.0, 1.0)
-        if is_inside_tree():
-            _push_weather_server_settings()
-            _sync_weather_state(true)
+            _apply_weather_state(true)
             _refresh_editor_preview()
 
 @export_group("Wind")
@@ -113,7 +110,7 @@ const RAIN_FIELD_WIDTH_SCALE := 1.5
         sheltered_volumetric_emission_scale = clampf(value, 0.0, 1.0)
         if is_inside_tree():
             _push_weather_server_settings()
-            _sync_weather_state(true)
+            _apply_weather_state(true)
             _refresh_editor_preview()
 @export var near_rain_color: Color = Color(0.72, 0.74, 0.76, 0.08):
     set(value):
@@ -152,28 +149,48 @@ const RAIN_FIELD_WIDTH_SCALE := 1.5
         lightning_enabled = value
         if is_inside_tree():
             _push_weather_server_settings()
-            _sync_weather_state(true)
+            _apply_weather_state(true)
             _refresh_editor_preview()
 @export_range(0.1, 30.0, 0.1) var lightning_min_interval: float = 3.2:
     set(value):
         lightning_min_interval = maxf(value, 0.1)
         if is_inside_tree():
             _push_weather_server_settings()
-            _sync_weather_state(true)
+            _apply_weather_state(true)
             _refresh_editor_preview()
 @export_range(0.1, 30.0, 0.1) var lightning_max_interval: float = 9.5:
     set(value):
         lightning_max_interval = maxf(value, 0.1)
         if is_inside_tree():
             _push_weather_server_settings()
-            _sync_weather_state(true)
+            _apply_weather_state(true)
             _refresh_editor_preview()
 @export_range(0.1, 20.0, 0.01) var lightning_flash_decay: float = 4.8:
     set(value):
         lightning_flash_decay = maxf(value, 0.1)
         if is_inside_tree():
             _push_weather_server_settings()
-            _sync_weather_state(true)
+            _apply_weather_state(true)
+            _refresh_editor_preview()
+@export_range(0.1, 20.0, 0.1) var thunder_lock_min_duration: float = 2.4:
+    set(value):
+        thunder_lock_min_duration = maxf(value, 0.1)
+        if thunder_lock_max_duration < thunder_lock_min_duration:
+            thunder_lock_max_duration = thunder_lock_min_duration
+@export_range(0.1, 20.0, 0.1) var thunder_lock_max_duration: float = 4.8:
+    set(value):
+        thunder_lock_max_duration = maxf(value, thunder_lock_min_duration)
+@export_range(0.1, 8.0, 0.01) var storm_intensity_exponent: float = 2.2:
+    set(value):
+        storm_intensity_exponent = maxf(value, 0.1)
+        if is_inside_tree():
+            _apply_weather_state(true)
+            _refresh_editor_preview()
+@export var storm_intensity_curve: Curve:
+    set(value):
+        storm_intensity_curve = value
+        if is_inside_tree():
+            _apply_weather_state(true)
             _refresh_editor_preview()
 
 var _near_rain_field: MultiMeshInstance3D
@@ -192,14 +209,12 @@ var _current_storm_factor: float = 0.0
 var _current_lightning_flash: float = 0.0
 var _current_shelter_factor: float = 0.0
 var _current_local_emission_scale: float = 1.0
+var _lightning_activity: float = 0.0
+var _lightning_roll_timer: float = 0.0
+var _thunder_locked: bool = false
+var _thunder_unlock_timer: SceneTreeTimer
+var _lightning_rng := RandomNumberGenerator.new()
 
-var _last_applied_precipitation: float = -1.0
-var _last_applied_cloud_density: float = -1.0
-var _last_applied_cloud_overcast_intensity: float = -1.0
-var _last_applied_storm_fog_intensity: float = -1.0
-var _last_applied_storm_factor: float = -1.0
-var _last_applied_lightning_flash: float = -1.0
-var _last_applied_local_emission_scale: float = -1.0
 var _last_emitted_rain_strength: float = -1.0
 var _last_emitted_local_rain_strength: float = -1.0
 var _editor_preview_camera_id: int = 0
@@ -223,7 +238,7 @@ func _notification(what: int) -> void:
 
 func _ready() -> void:
     _refresh_environment_cache()
-    _connect_weather_runtime()
+    _lightning_rng.randomize()
     _push_weather_server_settings()
     _push_rain_probe_config()
     _ensure_rain_field_nodes()
@@ -232,16 +247,21 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-    _disconnect_weather_runtime()
     _invalidate_rain_field_state_cache()
+    _clear_thunder_lock()
     WeatherServer.clear_weather_observer_sample(get_world_3d())
-    WeatherServer.clear_weather_runtime(get_world_3d())
+    WeatherServer.clear_weather_state(get_world_3d())
     WeatherServer.clear_visible_rain_participation_cache(get_world_3d(), get_instance_id())
     WeatherServer.clear_visible_rain_probe_field_config(get_world_3d(), get_instance_id())
     WeatherServer.clear_rain_render_field_cache(get_world_3d(), get_instance_id())
     var skydome := _get_skydome()
-    if skydome != null and skydome.has_method("clear_weather_overrides"):
-        skydome.clear_weather_overrides()
+    if skydome:
+        skydome.clouds_coverage = 0.0
+        #skydome.cloud_overcast_intensity = -1.0
+        #skydome.cloud_shadow_intensity = 0.0
+        skydome.fog_density = 0.0
+        #skydome.local_emission_scale = 1.0
+        skydome.lightning_flash = 0.0
 
 
 func _process(delta: float) -> void:
@@ -249,6 +269,7 @@ func _process(delta: float) -> void:
     _update_weather_observer()
     WeatherServer.update_weather_state(get_world_3d(), delta)
     _sync_weather_state()
+    _update_lightning(delta)
     _update_rain_rendering()
     _push_weather_state()
 
@@ -271,6 +292,27 @@ func set_storm_intensity(value: float) -> void:
 
 func set_storm_fog_intensity(value: float) -> void:
     storm_fog_intensity = value
+
+
+func apply_wind_controls(strength_ratio: float, direction: Vector2) -> void:
+    var normalized_direction := direction.normalized()
+    var gnd_speed := lerpf(0.15, 3.0, strength_ratio)
+    var gnd_strength := lerpf(0.4, 5.0, strength_ratio)
+
+    ProjectSettings.set_setting(GND_WIND_DIRECTION_SETTING, normalized_direction)
+    ProjectSettings.set_setting(GND_WIND_SPEED_SETTING, gnd_speed)
+    ProjectSettings.set_setting(GND_WIND_STRENGTH_SETTING, gnd_strength)
+    RenderingServer.global_shader_parameter_set("gnd_wind_direction", normalized_direction)
+    RenderingServer.global_shader_parameter_set("gnd_wind_speed", gnd_speed)
+    RenderingServer.global_shader_parameter_set("gnd_wind_strength", gnd_strength)
+
+    var skydome := _get_skydome()
+    if skydome:
+        skydome.clouds_wind_direction = normalized_direction
+        skydome.clouds_wind_strength = gnd_speed
+        skydome.apply_wind_now()
+
+    apply_now()
 
 
 func apply_now() -> void:
@@ -302,7 +344,7 @@ func get_precipitation_strength_at_position(world_position: Vector3) -> float:
 func get_storm_factor(precipitation_override: float = -1.0) -> float:
     if precipitation_override < 0.0:
         return _current_storm_factor
-    return clampf(_current_storm_intensity_input, 0.0, 1.0)
+    return _evaluate_storm_intensity_response(_current_storm_intensity_input)
 
 
 func _apply_weather_state(force: bool = false) -> void:
@@ -310,6 +352,7 @@ func _apply_weather_state(force: bool = false) -> void:
     _update_follow_position()
     _update_weather_observer()
     _sync_weather_state(force)
+    _update_lightning(0.0, force)
     _update_rain_rendering()
     _push_weather_state(force)
 
@@ -355,28 +398,6 @@ func _push_rain_probe_config() -> void:
     _invalidate_rain_field_state_cache()
 
 
-func _connect_weather_runtime() -> void:
-    var runtime := WeatherServer.get_weather_runtime(get_world_3d())
-    if runtime == null:
-        return
-
-    if not runtime.weather_state_changed.is_connected(_on_weather_server_state_changed):
-        runtime.weather_state_changed.connect(_on_weather_server_state_changed)
-    if not runtime.thunder.is_connected(_on_weather_server_thunder):
-        runtime.thunder.connect(_on_weather_server_thunder)
-
-
-func _disconnect_weather_runtime() -> void:
-    var runtime := WeatherServer.get_weather_runtime(get_world_3d())
-    if runtime == null:
-        return
-
-    if runtime.weather_state_changed.is_connected(_on_weather_server_state_changed):
-        runtime.weather_state_changed.disconnect(_on_weather_server_state_changed)
-    if runtime.thunder.is_connected(_on_weather_server_thunder):
-        runtime.thunder.disconnect(_on_weather_server_thunder)
-
-
 func _push_weather_server_settings() -> void:
     WeatherServer.configure_weather_state(
         get_world_3d(),
@@ -386,7 +407,6 @@ func _push_weather_server_settings() -> void:
         storm_intensity,
         storm_fog_intensity,
         precipitation_wind_strength,
-        storm_threshold,
         sheltered_volumetric_emission_scale,
         lightning_enabled,
         lightning_min_interval,
@@ -405,15 +425,13 @@ func _update_weather_observer() -> void:
 
 
 func _sync_weather_state(force: bool = false) -> void:
-    if force:
-        WeatherServer.update_weather_state(get_world_3d(), 0.0)
-    _apply_weather_state_snapshot(WeatherServer.get_weather_state(get_world_3d()))
+    var state := _get_server_weather_state(force)
+    if state.is_empty():
+        return
+    _apply_weather_state_snapshot(state)
 
 
 func _apply_weather_state_snapshot(state: Dictionary) -> void:
-    if state.is_empty():
-        state = _get_fallback_weather_state()
-
     _current_global_precipitation = clampf(float(state.get("global_precipitation", precipitation_intensity)), 0.0, 1.0)
     _current_cloud_density = clampf(float(state.get("cloud_density", cloud_density)), 0.0, 1.0)
     _current_cloud_overcast_intensity_input = clampf(float(state.get("cloud_overcast_intensity_input", cloud_overcast_intensity)), 0.0, 1.0)
@@ -421,59 +439,102 @@ func _apply_weather_state_snapshot(state: Dictionary) -> void:
     _current_storm_fog_intensity_input = clampf(float(state.get("storm_fog_intensity_input", storm_fog_intensity)), 0.0, 1.0)
     _current_local_precipitation = clampf(float(state.get("local_precipitation", _current_global_precipitation)), 0.0, 1.0)
     _current_storm_factor = clampf(float(state.get("storm_factor", 0.0)), 0.0, 1.0)
-    _current_lightning_flash = clampf(float(state.get("lightning_flash", 0.0)), 0.0, 1.0)
     _current_shelter_factor = clampf(float(state.get("shelter_factor", 0.0)), 0.0, 1.0)
     _current_local_emission_scale = clampf(float(state.get("local_emission_scale", 1.0)), 0.0, 1.0)
 
 
-func _get_fallback_weather_state() -> Dictionary:
-    var global_precipitation := _get_global_precipitation_setting()
-    var local_precipitation := global_precipitation
-    var follow_target := _get_follow_target()
-    if follow_target != null:
-        local_precipitation = WeatherServer.get_rain_participation_strength(
-            get_world_3d(),
-            follow_target.global_position,
-            global_precipitation
-        )
+func _get_server_weather_state(force_refresh: bool = false) -> Dictionary:
+    var world_3d := get_world_3d()
+    if world_3d == null:
+        return {}
 
-    var shelter_factor := 0.0
-    if global_precipitation > 0.0001 and local_precipitation < global_precipitation:
-        shelter_factor = clampf((global_precipitation - local_precipitation) / global_precipitation, 0.0, 1.0)
+    if force_refresh:
+        _push_weather_server_settings()
+        WeatherServer.update_weather_state(world_3d, 0.0)
 
-    return {
-        "global_precipitation": global_precipitation,
-        "cloud_density": clampf(cloud_density, 0.0, 1.0),
-        "cloud_overcast_intensity_input": clampf(cloud_overcast_intensity, 0.0, 1.0),
-        "storm_intensity_input": clampf(storm_intensity, 0.0, 1.0),
-        "storm_fog_intensity_input": clampf(storm_fog_intensity, 0.0, 1.0),
-        "local_precipitation": local_precipitation,
-        "storm_factor": clampf(storm_intensity, 0.0, 1.0),
-        "lightning_flash": 0.0,
-        "shelter_factor": shelter_factor,
-        "local_emission_scale": lerpf(1.0, sheltered_volumetric_emission_scale, shelter_factor),
-    }
+    return WeatherServer.get_weather_state(world_3d)
 
 
 func _get_global_precipitation_setting() -> float:
     return clampf(precipitation_intensity, 0.0, 1.0)
 
 
-func _compute_storm_factor(intensity: float) -> float:
-    if intensity <= storm_threshold:
-        return 0.0
-
-    var denominator := maxf(1.0 - storm_threshold, 0.0001)
-    var t := clampf((intensity - storm_threshold) / denominator, 0.0, 1.0)
-    return t * t * (3.0 - 2.0 * t)
+func _evaluate_storm_intensity_response(intensity: float) -> float:
+    var clamped_intensity := clampf(intensity, 0.0, 1.0)
+    if storm_intensity_curve != null:
+        return clampf(storm_intensity_curve.sample_baked(clamped_intensity), 0.0, 1.0)
+    return clampf(pow(clamped_intensity, storm_intensity_exponent), 0.0, 1.0)
 
 
-func _on_weather_server_state_changed() -> void:
-    return
+func _update_lightning(delta: float, force: bool = false) -> void:
+    var lightning_multiplier := 1.0
+    var follow_target := _get_follow_target()
+    if follow_target != null:
+        lightning_multiplier = WeatherServer.get_rain_lightning_multiplier(get_world_3d(), follow_target.global_position)
+
+    var storm_response := _evaluate_storm_intensity_response(_current_storm_intensity_input)
+    _lightning_activity = clampf(storm_response * lightning_multiplier, 0.0, 1.0)
+
+    if delta > 0.0:
+        _current_lightning_flash = move_toward(_current_lightning_flash, 0.0, delta * lightning_flash_decay)
+    elif force and (not lightning_enabled or _lightning_activity <= 0.02):
+        _current_lightning_flash = 0.0
+
+    if not lightning_enabled or _lightning_activity <= 0.02:
+        _lightning_roll_timer = 0.0
+        if force:
+            _current_lightning_flash = 0.0
+        return
+
+    if delta <= 0.0:
+        return
+
+    _lightning_roll_timer += delta
+    var flash_interval := lerpf(lightning_max_interval, lightning_min_interval, _lightning_activity)
+    flash_interval = clampf(flash_interval, 0.1, 60.0)
+    var flash_chance := clampf(LIGHTNING_ROLL_INTERVAL_SEC / flash_interval, 0.0, 1.0)
+    while _lightning_roll_timer >= LIGHTNING_ROLL_INTERVAL_SEC:
+        _lightning_roll_timer -= LIGHTNING_ROLL_INTERVAL_SEC
+        if _lightning_rng.randf() <= flash_chance:
+            _trigger_lightning_pulse(_lightning_activity)
 
 
-func _on_weather_server_thunder(strength: float) -> void:
-    thunder.emit(clampf(strength, 0.0, 1.0))
+func _trigger_lightning_pulse(activity: float) -> void:
+    var clamped_activity := clampf(activity, 0.0, 1.0)
+    var strength_roll := _lightning_rng.randf()
+    var min_strength := lerpf(0.03, 0.22, clamped_activity)
+    var max_strength := lerpf(0.35, 1.0, clamped_activity)
+    var flash_strength := lerpf(min_strength, max_strength, pow(strength_roll, 1.35))
+    _current_lightning_flash = maxf(_current_lightning_flash, flash_strength)
+    if not _thunder_locked:
+        thunder.emit(clampf(flash_strength, 0.0, 1.0))
+        _start_thunder_lock()
+
+
+func _start_thunder_lock() -> void:
+    _thunder_locked = true
+    _disconnect_thunder_unlock_timer()
+    var lock_duration := _lightning_rng.randf_range(thunder_lock_min_duration, thunder_lock_max_duration)
+    _thunder_unlock_timer = get_tree().create_timer(lock_duration)
+    _thunder_unlock_timer.timeout.connect(_on_thunder_unlock_timeout, CONNECT_ONE_SHOT)
+
+
+func _disconnect_thunder_unlock_timer() -> void:
+    if _thunder_unlock_timer == null:
+        return
+    if _thunder_unlock_timer.timeout.is_connected(_on_thunder_unlock_timeout):
+        _thunder_unlock_timer.timeout.disconnect(_on_thunder_unlock_timeout)
+    _thunder_unlock_timer = null
+
+
+func _clear_thunder_lock() -> void:
+    _thunder_locked = false
+    _disconnect_thunder_unlock_timer()
+
+
+func _on_thunder_unlock_timeout() -> void:
+    _thunder_locked = false
+    _thunder_unlock_timer = null
 
 
 func _get_follow_target() -> Node3D:
@@ -1106,33 +1167,22 @@ func _get_wind_speed() -> float:
 
 func _push_weather_state(force: bool = false) -> void:
     var skydome := _get_skydome()
-    if skydome == null or not skydome.has_method("set_weather_overrides"):
+    if skydome == null:
         return
 
-    var global_precipitation := _current_global_precipitation
-    var current_cloud_density := _current_cloud_density
-    var current_cloud_overcast_intensity := _current_cloud_overcast_intensity_input
-    var current_storm_fog_intensity := _current_storm_fog_intensity_input
-    var storm_factor := _current_storm_factor
-    var local_emission_scale := _current_local_emission_scale
-    if not force:
-        var unchanged := (
-            absf(_last_applied_precipitation - global_precipitation) <= 0.0001
-            and absf(_last_applied_cloud_density - current_cloud_density) <= 0.0001
-            and absf(_last_applied_cloud_overcast_intensity - current_cloud_overcast_intensity) <= 0.0001
-            and absf(_last_applied_storm_fog_intensity - current_storm_fog_intensity) <= 0.0001
-            and absf(_last_applied_storm_factor - storm_factor) <= 0.0001
-            and absf(_last_applied_lightning_flash - _current_lightning_flash) <= 0.0001
-            and absf(_last_applied_local_emission_scale - local_emission_scale) <= 0.0001
-        )
-        if unchanged:
-            return
+    var state := _get_server_weather_state(force)
+    if state.is_empty():
+        return
 
-    skydome.set_weather_overrides(global_precipitation, storm_factor, _current_lightning_flash, local_emission_scale, current_cloud_density, current_storm_fog_intensity, current_cloud_overcast_intensity)
-    _last_applied_precipitation = global_precipitation
-    _last_applied_cloud_density = current_cloud_density
-    _last_applied_cloud_overcast_intensity = current_cloud_overcast_intensity
-    _last_applied_storm_fog_intensity = current_storm_fog_intensity
-    _last_applied_storm_factor = storm_factor
-    _last_applied_lightning_flash = _current_lightning_flash
-    _last_applied_local_emission_scale = local_emission_scale
+    var current_cloud_density := clampf(float(state.get("cloud_density", _current_cloud_density)), 0.0, 1.0)
+    var current_cloud_overcast_intensity := clampf(float(state.get("cloud_overcast_intensity_input", _current_cloud_overcast_intensity_input)), 0.0, 1.0)
+    var current_fog_intensity := clampf(float(state.get("storm_fog_intensity_input", _current_storm_fog_intensity_input)), 0.0, 1.0)
+    var current_cloud_shadow_intensity := clampf(float(state.get("storm_factor", _current_storm_factor)), 0.0, 1.0)
+    var local_emission_scale := clampf(float(state.get("local_emission_scale", _current_local_emission_scale)), 0.0, 1.0)
+
+    skydome.clouds_coverage = current_cloud_density
+    #skydome.cloud_overcast_intensity = current_cloud_overcast_intensity
+    #skydome.cloud_shadow_intensity = current_cloud_shadow_intensity
+    skydome.fog_density = current_fog_intensity
+    #skydome.local_emission_scale = local_emission_scale
+    skydome.lightning_flash = _current_lightning_flash

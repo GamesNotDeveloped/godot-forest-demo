@@ -3,7 +3,6 @@ extends EditorPlugin
 
 const BIOMES_SCRIPT := preload("res://addons/gnd_biomes/Biomes.gd")
 const ENTRY_SCRIPT := preload("res://addons/gnd_biomes/BiomeScatterEntry.gd")
-const AUTO_FOG_SCRIPT := preload("res://addons/gnd_biomes/AutoBiomesFog.gd")
 const MASK_PAINTER_PANEL_SCRIPT := preload("res://addons/gnd_biomes/MaskPainterPanel.gd")
 const TERRAIN_PATCH_SCRIPT := preload("res://scenery/TerrainPatch3D.gd")
 const BIOMES_ICON := preload("res://icon.svg")
@@ -43,7 +42,6 @@ var _billboard_generation_running := false
 func _enter_tree() -> void:
     add_custom_type("Biomes", "Node3D", BIOMES_SCRIPT, BIOMES_ICON)
     add_custom_type("BiomeScatterEntry", "Resource", ENTRY_SCRIPT, BIOMES_ICON)
-    add_custom_type("AutoBiomesFog", "Node", AUTO_FOG_SCRIPT, BIOMES_ICON)
     _build_panel()
     _build_file_dialog()
     _build_overwrite_dialog()
@@ -53,7 +51,6 @@ func _enter_tree() -> void:
 
 
 func _exit_tree() -> void:
-    remove_custom_type("AutoBiomesFog")
     remove_custom_type("BiomeScatterEntry")
     remove_custom_type("Biomes")
     if _panel != null:
