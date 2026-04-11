@@ -28,6 +28,7 @@ var _weather_precipitation: float = 0.0
 var _weather_storm_factor: float = 0.0
 var _weather_lightning_flash: float = 0.0
 var _weather_local_emission_scale: float = 1.0
+var _weather_cloud_density: float = -1.0
 var _cloud_texture_a: Texture2D
 var _cloud_texture_b: Texture2D
 var current_vol_fog_min_density: float = 0.0
@@ -576,22 +577,27 @@ func apply_now() -> void:
     _request_time_update(true)
     _update_effect()
 
-func set_weather_overrides(precipitation: float, storm_factor: float, lightning_flash: float, local_emission_scale: float = 1.0) -> void:
+func set_weather_overrides(precipitation: float, storm_factor: float, lightning_flash: float, local_emission_scale: float = 1.0, cloud_density: float = -1.0) -> void:
     var next_precipitation := clampf(precipitation, 0.0, 1.0)
     var next_storm_factor := clampf(storm_factor, 0.0, 1.0)
     var next_lightning_flash := clampf(lightning_flash, 0.0, 1.0)
     var next_local_emission_scale := clampf(local_emission_scale, 0.0, 1.0)
+    var next_cloud_density := cloud_density
+    if next_cloud_density >= 0.0:
+        next_cloud_density = clampf(next_cloud_density, 0.0, 1.0)
     var changed := (
         absf(_weather_precipitation - next_precipitation) > 0.0001
         or absf(_weather_storm_factor - next_storm_factor) > 0.0001
         or absf(_weather_lightning_flash - next_lightning_flash) > 0.0001
         or absf(_weather_local_emission_scale - next_local_emission_scale) > 0.0001
+        or absf(_weather_cloud_density - next_cloud_density) > 0.0001
     )
 
     _weather_precipitation = next_precipitation
     _weather_storm_factor = next_storm_factor
     _weather_lightning_flash = next_lightning_flash
     _weather_local_emission_scale = next_local_emission_scale
+    _weather_cloud_density = next_cloud_density
 
     if changed and is_inside_tree() and _is_ready:
         _update_sun_transform()
@@ -599,7 +605,7 @@ func set_weather_overrides(precipitation: float, storm_factor: float, lightning_
 
 
 func clear_weather_overrides() -> void:
-    set_weather_overrides(0.0, 0.0, 0.0, 1.0)
+    set_weather_overrides(0.0, 0.0, 0.0, 1.0, -1.0)
 
 
 func _refresh() -> void:
@@ -1011,12 +1017,15 @@ func _apply_weather_overrides(env: Environment, light: DirectionalLight3D) -> vo
     var storm_factor := clampf(_weather_storm_factor, 0.0, 1.0)
     var lightning_flash := clampf(_weather_lightning_flash, 0.0, 1.0)
     var local_emission_scale := clampf(_weather_local_emission_scale, 0.0, 1.0)
+    var base_cloud_density := clouds_coverage
+    if _weather_cloud_density >= 0.0:
+        base_cloud_density = _weather_cloud_density
     var cloud_mix := clampf(precipitation * 0.8 + storm_factor * 0.55, 0.0, 1.0)
     var cloud_darkening := clampf(precipitation * 0.45 + storm_factor * 0.35, 0.0, 1.0)
     var weather_override_strength := maxf(weather_overcast_intensity, 0.0)
     var overcast_cooling := clampf((precipitation * 0.78 + storm_factor * 0.4) * weather_override_strength, 0.0, 1.0)
 
-    _set_shader_param("cloud_coverage", lerpf(clouds_coverage, maxf(clouds_coverage, 0.88), cloud_mix))
+    _set_shader_param("cloud_coverage", lerpf(base_cloud_density, maxf(base_cloud_density, 0.88), cloud_mix))
     _set_shader_param("cloud_opacity", lerpf(clouds_opacity, maxf(clouds_opacity, 0.95), clampf(precipitation * 0.85 + storm_factor * 0.35, 0.0, 1.0)))
     _set_shader_param("cloud_shadow_color", clouds_color_shadow.lerp(Color(0.22, 0.24, 0.29, 1.0), cloud_darkening))
     _set_shader_param("cloud_light_color", clouds_color_light.lerp(Color(0.66, 0.7, 0.78, 1.0), clampf(precipitation * 0.35 + storm_factor * 0.2, 0.0, 1.0)))

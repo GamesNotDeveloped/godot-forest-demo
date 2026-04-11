@@ -35,6 +35,7 @@ class WeatherRuntime extends RefCounted:
     signal thunder(strength: float)
 
     var precipitation_intensity: float = 0.0
+    var cloud_density: float = 0.15
     var precipitation_wind_strength: float = 4.0
     var storm_threshold: float = 0.82
     var sheltered_volumetric_emission_scale: float = 0.0
@@ -63,6 +64,7 @@ class WeatherRuntime extends RefCounted:
 
     func configure(
         next_precipitation_intensity: float,
+        next_cloud_density: float,
         next_precipitation_wind_strength: float,
         next_storm_threshold: float,
         next_sheltered_volumetric_emission_scale: float,
@@ -72,6 +74,7 @@ class WeatherRuntime extends RefCounted:
         next_lightning_flash_decay: float
     ) -> void:
         precipitation_intensity = clampf(next_precipitation_intensity, 0.0, 1.0)
+        cloud_density = clampf(next_cloud_density, 0.0, 1.0)
         precipitation_wind_strength = maxf(next_precipitation_wind_strength, 0.0)
         storm_threshold = clampf(next_storm_threshold, 0.0, 1.0)
         sheltered_volumetric_emission_scale = clampf(next_sheltered_volumetric_emission_scale, 0.0, 1.0)
@@ -128,6 +131,7 @@ class WeatherRuntime extends RefCounted:
     func get_weather_state() -> Dictionary:
         return {
             "global_precipitation": _global_precipitation,
+            "cloud_density": cloud_density,
             "local_precipitation": _local_precipitation,
             "storm_factor": _storm_factor,
             "lightning_flash": _lightning_flash,
@@ -313,6 +317,7 @@ static func clear_weather_runtime(world_3d: World3D) -> void:
 static func configure_weather_state(
     world_3d: World3D,
     precipitation_intensity: float,
+    cloud_density: float,
     precipitation_wind_strength: float,
     storm_threshold: float,
     sheltered_volumetric_emission_scale: float,
@@ -327,6 +332,7 @@ static func configure_weather_state(
 
     runtime.configure(
         precipitation_intensity,
+        cloud_density,
         precipitation_wind_strength,
         storm_threshold,
         sheltered_volumetric_emission_scale,

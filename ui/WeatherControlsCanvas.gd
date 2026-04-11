@@ -23,11 +23,13 @@ var _skydome: Skydome
 @onready var _weather_panel: PanelContainer = $WeatherControlsRoot/WeatherPanel
 @onready var _wind_value_label: Label = $WeatherControlsRoot/WeatherPanel/Row/WindGroup/Row/WindValueLabel
 @onready var _rain_value_label: Label = $WeatherControlsRoot/WeatherPanel/Row/RainGroup/Row/RainValueLabel
+@onready var _cloud_value_label: Label = $WeatherControlsRoot/WeatherPanel/Row/CloudGroup/Row/CloudValueLabel
 @onready var _time_value_label: Label = $WeatherControlsRoot/WeatherPanel/Row/TimeGroup/Row/TimeValueLabel
 @onready var _time_scale_value_label: Label = $WeatherControlsRoot/WeatherPanel/Row/TimeScaleGroup/Row/TimeScaleValueLabel
 @onready var _wind_strength_slider: HSlider = $WeatherControlsRoot/WeatherPanel/Row/WindGroup/Row/WindSlider
 @onready var _wind_direction_button: OptionButton = $WeatherControlsRoot/WeatherPanel/Row/WindDirectionGroup/WindDirectionButton
 @onready var _rain_slider: HSlider = $WeatherControlsRoot/WeatherPanel/Row/RainGroup/Row/RainSlider
+@onready var _cloud_slider: HSlider = $WeatherControlsRoot/WeatherPanel/Row/CloudGroup/Row/CloudSlider
 @onready var _time_slider: HSlider = $WeatherControlsRoot/WeatherPanel/Row/TimeGroup/Row/TimeSlider
 @onready var _time_scale_slider: HSlider = $WeatherControlsRoot/WeatherPanel/Row/TimeScaleGroup/Row/TimeScaleSlider
 var _time_slider_dragging := false
@@ -39,6 +41,7 @@ func _ready() -> void:
     _wind_strength_slider.value_changed.connect(_on_wind_strength_changed)
     _wind_direction_button.item_selected.connect(_on_wind_direction_selected)
     _rain_slider.value_changed.connect(_on_rain_changed)
+    _cloud_slider.value_changed.connect(_on_cloud_density_changed)
     _time_slider.value_changed.connect(_on_time_changed)
     _time_slider.drag_started.connect(_on_time_drag_started)
     _time_slider.drag_ended.connect(_on_time_drag_ended)
@@ -88,6 +91,8 @@ func _sync_weather_controls() -> void:
     if _weather != null:
         _rain_slider.set_value_no_signal(_weather.precipitation_intensity)
         _rain_value_label.text = "%d%%" % int(round(_weather.precipitation_intensity * 100.0))
+        _cloud_slider.set_value_no_signal(_weather.cloud_density)
+        _cloud_value_label.text = "%d%%" % int(round(_weather.cloud_density * 100.0))
 
 
 func _sync_time_control(time_of_day: float) -> void:
@@ -108,6 +113,12 @@ func _on_rain_changed(value: float) -> void:
     _rain_value_label.text = "%d%%" % int(round(value * 100.0))
     if _weather != null:
         _weather.set_precipitation_intensity(value)
+
+
+func _on_cloud_density_changed(value: float) -> void:
+    _cloud_value_label.text = "%d%%" % int(round(value * 100.0))
+    if _weather != null:
+        _weather.set_cloud_density(value)
 
 
 func _on_time_changed(value: float) -> void:

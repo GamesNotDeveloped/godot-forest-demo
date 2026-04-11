@@ -29,6 +29,13 @@ const RAIN_FIELD_WIDTH_SCALE := 1.5
             _push_weather_server_settings()
             _sync_weather_state(true)
             _refresh_editor_preview()
+@export_range(0.0, 1.0, 0.001) var cloud_density: float = 0.15:
+    set(value):
+        cloud_density = clampf(value, 0.0, 1.0)
+        if is_inside_tree():
+            _push_weather_server_settings()
+            _sync_weather_state(true)
+            _refresh_editor_preview()
 @export_range(0.0, 1.0, 0.001) var storm_threshold: float = 0.82:
     set(value):
         storm_threshold = clampf(value, 0.0, 1.0)
@@ -155,6 +162,7 @@ var _mid_rain_debug_material: StandardMaterial3D
 var _rain_mesh_debug_preview_enabled: bool = false
 var _environment: Environment
 var _current_global_precipitation: float = 0.0
+var _current_cloud_density: float = 0.15
 var _current_local_precipitation: float = 0.0
 var _current_storm_factor: float = 0.0
 var _current_lightning_flash: float = 0.0
@@ -162,6 +170,7 @@ var _current_shelter_factor: float = 0.0
 var _current_local_emission_scale: float = 1.0
 
 var _last_applied_precipitation: float = -1.0
+var _last_applied_cloud_density: float = -1.0
 var _last_applied_storm_factor: float = -1.0
 var _last_applied_lightning_flash: float = -1.0
 var _last_applied_local_emission_scale: float = -1.0
@@ -220,6 +229,10 @@ func _process(delta: float) -> void:
 
 func set_precipitation_intensity(value: float) -> void:
     precipitation_intensity = value
+
+
+func set_cloud_density(value: float) -> void:
+    cloud_density = value
 
 
 func apply_now() -> void:
@@ -330,6 +343,7 @@ func _push_weather_server_settings() -> void:
     WeatherServer.configure_weather_state(
         get_world_3d(),
         precipitation_intensity,
+        cloud_density,
         precipitation_wind_strength,
         storm_threshold,
         sheltered_volumetric_emission_scale,
@@ -360,6 +374,7 @@ func _apply_weather_state_snapshot(state: Dictionary) -> void:
         state = _get_fallback_weather_state()
 
     _current_global_precipitation = clampf(float(state.get("global_precipitation", precipitation_intensity)), 0.0, 1.0)
+    _current_cloud_density = clampf(float(state.get("cloud_density", cloud_density)), 0.0, 1.0)
     _current_local_precipitation = clampf(float(state.get("local_precipitation", _current_global_precipitation)), 0.0, 1.0)
     _current_storm_factor = clampf(float(state.get("storm_factor", 0.0)), 0.0, 1.0)
     _current_lightning_flash = clampf(float(state.get("lightning_flash", 0.0)), 0.0, 1.0)
@@ -386,6 +401,7 @@ func _get_fallback_weather_state() -> Dictionary:
 
     return {
         "global_precipitation": global_precipitation,
+        "cloud_density": clampf(cloud_density, 0.0, 1.0),
         "local_precipitation": local_precipitation,
         "storm_factor": _compute_storm_factor(storm_input),
         "lightning_flash": 0.0,
@@ -1049,11 +1065,13 @@ func _push_weather_state(force: bool = false) -> void:
         return
 
     var global_precipitation := _current_global_precipitation
+    var current_cloud_density := _current_cloud_density
     var storm_factor := _current_storm_factor
     var local_emission_scale := _current_local_emission_scale
     if not force:
         var unchanged := (
             absf(_last_applied_precipitation - global_precipitation) <= 0.0001
+            and absf(_last_applied_cloud_density - current_cloud_density) <= 0.0001
             and absf(_last_applied_storm_factor - storm_factor) <= 0.0001
             and absf(_last_applied_lightning_flash - _current_lightning_flash) <= 0.0001
             and absf(_last_applied_local_emission_scale - local_emission_scale) <= 0.0001
@@ -1061,8 +1079,9 @@ func _push_weather_state(force: bool = false) -> void:
         if unchanged:
             return
 
-    skydome.set_weather_overrides(global_precipitation, storm_factor, _current_lightning_flash, local_emission_scale)
+    skydome.set_weather_overrides(global_precipitation, storm_factor, _current_lightning_flash, local_emission_scale, current_cloud_density)
     _last_applied_precipitation = global_precipitation
+    _last_applied_cloud_density = current_cloud_density
     _last_applied_storm_factor = storm_factor
     _last_applied_lightning_flash = _current_lightning_flash
     _last_applied_local_emission_scale = local_emission_scale

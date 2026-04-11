@@ -18,9 +18,9 @@ mouse_filter = 2
 layout_mode = 0
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -430.0
+offset_left = -535.0
 offset_top = 14.0
-offset_right = 430.0
+offset_right = 535.0
 offset_bottom = 156.0
 grow_horizontal = 2
 size_flags_horizontal = 4
@@ -116,6 +116,39 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
 theme_override_font_sizes/font_size = 13
 text = "0%"
+horizontal_alignment = 2
+
+[node name="CloudGroup" type="VBoxContainer" parent="WeatherControlsRoot/WeatherPanel/Row" unique_id=959306121]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="WeatherControlsRoot/WeatherPanel/Row/CloudGroup" unique_id=170085659]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Clouds"
+
+[node name="Row" type="HBoxContainer" parent="WeatherControlsRoot/WeatherPanel/Row/CloudGroup" unique_id=755775723]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="CloudSlider" type="HSlider" parent="WeatherControlsRoot/WeatherPanel/Row/CloudGroup/Row" unique_id=1703005540]
+custom_minimum_size = Vector2(170, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.01
+value = 0.15
+
+[node name="CloudValueLabel" type="Label" parent="WeatherControlsRoot/WeatherPanel/Row/CloudGroup/Row" unique_id=760328962]
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+text = "15%"
 horizontal_alignment = 2
 
 [node name="TimeGroup" type="VBoxContainer" parent="WeatherControlsRoot/WeatherPanel/Row" unique_id=702265457]
