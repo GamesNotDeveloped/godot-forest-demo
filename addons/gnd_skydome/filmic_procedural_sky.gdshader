@@ -87,6 +87,9 @@ uniform vec2 cloud_wind_direction = vec2(0.8, 0.3);
 uniform float cloud_wind_speed = 1.0;
 uniform float cloud_motion_time = 0.0;
 uniform float cloud_motion_scale = 0.12;
+uniform float cloud_evolution_time = 0.0;
+uniform float cloud_evolution_strength : hint_range(0.0, 1.0) = 0.18;
+uniform float cloud_evolution_scale : hint_range(0.001, 0.25) = 0.018;
 
 vec2 dir_to_cloud_plane_uv(vec3 dir, float plane_height, float curve) {
 	float denom = max(dir.y + plane_height, 0.05);
@@ -169,13 +172,23 @@ void sky() {
 	vec2 warp = texture(cloud_tex_b, cloud_uv * 0.01 + warp_scroll * motion_time).rg * 2.0 - 1.0;
 	cloud_uv += warp * cloud_warp_strength;
 
+	vec2 evolution_uv = cloud_uv * cloud_evolution_scale;
+	vec2 evolution_flow_a = vec2(0.011, -0.007) * cloud_evolution_time;
+	vec2 evolution_flow_b = vec2(-0.009, 0.013) * cloud_evolution_time;
+	float evolution_a = texture(cloud_tex_a, evolution_uv + evolution_flow_a).r;
+	float evolution_b = texture(cloud_tex_b, evolution_uv * 1.83 + evolution_flow_b).r;
+	vec2 evolution_warp = (vec2(evolution_a, evolution_b) - 0.5) * cloud_evolution_strength;
+	cloud_uv += evolution_warp;
+
 	float cloud_a = texture(cloud_tex_a, cloud_uv * cloud_scale_a + scroll_a * motion_time).r;
 	float cloud_b = texture(cloud_tex_b, cloud_uv * cloud_scale_b + scroll_b * motion_time).r;
 	float breakup = texture(cloud_tex_b, cloud_uv * 0.04 + breakup_scroll * motion_time).r;
 
 	float cloud_shape = mix(cloud_a, cloud_b, 0.5);
 	cloud_shape = mix(cloud_shape, cloud_shape * breakup, 0.4);
-	float cloud_mask = 1.0 - smoothstep(cloud_coverage - cloud_softness, cloud_coverage + cloud_softness, cloud_shape);
+	float evolution_signed = (mix(evolution_a, evolution_b, 0.45) * 2.0 - 1.0) * cloud_evolution_strength;
+	float evolved_coverage = clamp(cloud_coverage + evolution_signed * (cloud_softness * 1.4 + 0.08), 0.0, 1.0);
+	float cloud_mask = 1.0 - smoothstep(evolved_coverage - cloud_softness, evolved_coverage + cloud_softness, cloud_shape);
 
 	float horizon_mask = smoothstep(-0.1, cloud_horizon_fade, dir.y);
 	float top_mask = 1.0 - smoothstep(1.0 - cloud_top_fade, 1.0, max(dir.y, 0.0));

@@ -17,6 +17,7 @@ var _time_transition_target_total_hours: float = 0.0
 var _time_transition_target_unwrapped_time: float = 0.0
 var _time_transition_speed_hours_per_second: float = 0.0
 var _cloud_motion_time: float = 0.0
+var _cloud_evolution_time: float = 0.0
 var _sky_material: ShaderMaterial
 var _compositor_effect: CompositorEffect
 var _light: DirectionalLight3D
@@ -286,6 +287,15 @@ func _success(x):
     set(v):
         clouds_motion_scale = v
         _set_shader_param("cloud_motion_scale", v)
+@export var clouds_evolution_speed: float = 0.04
+@export var clouds_evolution_strength: float = 0.18:
+    set(v):
+        clouds_evolution_strength = v
+        _set_shader_param("cloud_evolution_strength", v)
+@export var clouds_evolution_scale: float = 0.018:
+    set(v):
+        clouds_evolution_scale = v
+        _set_shader_param("cloud_evolution_scale", v)
 @export var clouds_scroll_a: Vector2 = Vector2(0.0012, 0.00015):
     set(v):
         clouds_scroll_a = v
@@ -558,6 +568,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
     _advance_cloud_motion(_delta)
+    _advance_cloud_evolution(_delta)
     _advance_time_transition(_delta)
     _update_effect()
 
@@ -752,7 +763,10 @@ func _sync_sky_shader_params() -> void:
 
     _sky_material.set_shader_parameter("cloud_time", _get_cloud_time_value())
     _sky_material.set_shader_parameter("cloud_motion_time", _cloud_motion_time)
+    _sky_material.set_shader_parameter("cloud_evolution_time", _cloud_evolution_time)
     _sky_material.set_shader_parameter("cloud_motion_scale", clouds_motion_scale)
+    _sky_material.set_shader_parameter("cloud_evolution_strength", clouds_evolution_strength)
+    _sky_material.set_shader_parameter("cloud_evolution_scale", clouds_evolution_scale)
     _apply_cloud_wind_params()
 
 func _get_cloud_time_value() -> float:
@@ -766,6 +780,11 @@ func _update_cloud_time() -> void:
 func _advance_cloud_motion(delta: float) -> void:
     _cloud_motion_time += delta * _get_global_wind_speed() * clouds_motion_scale
     _set_shader_param("cloud_motion_time", _cloud_motion_time)
+
+
+func _advance_cloud_evolution(delta: float) -> void:
+    _cloud_evolution_time += delta * clouds_evolution_speed
+    _set_shader_param("cloud_evolution_time", _cloud_evolution_time)
 
 
 func _get_global_wind_speed() -> float:

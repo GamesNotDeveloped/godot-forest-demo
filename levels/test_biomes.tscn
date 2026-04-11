@@ -190,9 +190,9 @@ script = ExtResource("35_quality")
 [node name="WeatherControlsCanvas" parent="." unique_id=1325048792 instance=ExtResource("36_weather_ui")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(0.19153757, 0.35511485, -0.91499007, 0, 0.9322504, 0.36181375, 0.98148525, -0.06930093, 0.17856099, 0, 0.5193932, -0.2882359)
-light_color = Color(0.5959932, 0.7639389, 0.93589133, 1)
-light_energy = 0.17704785
+transform = Transform3D(-0.13397254, -0.7954886, 0.5909732, 0, 0.5963493, 0.8027251, -0.990985, 0.10754313, -0.07989443, 0, 0.5193932, -0.2882359)
+light_color = Color(1, 0.93, 0.85, 1)
+light_energy = 1.28
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
 light_angular_distance = 3.6
@@ -306,12 +306,15 @@ directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
 manage_vol_fog_density = false
 day_of_year = 154
-time_of_day = 22.334
+time_of_day = 9.353
 latitude = 22.400999999999996
 shader_zenith_color = Color(0.11514282, 0.20309141, 0.3828125, 1)
 shader_sky_energy = 0.532
 shader_horizon_height = 0.178
 shader_night_sky_energy = 0.165
+clouds_coverage = 0.15
+clouds_evolution_strength = 0.775
+clouds_evolution_scale = 0.198
 weather_overcast_intensity = 0.54
 weather_fog_density_boost = 0.3
 weather_storm_fog_density_boost = 0.91
@@ -326,15 +329,14 @@ weather_volumetric_fog_density_target = 0.12
 weather_volumetric_fog_sky_affect_target = 1.0
 weather_volumetric_fog_emission_color = Color(1, 1, 1, 1)
 weather_volumetric_fog_emission_energy = 0.28
-moon_phase_debug = 0.2465487075290671
+moon_phase_debug = 0.22823258832825388
 shader_atmosphere_sunset_boost = 0.47
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.837807, 5.481951, 0.15789318)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.4490805, 9.275639, -2.5844855)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
-precipitation_intensity = 0.506
 storm_threshold = 0.845
 precipitation_wind_strength = 10.0
 wind_influence = 0.52
