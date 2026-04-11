@@ -16,6 +16,7 @@ var _time_transition_wrapped: bool = false
 var _time_transition_target_total_hours: float = 0.0
 var _time_transition_target_unwrapped_time: float = 0.0
 var _time_transition_speed_hours_per_second: float = 0.0
+var _last_cloud_total_hours: float = 0.0
 var _cloud_motion_time: float = 0.0
 var _cloud_evolution_time: float = 0.0
 var _sky_material: ShaderMaterial
@@ -398,11 +399,11 @@ func _success(x):
     set(v):
         moon_size = v
         _set_shader_param("moon_size", v)
-@export var moon_glow_strength: float = 1.0:
+@export var moon_glow_strength: float = 0.1:
     set(v):
         moon_glow_strength = v
         _set_shader_param("moon_glow_strength", v)
-@export var moon_eclipse_size: float = 2.5:
+@export var moon_eclipse_size: float = 0.8:
     set(v):
         moon_eclipse_size = v
         _set_shader_param("moon_eclipse_size", v)
@@ -567,8 +568,6 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-    _advance_cloud_motion(_delta)
-    _advance_cloud_evolution(_delta)
     _advance_time_transition(_delta)
     _update_effect()
 
@@ -685,6 +684,7 @@ func _init_sky() -> void:
         _install_sunshafts_compositor_effect()
 
     _sync_sky_shader_params()
+    _reset_cloud_time_tracking()
 
 
 func _set_shader_param(param_name: String, value: Variant) -> void:
@@ -773,17 +773,29 @@ func _get_cloud_time_value() -> float:
     return ((float(_rendered_day - 1) * 24.0) + _rendered_time) * clouds_time_scale
 
 
-func _update_cloud_time() -> void:
-    _set_shader_param("cloud_time", _get_cloud_time_value())
+func _get_rendered_total_hours() -> float:
+    return float(_rendered_day) * 24.0 + _rendered_time
 
 
-func _advance_cloud_motion(delta: float) -> void:
-    _cloud_motion_time += delta * _get_global_wind_speed() * clouds_motion_scale
+func _reset_cloud_time_tracking() -> void:
+    _last_cloud_total_hours = _get_rendered_total_hours()
     _set_shader_param("cloud_motion_time", _cloud_motion_time)
+    _set_shader_param("cloud_evolution_time", _cloud_evolution_time)
 
 
-func _advance_cloud_evolution(delta: float) -> void:
-    _cloud_evolution_time += delta * clouds_evolution_speed
+func _update_cloud_time(current_total_hours: float = INF) -> void:
+    if is_inf(current_total_hours):
+        current_total_hours = _get_rendered_total_hours()
+    var delta_hours := current_total_hours - _last_cloud_total_hours
+    _last_cloud_total_hours = current_total_hours
+    var delta_world_seconds := delta_hours * 3600.0
+
+    if absf(delta_world_seconds) > 0.0001:
+        _cloud_motion_time += delta_world_seconds * _get_global_wind_speed() * clouds_motion_scale
+        _cloud_evolution_time += delta_world_seconds * clouds_evolution_speed
+
+    _set_shader_param("cloud_time", _get_cloud_time_value())
+    _set_shader_param("cloud_motion_time", _cloud_motion_time)
     _set_shader_param("cloud_evolution_time", _cloud_evolution_time)
 
 
@@ -873,7 +885,7 @@ func _apply_wrapped_time_of_day(unwrapped_time: float) -> void:
     _rendered_day = day_of_year
     _rendered_time = wrapf(unwrapped_time, 0.0, 24.0)
     _update_sun_transform()
-    _update_cloud_time()
+    _update_cloud_time(float(day_of_year) * 24.0 + unwrapped_time)
     time_changed.emit(_rendered_day, _rendered_time)
 
 func _apply_total_hours(total_hours: float) -> void:
@@ -885,7 +897,7 @@ func _apply_total_hours(total_hours: float) -> void:
     _rendered_time = new_time
 
     _update_sun_transform()
-    _update_cloud_time()
+    _update_cloud_time(total_hours)
     time_changed.emit(_rendered_day, _rendered_time)
 
 func _update_sun_transform() -> void:
