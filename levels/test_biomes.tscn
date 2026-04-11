@@ -10,7 +10,6 @@
 [ext_resource type="Texture2D" uid="uid://b7qpk2tctbu0x" path="res://levels/biomes_mask.png" id="6_2omi8"]
 [ext_resource type="PackedScene" uid="uid://b6d80typr1lwv" path="res://generated/biomes_billboards/trees/02_pine-tree-2/billboard.tscn" id="7_hx8ph"]
 [ext_resource type="PackedScene" uid="uid://dg7d0q3ew7q7o" path="res://objects/plants/paproc.tscn" id="7_paprocscene"]
-[ext_resource type="Script" uid="uid://c0tpjiw2klhkn" path="res://addons/gnd_biomes/AutoBiomesFog.gd" id="7_wj6dr"]
 [ext_resource type="PackedScene" uid="uid://cdjtntpf7gt6t" path="res://generated/biomes_billboards/trees/01_scene/billboard.tscn" id="7_ym8rc"]
 [ext_resource type="PackedScene" uid="uid://bhtip2magw5d2" path="res://objects/pine-tree-3/scene.gltf" id="8_mh1bx"]
 [ext_resource type="ArrayMesh" uid="uid://d4gwdbg276nmj" path="res://objects/plants/plant99.mesh" id="8_y1vgc"]
@@ -190,12 +189,12 @@ script = ExtResource("35_quality")
 [node name="WeatherControlsCanvas" parent="." unique_id=1325048792 instance=ExtResource("36_weather_ui")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(0.0069565047, 0.99817336, -0.060013354, 0, 0.060014807, 0.9981975, 0.9999758, -0.0069439653, 0.00041749328, 0, 0.5193932, -0.2882359)
+transform = Transform3D(-0.026714934, -0.98593223, 0.16499719, 0, 0.1650561, 0.9862842, -0.999643, 0.02634852, -0.004409463, 0, 0.5193932, -0.2882359)
 light_color = Color(1, 0.93, 0.85, 1)
-light_energy = 1.28
+light_energy = 1.5
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
-light_angular_distance = 3.6
+light_angular_distance = 0.5
 shadow_enabled = true
 directional_shadow_mode = 1
 directional_shadow_max_distance = 200.0
@@ -289,34 +288,27 @@ grass_rebuild_distance = 2.26
 grass_scale_min = 0.56
 grass_scale_max = 0.88
 
-[node name="AutoBiomesFog" type="Node" parent="." unique_id=158901427]
-script = ExtResource("7_wj6dr")
-biomes_path = NodePath("../Trees")
-world_environment_path = NodePath("../WorldEnvironment")
-sample_target_path = NodePath("../UP_FPSController_Prefab")
-skydome_path = NodePath("../Skydome")
-max_density = 0.107
-radius = 1.2
-min_fog_density = 0.01
-tween_duration = 1.5
-
 [node name="Skydome" type="Node" parent="." unique_id=492184110]
 script = ExtResource("19_shafts")
 directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
 manage_vol_fog_density = false
 day_of_year = 154
-time_of_day = 12.248
+time_of_day = 11.315
 latitude = 22.400999999999996
+day_light_energy = 1.5
 shader_zenith_color = Color(0.11514282, 0.20309141, 0.3828125, 1)
 shader_sky_energy = 0.532
 shader_horizon_height = 0.178
+day_vol_fog_density = 0.005
 shader_night_sky_energy = 0.165
-clouds_coverage = 0.15
+clouds_coverage = 0.0
 clouds_color_light = Color(1, 1, 1, 1)
 clouds_color_shadow = Color(0.6171875, 0.6171875, 0.6171875, 1)
 clouds_evolution_strength = 0.775
 clouds_evolution_scale = 0.198
+sun_halo_strength = 0.14
+sun_atmosphere_strength = 0.07
 weather_overcast_intensity = 0.54
 weather_fog_density_boost = 0.3
 weather_storm_fog_density_boost = 0.91
@@ -331,15 +323,15 @@ weather_volumetric_fog_density_target = 0.12
 weather_volumetric_fog_sky_affect_target = 1.0
 weather_volumetric_fog_emission_color = Color(1, 1, 1, 1)
 weather_volumetric_fog_emission_energy = 0.28
-moon_phase_debug = 0.2323174173157243
+moon_phase_debug = 0.23100095947623878
 shader_atmosphere_sunset_boost = 0.47
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.711151, 2.3220577, -0.8279953)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.6633253, 2.167105, 1.321623)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
-cloud_density = 0.481
+cloud_density = 0.0
 precipitation_wind_strength = 10.0
 wind_influence = 0.52
 follow_height = 0.855
@@ -381,6 +373,7 @@ transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9
 
 [node name="SpotLight3D" type="SpotLight3D" parent="OldHouse" unique_id=265595149]
 transform = Transform3D(0.97878295, -0.17760842, 0.1021733, -0.05016828, 0.27574402, 0.9599211, -0.19866371, -0.9446803, 0.2609832, -2.654221, 1.6775688, 0.10019219)
+visible = false
 light_color = Color(0.95703125, 0.81465065, 0.676651, 1)
 light_energy = 3.428
 spot_range = 2.574964

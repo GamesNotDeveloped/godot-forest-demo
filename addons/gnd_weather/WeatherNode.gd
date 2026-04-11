@@ -29,9 +29,16 @@ const RAIN_FIELD_WIDTH_SCALE := 1.5
             _push_weather_server_settings()
             _sync_weather_state(true)
             _refresh_editor_preview()
-@export_range(0.0, 1.0, 0.001) var cloud_density: float = 0.15:
+@export_range(0.0, 1.0, 0.001) var cloud_density: float = 0.0:
     set(value):
         cloud_density = clampf(value, 0.0, 1.0)
+        if is_inside_tree():
+            _push_weather_server_settings()
+            _sync_weather_state(true)
+            _refresh_editor_preview()
+@export_range(0.0, 1.0, 0.001) var cloud_overcast_intensity: float = 0.0:
+    set(value):
+        cloud_overcast_intensity = clampf(value, 0.0, 1.0)
         if is_inside_tree():
             _push_weather_server_settings()
             _sync_weather_state(true)
@@ -39,6 +46,13 @@ const RAIN_FIELD_WIDTH_SCALE := 1.5
 @export_range(0.0, 1.0, 0.001) var storm_intensity: float = 0.0:
     set(value):
         storm_intensity = clampf(value, 0.0, 1.0)
+        if is_inside_tree():
+            _push_weather_server_settings()
+            _sync_weather_state(true)
+            _refresh_editor_preview()
+@export_range(0.0, 1.0, 0.001) var storm_fog_intensity: float = 0.0:
+    set(value):
+        storm_fog_intensity = clampf(value, 0.0, 1.0)
         if is_inside_tree():
             _push_weather_server_settings()
             _sync_weather_state(true)
@@ -169,8 +183,10 @@ var _mid_rain_debug_material: StandardMaterial3D
 var _rain_mesh_debug_preview_enabled: bool = false
 var _environment: Environment
 var _current_global_precipitation: float = 0.0
-var _current_cloud_density: float = 0.15
+var _current_cloud_density: float = 0.0
+var _current_cloud_overcast_intensity_input: float = 0.0
 var _current_storm_intensity_input: float = 0.0
+var _current_storm_fog_intensity_input: float = 0.0
 var _current_local_precipitation: float = 0.0
 var _current_storm_factor: float = 0.0
 var _current_lightning_flash: float = 0.0
@@ -179,6 +195,8 @@ var _current_local_emission_scale: float = 1.0
 
 var _last_applied_precipitation: float = -1.0
 var _last_applied_cloud_density: float = -1.0
+var _last_applied_cloud_overcast_intensity: float = -1.0
+var _last_applied_storm_fog_intensity: float = -1.0
 var _last_applied_storm_factor: float = -1.0
 var _last_applied_lightning_flash: float = -1.0
 var _last_applied_local_emission_scale: float = -1.0
@@ -243,8 +261,16 @@ func set_cloud_density(value: float) -> void:
     cloud_density = value
 
 
+func set_cloud_overcast_intensity(value: float) -> void:
+    cloud_overcast_intensity = value
+
+
 func set_storm_intensity(value: float) -> void:
     storm_intensity = value
+
+
+func set_storm_fog_intensity(value: float) -> void:
+    storm_fog_intensity = value
 
 
 func apply_now() -> void:
@@ -276,7 +302,7 @@ func get_precipitation_strength_at_position(world_position: Vector3) -> float:
 func get_storm_factor(precipitation_override: float = -1.0) -> float:
     if precipitation_override < 0.0:
         return _current_storm_factor
-    return maxf(_current_storm_intensity_input, _compute_storm_factor(precipitation_override))
+    return clampf(_current_storm_intensity_input, 0.0, 1.0)
 
 
 func _apply_weather_state(force: bool = false) -> void:
@@ -356,7 +382,9 @@ func _push_weather_server_settings() -> void:
         get_world_3d(),
         precipitation_intensity,
         cloud_density,
+        cloud_overcast_intensity,
         storm_intensity,
+        storm_fog_intensity,
         precipitation_wind_strength,
         storm_threshold,
         sheltered_volumetric_emission_scale,
@@ -388,7 +416,9 @@ func _apply_weather_state_snapshot(state: Dictionary) -> void:
 
     _current_global_precipitation = clampf(float(state.get("global_precipitation", precipitation_intensity)), 0.0, 1.0)
     _current_cloud_density = clampf(float(state.get("cloud_density", cloud_density)), 0.0, 1.0)
+    _current_cloud_overcast_intensity_input = clampf(float(state.get("cloud_overcast_intensity_input", cloud_overcast_intensity)), 0.0, 1.0)
     _current_storm_intensity_input = clampf(float(state.get("storm_intensity_input", storm_intensity)), 0.0, 1.0)
+    _current_storm_fog_intensity_input = clampf(float(state.get("storm_fog_intensity_input", storm_fog_intensity)), 0.0, 1.0)
     _current_local_precipitation = clampf(float(state.get("local_precipitation", _current_global_precipitation)), 0.0, 1.0)
     _current_storm_factor = clampf(float(state.get("storm_factor", 0.0)), 0.0, 1.0)
     _current_lightning_flash = clampf(float(state.get("lightning_flash", 0.0)), 0.0, 1.0)
@@ -411,15 +441,14 @@ func _get_fallback_weather_state() -> Dictionary:
     if global_precipitation > 0.0001 and local_precipitation < global_precipitation:
         shelter_factor = clampf((global_precipitation - local_precipitation) / global_precipitation, 0.0, 1.0)
 
-    var storm_input := clampf(maxf(global_precipitation, local_precipitation), 0.0, 1.0)
-    var derived_storm := _compute_storm_factor(storm_input)
-
     return {
         "global_precipitation": global_precipitation,
         "cloud_density": clampf(cloud_density, 0.0, 1.0),
+        "cloud_overcast_intensity_input": clampf(cloud_overcast_intensity, 0.0, 1.0),
         "storm_intensity_input": clampf(storm_intensity, 0.0, 1.0),
+        "storm_fog_intensity_input": clampf(storm_fog_intensity, 0.0, 1.0),
         "local_precipitation": local_precipitation,
-        "storm_factor": maxf(clampf(storm_intensity, 0.0, 1.0), derived_storm),
+        "storm_factor": clampf(storm_intensity, 0.0, 1.0),
         "lightning_flash": 0.0,
         "shelter_factor": shelter_factor,
         "local_emission_scale": lerpf(1.0, sheltered_volumetric_emission_scale, shelter_factor),
@@ -1082,12 +1111,16 @@ func _push_weather_state(force: bool = false) -> void:
 
     var global_precipitation := _current_global_precipitation
     var current_cloud_density := _current_cloud_density
+    var current_cloud_overcast_intensity := _current_cloud_overcast_intensity_input
+    var current_storm_fog_intensity := _current_storm_fog_intensity_input
     var storm_factor := _current_storm_factor
     var local_emission_scale := _current_local_emission_scale
     if not force:
         var unchanged := (
             absf(_last_applied_precipitation - global_precipitation) <= 0.0001
             and absf(_last_applied_cloud_density - current_cloud_density) <= 0.0001
+            and absf(_last_applied_cloud_overcast_intensity - current_cloud_overcast_intensity) <= 0.0001
+            and absf(_last_applied_storm_fog_intensity - current_storm_fog_intensity) <= 0.0001
             and absf(_last_applied_storm_factor - storm_factor) <= 0.0001
             and absf(_last_applied_lightning_flash - _current_lightning_flash) <= 0.0001
             and absf(_last_applied_local_emission_scale - local_emission_scale) <= 0.0001
@@ -1095,9 +1128,11 @@ func _push_weather_state(force: bool = false) -> void:
         if unchanged:
             return
 
-    skydome.set_weather_overrides(global_precipitation, storm_factor, _current_lightning_flash, local_emission_scale, current_cloud_density)
+    skydome.set_weather_overrides(global_precipitation, storm_factor, _current_lightning_flash, local_emission_scale, current_cloud_density, current_storm_fog_intensity, current_cloud_overcast_intensity)
     _last_applied_precipitation = global_precipitation
     _last_applied_cloud_density = current_cloud_density
+    _last_applied_cloud_overcast_intensity = current_cloud_overcast_intensity
+    _last_applied_storm_fog_intensity = current_storm_fog_intensity
     _last_applied_storm_factor = storm_factor
     _last_applied_lightning_flash = _current_lightning_flash
     _last_applied_local_emission_scale = local_emission_scale

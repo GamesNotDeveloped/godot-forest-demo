@@ -113,7 +113,9 @@ func _on_rain_changed(value: float) -> void:
     _rain_value_label.text = "%d%%" % int(round(value * 100.0))
     if _weather != null:
         _weather.set_precipitation_intensity(value)
+        _weather.set_cloud_overcast_intensity(value)
         _weather.set_storm_intensity(value)
+        _weather.set_storm_fog_intensity(value)
 
 
 func _on_cloud_density_changed(value: float) -> void:
@@ -165,7 +167,7 @@ func _apply_wind_controls(strength_ratio: float, direction: Vector2) -> void:
     if _weather != null:
         _weather.apply_now()
     if _skydome != null:
-        _skydome.apply_now()
+        _skydome.apply_wind_now()
 
 
 func _set_runtime_wind_value(setting_path: String, setting_value: Variant, shader_global_name: String) -> void:

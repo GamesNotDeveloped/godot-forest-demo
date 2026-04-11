@@ -167,9 +167,7 @@ void sky() {
 	float motion_time = cloud_motion_time;
 	vec2 scroll_a = wind_dir * length(cloud_scroll_a);
 	vec2 scroll_b = wind_dir * length(cloud_scroll_b) * 1.35;
-	vec2 warp_scroll = wind_dir * 0.0034;
-	vec2 breakup_scroll = wind_dir * -0.0021;
-	vec2 warp = texture(cloud_tex_b, cloud_uv * 0.01 + warp_scroll * motion_time).rg * 2.0 - 1.0;
+	vec2 warp = texture(cloud_tex_b, cloud_uv * 0.01).rg * 2.0 - 1.0;
 	cloud_uv += warp * cloud_warp_strength;
 
 	vec2 evolution_uv = cloud_uv * cloud_evolution_scale;
@@ -182,7 +180,7 @@ void sky() {
 
 	float cloud_a = texture(cloud_tex_a, cloud_uv * cloud_scale_a + scroll_a * motion_time).r;
 	float cloud_b = texture(cloud_tex_b, cloud_uv * cloud_scale_b + scroll_b * motion_time).r;
-	float breakup = texture(cloud_tex_b, cloud_uv * 0.04 + breakup_scroll * motion_time).r;
+	float breakup = texture(cloud_tex_b, cloud_uv * 0.04).r;
 
 	float cloud_shape = mix(cloud_a, cloud_b, 0.5);
 	cloud_shape = mix(cloud_shape, cloud_shape * breakup, 0.4);
