@@ -17,6 +17,11 @@ const GND_WIND_SPEED_SETTING := "shader_globals/gnd_wind_speed/value"
 const STORM_RAIN_START_RATIO := 0.4
 const SKYDOME_FOG_RAIN_START_RATIO := 0.6
 const SKYDOME_FOG_DENSITY_MAX := 0.4
+const RAINBOW_INTENSITY_MAX := 0.12
+const RAINBOW_RAIN_START_RATIO := 0.2
+const RAINBOW_RAIN_END_RATIO := 0.5
+const RAINBOW_CLOUD_FADE_START_RATIO := 0.2
+const RAINBOW_CLOUD_FADE_END_RATIO := 0.5
 
 var _weather: WeatherNode
 var _skydome: Skydome
@@ -94,6 +99,7 @@ func _sync_weather_controls() -> void:
         _rain_value_label.text = "%d%%" % int(round(_weather.precipitation_intensity * 100.0))
         _cloud_slider.set_value_no_signal(_weather.cloud_density)
         _cloud_value_label.text = "%d%%" % int(round(_weather.cloud_density * 100.0))
+    _sync_rainbow_intensity()
 
 
 func _sync_time_control(time_of_day: float) -> void:
@@ -117,12 +123,14 @@ func _on_rain_changed(value: float) -> void:
         _weather.set_cloud_overcast_intensity(value)
         _weather.set_storm_intensity(_get_storm_intensity_from_rain(value))
         _weather.set_storm_fog_intensity(_get_skydome_fog_density_from_rain(value))
+    _sync_rainbow_intensity()
 
 
 func _on_cloud_density_changed(value: float) -> void:
     _cloud_value_label.text = "%d%%" % int(round(value * 100.0))
     if _weather != null:
         _weather.set_cloud_density(value)
+    _sync_rainbow_intensity()
 
 
 func _on_time_changed(value: float) -> void:
@@ -223,6 +231,42 @@ func _get_skydome_fog_density_from_rain(rain_ratio: float) -> float:
         0.0,
         SKYDOME_FOG_DENSITY_MAX
     )
+
+
+func _sync_rainbow_intensity() -> void:
+    if _skydome == null:
+        return
+
+    var rain_ratio := _rain_slider.value
+    if _weather != null:
+        rain_ratio = _weather.precipitation_intensity
+
+    var cloud_ratio := _cloud_slider.value
+    if _weather != null:
+        cloud_ratio = _weather.cloud_density
+
+    _skydome.rainbow_intensity = _get_rainbow_intensity_from_weather(rain_ratio, cloud_ratio)
+
+
+func _get_rainbow_intensity_from_weather(rain_ratio: float, cloud_ratio: float) -> float:
+    var clamped_rain := clampf(rain_ratio, 0.0, 1.0)
+    var clamped_clouds := clampf(cloud_ratio, 0.0, 1.0)
+
+    var rain_factor := _smoothstep(RAINBOW_RAIN_START_RATIO, RAINBOW_RAIN_END_RATIO, clamped_rain)
+    var cloud_factor := 1.0 - _smoothstep(
+        RAINBOW_CLOUD_FADE_START_RATIO,
+        RAINBOW_CLOUD_FADE_END_RATIO,
+        clamped_clouds
+    )
+
+    return RAINBOW_INTENSITY_MAX * rain_factor * clampf(cloud_factor, 0.0, 1.0)
+
+
+func _smoothstep(edge0: float, edge1: float, x: float) -> float:
+    if is_equal_approx(edge0, edge1):
+        return 1.0 if x >= edge1 else 0.0
+    var t := clampf(inverse_lerp(edge0, edge1, x), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
 
 
 func _make_panel_style() -> StyleBoxFlat:

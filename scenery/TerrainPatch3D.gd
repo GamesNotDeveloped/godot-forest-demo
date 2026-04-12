@@ -11,6 +11,7 @@ enum MaskChannel {
 }
 
 const TERRAIN_PUDDLES_SHADER := preload("res://scenery/shaders/terrain_puddles.gdshader")
+const EDITOR_ACCESS_SCRIPT_PATH := "res://addons/gnd_skydome/EditorAccess.gd"
 const MESH_NODE_NAME := "__terrain_mesh"
 const BODY_NODE_NAME := "__terrain_body"
 const SHAPE_NODE_NAME := "__terrain_shape"
@@ -42,6 +43,7 @@ var _terrain_puddles_probe_timer := 0.0
 var _terrain_puddles_target_rain_strength := 0.0
 var _terrain_puddles_current_rain_strength := 0.0
 var _terrain_puddles_material: ShaderMaterial
+var _editor_access = null
 
 @export_group("Terrain")
 @export var size: Vector2 = Vector2(200.0, 200.0):
@@ -1034,11 +1036,22 @@ func _resource_id(resource: Resource) -> String:
     return str(resource.get_instance_id())
 
 
+func _get_editor_access():
+    if _editor_access != null:
+        return _editor_access
+    if not Engine.is_editor_hint():
+        return null
+    _editor_access = load(EDITOR_ACCESS_SCRIPT_PATH)
+    return _editor_access
+
+
 func _get_active_camera() -> Camera3D:
     if Engine.is_editor_hint():
-        var editor_viewport := EditorInterface.get_editor_viewport_3d(0)
-        if editor_viewport != null and editor_viewport.get_camera_3d() != null:
-            return editor_viewport.get_camera_3d()
+        var editor_access = _get_editor_access()
+        if editor_access != null:
+            var editor_camera := editor_access.get_editor_camera_3d(0) as Camera3D
+            if editor_camera != null:
+                return editor_camera
     var viewport := get_viewport()
     if viewport == null:
         return null

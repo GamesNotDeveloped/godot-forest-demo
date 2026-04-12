@@ -19,6 +19,9 @@ const THUNDER_HEAVY_THRESHOLD_STORM := 0.72
 const THUNDER_VOLUME_DB_MIN := -5.0
 const THUNDER_VOLUME_DB_MAX := 1.5
 
+@export_group("Exposure Correction")
+@export var exposure_correction_night: float = 0.5
+
 @onready var _quality_profiles_manager: QualityProfilesManager = $QualityProfilesManager
 @onready var _directional_light: DirectionalLight3D = $DirectionalLight3D
 @onready var _terrain: TerrainPatch3D = $Terrain
@@ -26,9 +29,11 @@ const THUNDER_VOLUME_DB_MAX := 1.5
 @onready var _weather: WeatherNode = $Weather
 @onready var _thunder_light_player: AudioStreamPlayer = $Thunder1
 @onready var _thunder_heavy_player: AudioStreamPlayer = $Thunder2
+@onready var _world_environment: WorldEnvironment = $WorldEnvironment
 
 var _rain_low_pass_filter: AudioEffectLowPassFilter
 var _rain_low_pass_tween: Tween
+var _exposure_tween: Tween
 var _world_time_scale: float = DEFAULT_WORLD_TIME_SCALE
 
 
@@ -39,6 +44,27 @@ func _ready() -> void:
         _rain_low_pass_filter = AudioServer.get_bus_effect(rain_bus_index, 0) as AudioEffectLowPassFilter
     _apply_rain_low_pass_cutoff(RAIN_LP_OPEN_CUTOFF_HZ)
     _apply_default_weather_controls()
+
+    var exposure_timer := Timer.new()
+    exposure_timer.wait_time = 1.0
+    exposure_timer.autostart = true
+    exposure_timer.timeout.connect(_on_exposure_timer_timeout)
+    add_child(exposure_timer)
+
+
+func _on_exposure_timer_timeout() -> void:
+    if _world_environment == null or _world_environment.camera_attributes == null:
+        return
+
+    var day_blend := _sun_shafts_controller.get_day_blend()
+    # 1.0 during day, 1.0 + exposure_correction_night during night
+    var target_exposure := 1.0 + (1.0 - day_blend) * exposure_correction_night
+
+    if _exposure_tween:
+        _exposure_tween.kill()
+    _exposure_tween = create_tween()
+    _exposure_tween.tween_property(_world_environment.camera_attributes, "exposure_multiplier", target_exposure, 1.0)\
+        .set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func _input(event):
@@ -211,7 +237,6 @@ func _on_weather_thunder(strength: float) -> void:
 
 
 func _on_weather_rain_strength_changed(strength):
-    print("weather rain str chg ", strength)
     if strength > 0.4:
         if $Rain2.playing:
             $Rain2.stop()
@@ -225,7 +250,6 @@ func _on_weather_rain_strength_changed(strength):
             $Rain2.play()
         $Rain2.volume_db = ((strength * 3)-1)*2 -1
     else:
-        print("Stopping rain")
         if $Rain1.playing:
             $Rain1.stop()
         if $Rain2.playing:
