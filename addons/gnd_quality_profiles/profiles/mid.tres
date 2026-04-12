@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QualityProfile" format=3]
+
+[ext_resource type="Script" uid="uid://cdn2kmll4nqlk" path="res://addons/gnd_quality_profiles/quality_profile.gd" id="1_script"]
+[ext_resource type="CompressedTexture3D" uid="uid://dtbgscvfrtl8e" path="res://lut/lut3.png" id="2_lut"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"mid"
+name = "Mid"
+scaling_3d_mode = 1
+scaling_3d_scale = 0.77
+fsr_sharpness = 0.08
+use_taa = false
+msaa_3d = 0
+screen_space_aa = 1
+background_energy_multiplier = 0.73
+tonemap_exposure = 1.14
+tonemap_white = 8.8
+tonemap_agx_contrast = 1.32
+ssao_enabled = true
+ssao_light_affect = 0.07
+ssil_enabled = false
+sdfgi_enabled = false
+glow_enabled = true
+glow_intensity = 0.62
+glow_bloom = 0.12
+volumetric_fog_enabled = true
+adjustment_saturation = 0.84
+adjustment_color_correction = ExtResource("2_lut")
+auto_exposure_enabled = true
+auto_exposure_scale = 0.28
+auto_exposure_speed = 2.0
+auto_exposure_min_sensitivity = 74.0
+auto_exposure_max_sensitivity = 210.0

@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QualityProfile" format=3]
+
+[ext_resource type="Script" uid="uid://cdn2kmll4nqlk" path="res://addons/gnd_quality_profiles/quality_profile.gd" id="1_script"]
+[ext_resource type="CompressedTexture3D" uid="uid://dtbgscvfrtl8e" path="res://lut/lut3.png" id="2_lut"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"high"
+name = "High"
+scaling_3d_mode = 0
+scaling_3d_scale = 1.0
+fsr_sharpness = 0.0
+use_taa = false
+msaa_3d = 1
+screen_space_aa = 1
+background_energy_multiplier = 0.73
+tonemap_exposure = 1.32
+tonemap_white = 9.64
+tonemap_agx_contrast = 1.57
+ssao_enabled = true
+ssao_light_affect = 0.11
+ssil_enabled = true
+sdfgi_enabled = true
+glow_enabled = true
+glow_intensity = 0.96
+glow_bloom = 0.23
+volumetric_fog_enabled = true
+adjustment_saturation = 0.88
+adjustment_color_correction = ExtResource("2_lut")
+auto_exposure_enabled = true
+auto_exposure_scale = 0.33
+auto_exposure_speed = 3.0
+auto_exposure_min_sensitivity = 91.33
+auto_exposure_max_sensitivity = 506.5

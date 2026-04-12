@@ -92,11 +92,41 @@ func _apply_world_environment_profile(profile: QualityProfile) -> void:
     if world_environment == null:
         return
 
-    if profile.environment != null:
-        world_environment.environment = profile.environment
-    if profile.camera_attributes != null:
-        world_environment.camera_attributes = profile.camera_attributes
-    world_environment.compositor = profile.compositor
+    _apply_environment_profile(world_environment.environment, profile)
+    _apply_camera_attributes_profile(world_environment.camera_attributes, profile)
+
+
+func _apply_environment_profile(environment: Environment, profile: QualityProfile) -> void:
+    if environment == null:
+        return
+
+    environment.background_energy_multiplier = profile.background_energy_multiplier
+    environment.tonemap_exposure = profile.tonemap_exposure
+    environment.tonemap_white = profile.tonemap_white
+    environment.tonemap_agx_contrast = profile.tonemap_agx_contrast
+    environment.ssao_enabled = profile.ssao_enabled
+    environment.ssao_light_affect = profile.ssao_light_affect
+    environment.ssil_enabled = profile.ssil_enabled
+    environment.sdfgi_enabled = profile.sdfgi_enabled
+    environment.glow_enabled = profile.glow_enabled
+    environment.glow_intensity = profile.glow_intensity
+    environment.glow_bloom = profile.glow_bloom
+    environment.volumetric_fog_enabled = profile.volumetric_fog_enabled
+    environment.adjustment_enabled = true
+    environment.adjustment_saturation = profile.adjustment_saturation
+    environment.adjustment_color_correction = profile.adjustment_color_correction
+
+
+func _apply_camera_attributes_profile(camera_attributes: CameraAttributes, profile: QualityProfile) -> void:
+    var practical_attributes := camera_attributes as CameraAttributesPractical
+    if practical_attributes == null:
+        return
+
+    practical_attributes.auto_exposure_enabled = profile.auto_exposure_enabled
+    practical_attributes.auto_exposure_scale = profile.auto_exposure_scale
+    practical_attributes.auto_exposure_speed = profile.auto_exposure_speed
+    practical_attributes.auto_exposure_min_sensitivity = profile.auto_exposure_min_sensitivity
+    practical_attributes.auto_exposure_max_sensitivity = profile.auto_exposure_max_sensitivity
 
 
 func _get_world_environment() -> WorldEnvironment:

@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QualityProfile" format=3]
+
+[ext_resource type="Script" uid="uid://cdn2kmll4nqlk" path="res://addons/gnd_quality_profiles/quality_profile.gd" id="1_script"]
+[ext_resource type="CompressedTexture3D" uid="uid://dtbgscvfrtl8e" path="res://lut/lut3.png" id="2_lut"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"low"
+name = "Low"
+scaling_3d_mode = 1
+scaling_3d_scale = 0.67
+fsr_sharpness = 0.12
+use_taa = false
+msaa_3d = 0
+screen_space_aa = 1
+background_energy_multiplier = 0.73
+tonemap_exposure = 1.08
+tonemap_white = 8.5
+tonemap_agx_contrast = 1.28
+ssao_enabled = false
+ssao_light_affect = 0.0
+ssil_enabled = false
+sdfgi_enabled = false
+glow_enabled = false
+glow_intensity = 0.0
+glow_bloom = 0.0
+volumetric_fog_enabled = false
+adjustment_saturation = 0.83
+adjustment_color_correction = ExtResource("2_lut")
+auto_exposure_enabled = true
+auto_exposure_scale = 0.25
+auto_exposure_speed = 1.8
+auto_exposure_min_sensitivity = 68.0
+auto_exposure_max_sensitivity = 170.0

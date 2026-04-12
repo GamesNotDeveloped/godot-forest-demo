@@ -8,13 +8,24 @@ const RAIN_BUS_NAME := &"Rain"
 const RAIN_LP_OPEN_CUTOFF_HZ := 20500.0
 const RAIN_LP_OCCLUDED_CUTOFF_HZ := 3000.0
 const RAIN_LP_TWEEN_DURATION := 0.12
-const DEFAULT_WORLD_TIME_SCALE := 1.0
+const STORM_RAIN_START_RATIO := 0.4
+const SKYDOME_FOG_RAIN_START_RATIO := 0.6
+const SKYDOME_FOG_DENSITY_MAX := 0.4
+const DEFAULT_WORLD_TIME_SCALE := 50.0
+const DEFAULT_RAIN_INTENSITY := 0.35
+const DEFAULT_CLOUD_DENSITY := 0.15
+const THUNDER_HEAVY_THRESHOLD_CALM := 0.9
+const THUNDER_HEAVY_THRESHOLD_STORM := 0.72
+const THUNDER_VOLUME_DB_MIN := -5.0
+const THUNDER_VOLUME_DB_MAX := 1.5
 
 @onready var _quality_profiles_manager: QualityProfilesManager = $QualityProfilesManager
 @onready var _directional_light: DirectionalLight3D = $DirectionalLight3D
 @onready var _terrain: TerrainPatch3D = $Terrain
 @onready var _sun_shafts_controller: Skydome = $Skydome
 @onready var _weather: WeatherNode = $Weather
+@onready var _thunder_light_player: AudioStreamPlayer = $Thunder1
+@onready var _thunder_heavy_player: AudioStreamPlayer = $Thunder2
 
 var _rain_low_pass_filter: AudioEffectLowPassFilter
 var _rain_low_pass_tween: Tween
@@ -27,6 +38,12 @@ func _ready() -> void:
     if rain_bus_index >= 0 and AudioServer.get_bus_effect_count(rain_bus_index) > 0:
         _rain_low_pass_filter = AudioServer.get_bus_effect(rain_bus_index, 0) as AudioEffectLowPassFilter
     _apply_rain_low_pass_cutoff(RAIN_LP_OPEN_CUTOFF_HZ)
+    _apply_default_weather_controls()
+
+
+func _input(event):
+    if event.is_action_pressed("toggle_flashlight"):
+        $UP_FPSController_Prefab/RotationHelper/Flashlight.visible = not $UP_FPSController_Prefab/RotationHelper/Flashlight.visible
 
 
 func _on_quality_profiles_manager_profile_changed() -> void:
@@ -43,6 +60,30 @@ func _on_quality_profiles_manager_profile_changed() -> void:
     if _weather != null:
         _weather.apply_now()
     _refresh_debug_menu()
+
+
+func get_world_time_scale() -> float:
+    return _world_time_scale
+
+
+func _apply_default_weather_controls() -> void:
+    if _weather == null:
+        return
+
+    _weather.set_precipitation_intensity(DEFAULT_RAIN_INTENSITY)
+    _weather.set_cloud_density(DEFAULT_CLOUD_DENSITY)
+    _weather.set_cloud_overcast_intensity(DEFAULT_RAIN_INTENSITY)
+    _weather.set_storm_intensity(clampf(inverse_lerp(STORM_RAIN_START_RATIO, 1.0, DEFAULT_RAIN_INTENSITY), 0.0, 1.0))
+    _weather.set_storm_fog_intensity(_get_skydome_fog_density_from_rain(DEFAULT_RAIN_INTENSITY))
+
+
+func _get_skydome_fog_density_from_rain(rain_ratio: float) -> float:
+    var clamped_rain := clampf(rain_ratio, 0.0, 1.0)
+    return clampf(
+        inverse_lerp(SKYDOME_FOG_RAIN_START_RATIO, 1.0, clamped_rain) * SKYDOME_FOG_DENSITY_MAX,
+        0.0,
+        SKYDOME_FOG_DENSITY_MAX
+    )
 
 
 func _build_project_quality_settings(profile_id: StringName) -> Dictionary:
@@ -153,11 +194,16 @@ func _on_weather_controls_canvas_world_time_scale_changed(scale: float) -> void:
     _world_time_scale = maxf(scale, 0.0)
 
 
-func _on_weather_thunder(strength):
-    if strength > 0.9:
-        $Thunder2.play()
-    else:
-        $Thunder1.play()
+func _on_weather_thunder(strength: float) -> void:
+    var thunder_strength := clampf(strength, 0.0, 1.0)
+    var storm_factor := 0.0
+    if _weather != null:
+        storm_factor = clampf(_weather.get_storm_factor(), 0.0, 1.0)
+
+    var heavy_threshold := lerpf(THUNDER_HEAVY_THRESHOLD_CALM, THUNDER_HEAVY_THRESHOLD_STORM, storm_factor)
+    var player := _thunder_heavy_player if thunder_strength >= heavy_threshold else _thunder_light_player
+    player.volume_db = lerpf(THUNDER_VOLUME_DB_MIN, THUNDER_VOLUME_DB_MAX, thunder_strength)
+    player.play()
 
 
 func _on_weather_rain_strength_changed(strength):

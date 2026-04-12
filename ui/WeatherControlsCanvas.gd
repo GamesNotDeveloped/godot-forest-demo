@@ -14,6 +14,9 @@ const WIND_DIRECTION_OPTIONS := [
 ]
 const GND_WIND_DIRECTION_SETTING := "shader_globals/gnd_wind_direction/value"
 const GND_WIND_SPEED_SETTING := "shader_globals/gnd_wind_speed/value"
+const STORM_RAIN_START_RATIO := 0.4
+const SKYDOME_FOG_RAIN_START_RATIO := 0.6
+const SKYDOME_FOG_DENSITY_MAX := 0.4
 
 var _weather: WeatherNode
 var _skydome: Skydome
@@ -77,7 +80,7 @@ func _sync_with_scene() -> void:
     _sync_weather_controls()
     if _skydome != null:
         _sync_time_control(_skydome.time_of_day)
-    _sync_time_scale_control(1.0)
+    _sync_time_scale_control(_get_initial_time_scale())
 
 
 func _sync_weather_controls() -> void:
@@ -112,8 +115,8 @@ func _on_rain_changed(value: float) -> void:
     if _weather != null:
         _weather.set_precipitation_intensity(value)
         _weather.set_cloud_overcast_intensity(value)
-        _weather.set_storm_intensity(value)
-        _weather.set_storm_fog_intensity(value)
+        _weather.set_storm_intensity(_get_storm_intensity_from_rain(value))
+        _weather.set_storm_fog_intensity(_get_skydome_fog_density_from_rain(value))
 
 
 func _on_cloud_density_changed(value: float) -> void:
@@ -158,6 +161,13 @@ func _apply_wind_controls(strength_ratio: float, direction: Vector2) -> void:
         _weather.apply_wind_controls(strength_ratio, direction)
 
 
+func _get_initial_time_scale() -> float:
+    var host := get_parent()
+    if host != null and host.has_method("get_world_time_scale"):
+        return float(host.get_world_time_scale())
+    return 1.0
+
+
 func _get_current_wind_direction() -> Vector2:
     if ProjectSettings.has_setting(GND_WIND_DIRECTION_SETTING):
         var direction := ProjectSettings.get_setting(GND_WIND_DIRECTION_SETTING) as Vector2
@@ -199,6 +209,20 @@ func _format_time_label(value: float) -> String:
         hours = (hours + 1) % 24
         minutes = 0
     return "%02d:%02d" % [hours, minutes]
+
+
+func _get_storm_intensity_from_rain(rain_ratio: float) -> float:
+    var clamped_rain := clampf(rain_ratio, 0.0, 1.0)
+    return clampf(inverse_lerp(STORM_RAIN_START_RATIO, 1.0, clamped_rain), 0.0, 1.0)
+
+
+func _get_skydome_fog_density_from_rain(rain_ratio: float) -> float:
+    var clamped_rain := clampf(rain_ratio, 0.0, 1.0)
+    return clampf(
+        inverse_lerp(SKYDOME_FOG_RAIN_START_RATIO, 1.0, clamped_rain) * SKYDOME_FOG_DENSITY_MAX,
+        0.0,
+        SKYDOME_FOG_DENSITY_MAX
+    )
 
 
 func _make_panel_style() -> StyleBoxFlat:

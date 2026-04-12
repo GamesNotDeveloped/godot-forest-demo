@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://bs433ey6i3c11" path="res://scenery/TerrainPatch3D.gd" id="2_terrain"]
 [ext_resource type="PackedScene" uid="uid://bkepaelbv6c50" path="res://generated/biomes_billboards/trees/00_pine-tree-1/billboard.tscn" id="3_oakni"]
 [ext_resource type="PackedScene" uid="uid://b0arh1uwyilru" path="res://objects/pine-tree-1.tscn" id="3_qc3ns"]
+[ext_resource type="Resource" uid="uid://buspk6gxsygam" path="res://addons/gnd_quality_profiles/profiles/filmic.tres" id="4_dkfx2"]
 [ext_resource type="PackedScene" uid="uid://b4c8s22viordq" path="res://objects/pine-tree-2.tscn" id="5_qsh2c"]
 [ext_resource type="Texture2D" uid="uid://b7qpk2tctbu0x" path="res://levels/biomes_mask.png" id="6_2omi8"]
 [ext_resource type="PackedScene" uid="uid://b6d80typr1lwv" path="res://generated/biomes_billboards/trees/02_pine-tree-2/billboard.tscn" id="7_hx8ph"]
@@ -38,62 +39,18 @@
 [ext_resource type="Script" uid="uid://sdanr78joiow" path="res://addons/gnd_quality_profiles/quality_profiles_manager.gd" id="37_8echa"]
 [ext_resource type="Script" uid="uid://cdn2kmll4nqlk" path="res://addons/gnd_quality_profiles/quality_profile.gd" id="38_3k2hm"]
 [ext_resource type="Texture2D" uid="uid://crwspa7n1ej4e" path="res://textures/Ground020_1K-JPG/Ground020_1K_NormalGL.jpg" id="38_88um7"]
+[ext_resource type="Resource" path="res://addons/gnd_quality_profiles/profiles/high.tres" id="39_high"]
 [ext_resource type="Environment" uid="uid://nisddm6dgh86" path="res://materials/environment_filmic.tres" id="39_jt4jh"]
 [ext_resource type="Texture2D" uid="uid://bdgrvha11igfp" path="res://textures/Ground020_1K-JPG/Ground020_1K_AmbientOcclusion.jpg" id="39_kf4y5"]
-[ext_resource type="Environment" uid="uid://cak7d6jocsmjr" path="res://materials/environment_high.tres" id="40_bluus"]
-[ext_resource type="Environment" uid="uid://c03gy32a1t6n7" path="res://materials/environment_mid.tres" id="41_j5vua"]
-[ext_resource type="Environment" uid="uid://0gabw6jt7o71" path="res://materials/environment_low.tres" id="42_w6gka"]
+[ext_resource type="Resource" path="res://addons/gnd_quality_profiles/profiles/mid.tres" id="40_mid"]
+[ext_resource type="Resource" path="res://addons/gnd_quality_profiles/profiles/low.tres" id="41_low"]
 [ext_resource type="CameraAttributesPractical" uid="uid://c1eswprngr57f" path="res://materials/camera_attributes_filmic.tres" id="43_j63ba"]
-[ext_resource type="CameraAttributesPractical" path="res://materials/camera_attributes_high.tres" id="44_h44du"]
-[ext_resource type="CameraAttributesPractical" uid="uid://n24ik0agktua" path="res://materials/camera_attributes_mid.tres" id="45_716pq"]
-[ext_resource type="CameraAttributesPractical" path="res://materials/camera_attributes_low.tres" id="46_2v3co"]
-[ext_resource type="Compositor" uid="uid://c6vl1e5gs60bn" path="res://materials/filmic_compositor.tres" id="47_jyfmq"]
+[ext_resource type="Script" uid="uid://pw1ljvn4g7cy" path="res://addons/gnd_skydome/SunShaftsCompositorEffect.gd" id="46_kwcl0"]
+[ext_resource type="CompositorEffect" uid="uid://c8f5kmj6wip87" path="res://materials/film_grain_compositor_fx.tres" id="47_c6or4"]
 [ext_resource type="AudioStream" uid="uid://dodwn40mt8px7" path="res://thunder/334151__svampen__thunder-rolling-2.wav" id="51_kwcl0"]
 [ext_resource type="AudioStream" uid="uid://fqnuofshaed1" path="res://thunder/399656__bajko__sfx_thunder-blast.wav" id="52_c6or4"]
 [ext_resource type="AudioStream" uid="uid://dd3xpi0qd5ftg" path="res://thunder/136971__dwoboyle__ambiance-heavy-rain-loop.wav" id="53_xnulj"]
 [ext_resource type="AudioStream" uid="uid://blr157w0srbul" path="res://thunder/116323__dymewiz__rain-05.wav" id="54_8l7hv"]
-
-[sub_resource type="Resource" id="Resource_quality_profile_filmic"]
-script = ExtResource("38_3k2hm")
-id = &"filmic"
-name = "Filmic"
-scaling_3d_mode = 2
-scaling_3d_scale = 0.85
-use_taa = true
-environment = ExtResource("39_jt4jh")
-camera_attributes = ExtResource("43_j63ba")
-compositor = ExtResource("47_jyfmq")
-
-[sub_resource type="Resource" id="Resource_quality_profile_high"]
-script = ExtResource("38_3k2hm")
-id = &"high"
-name = "High"
-msaa_3d = 1
-screen_space_aa = 1
-environment = ExtResource("40_bluus")
-camera_attributes = ExtResource("44_h44du")
-
-[sub_resource type="Resource" id="Resource_quality_profile_mid"]
-script = ExtResource("38_3k2hm")
-id = &"mid"
-name = "Mid"
-scaling_3d_mode = 1
-scaling_3d_scale = 0.77
-fsr_sharpness = 0.08
-screen_space_aa = 1
-environment = ExtResource("41_j5vua")
-camera_attributes = ExtResource("45_716pq")
-
-[sub_resource type="Resource" id="Resource_quality_profile_low"]
-script = ExtResource("38_3k2hm")
-id = &"low"
-name = "Low"
-scaling_3d_mode = 1
-scaling_3d_scale = 0.67
-fsr_sharpness = 0.12
-screen_space_aa = 1
-environment = ExtResource("42_w6gka")
-camera_attributes = ExtResource("46_2v3co")
 
 [sub_resource type="Resource" id="Resource_ei7n8"]
 script = ExtResource("2_471tc")
@@ -168,12 +125,32 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
 noise_type = 3
 
+[sub_resource type="CompositorEffect" id="CompositorEffect_kwcl0"]
+resource_local_to_scene = false
+resource_name = ""
+enabled = true
+effect_callback_type = 4
+needs_motion_vectors = false
+needs_normal_roughness = false
+script = ExtResource("46_kwcl0")
+sun_screen_uv = Vector2(10.309635, -37.92405)
+shaft_color = Color(0.718, 0.637, 0.379, 1)
+density = 0.485
+bright_threshold = 0.182
+weight = 0.0355
+decay = 0.93
+exposure = 1.59
+max_radius = 1.377
+
+[sub_resource type="Compositor" id="Compositor_c6or4"]
+compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_kwcl0"), ExtResource("47_c6or4")])
+
 [node name="TestBiomes" type="Node3D" unique_id=1245326294]
 script = ExtResource("1_flr7s")
 
 [node name="QualityProfilesManager" type="Node" parent="." unique_id=1627198034]
 script = ExtResource("37_8echa")
-profiles = Array[ExtResource("38_3k2hm")]([SubResource("Resource_quality_profile_filmic"), SubResource("Resource_quality_profile_high"), SubResource("Resource_quality_profile_mid"), SubResource("Resource_quality_profile_low")])
+profiles = Array[ExtResource("38_3k2hm")]([ExtResource("4_dkfx2"), ExtResource("39_high"), ExtResource("40_mid"), ExtResource("41_low")])
 initial_profile_id = &"filmic"
 world_environment_path = NodePath("../WorldEnvironment")
 metadata/_custom_type_script = "uid://sdanr78joiow"
@@ -184,7 +161,7 @@ script = ExtResource("35_quality")
 [node name="WeatherControlsCanvas" parent="." unique_id=1325048792 instance=ExtResource("36_weather_ui")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(-0.026714934, -0.98593223, 0.16499719, 0, 0.1650561, 0.9862842, -0.999643, 0.02634852, -0.004409463, 0, 0.5193932, -0.2882359)
+transform = Transform3D(-0.07564657, 0.92735857, -0.36644745, 0, 0.36750042, 0.9300234, 0.9971347, 0.07035308, -0.02780015, 0, 0.5193932, -0.2882359)
 light_color = Color(1, 0.93, 0.85, 1)
 light_energy = 2.0
 light_indirect_energy = 1.18
@@ -288,13 +265,16 @@ script = ExtResource("19_shafts")
 directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
 day_of_year = 154
-time_of_day = 11.315
+time_of_day = 13.556
 latitude = 22.400999999999996
 day_light_energy = 2.0
 shader_zenith_color = Color(0.11514282, 0.20309141, 0.3828125, 1)
 shader_horizon_height = 0.178
+day_ambient_energy = 0.325
+day_ambient_sky_contribution = 0.69
 day_vol_fog_density = 0.005
 shader_night_sky_energy = 0.165
+night_vol_fog_density = 0.121
 clouds_coverage = 0.0
 clouds_color_shadow = Color(0.8515625, 0.8515625, 0.8515625, 1)
 clouds_shadow_angular_distance_clear = 1.0
@@ -302,15 +282,14 @@ clouds_evolution_strength = 0.775
 clouds_evolution_scale = 0.198
 sun_halo_strength = 0.14
 sun_atmosphere_strength = 0.07
-moon_phase_debug = 0.23100095947623878
+moon_phase_debug = 0.23416299808104668
 shader_atmosphere_sunset_boost = 0.47
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5873957, 1.3917677, -4.107332)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0592036, 2.6342235, 1.0734115)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
-storm_intensity = 0.043
 precipitation_wind_strength = 10.0
 wind_influence = 0.52
 follow_height = 0.855
@@ -323,19 +302,27 @@ near_rain_color = Color(1, 1, 1, 0.1254902)
 mid_rain_color = Color(0.49803922, 0.49803922, 0.49803922, 0.24313726)
 rain_probe_max_count = 128
 rain_probe_distance = 4.0
-thunder_lock_min_duration = null
-thunder_lock_max_duration = null
 
 [node name="CanvasLayer" parent="." unique_id=1602580574 instance=ExtResource("17_1ndc1")]
 
 [node name="UP_FPSController_Prefab" parent="." unique_id=654069376 instance=ExtResource("17_hx8ph")]
-transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, -3.7618966, 0.5954702, 0.2663297)
+transform = Transform3D(-0.01167597, 0, 0.99993175, 0, 0.99999994, 0, -0.99993175, 0, -0.01167597, 2.1503146, -0.05347073, 1.7885692)
 speed_factor = 0.7
 hurry_factor = 0.1
 footstep_time_factor = 1.1
 bob_strength_factor = 0.3
 nervous = 0.3
-player_scale = 0.65
+player_scale = 0.6
+
+[node name="Flashlight" type="SpotLight3D" parent="UP_FPSController_Prefab/RotationHelper" index="1" unique_id=1165595639]
+transform = Transform3D(1.0000001, 0, 0, 0, 0.98480785, 0.1736482, 0, -0.1736482, 0.98480785, 0.235, 0.198, 0.465)
+visible = false
+light_energy = 1.302
+shadow_enabled = true
+spot_range = 24.0
+spot_attenuation = 0.43
+spot_angle = 19.73
+spot_angle_attenuation = 1.4640857
 
 [node name="MouseCapture" type="Node" parent="." unique_id=440965075]
 script = ExtResource("18_hx8ph")
@@ -362,7 +349,7 @@ spot_angle = 57.83131
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1473354202]
 environment = ExtResource("39_jt4jh")
 camera_attributes = ExtResource("43_j63ba")
-compositor = ExtResource("47_jyfmq")
+compositor = SubResource("Compositor_c6or4")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
 wait_time = 0.1
@@ -384,6 +371,8 @@ bus = &"Rain"
 stream = ExtResource("54_8l7hv")
 bus = &"Rain"
 
+[node name="SpotLight3D" type="SpotLight3D" parent="." unique_id=1800630014]
+
 [connection signal="profile_changed" from="QualityProfilesManager" to="." method="_on_quality_profiles_manager_profile_changed"]
 [connection signal="world_time_scale_changed" from="WeatherControlsCanvas" to="." method="_on_weather_controls_canvas_world_time_scale_changed"]
 [connection signal="rain_local_strength_changed" from="Weather" to="." method="_on_weather_rain_local_strength_changed"]
@@ -391,3 +380,5 @@ bus = &"Rain"
 [connection signal="thunder" from="Weather" to="." method="_on_weather_thunder"]
 [connection signal="toggled" from="MouseCapture" to="." method="_on_mouse_capture_toggled"]
 [connection signal="timeout" from="WorldTimer" to="." method="_on_world_timer_timeout"]
+
+[editable path="UP_FPSController_Prefab"]

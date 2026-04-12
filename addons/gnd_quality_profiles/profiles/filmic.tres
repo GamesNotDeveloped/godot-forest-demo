@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="QualityProfile" format=3 uid="uid://buspk6gxsygam"]
+
+[ext_resource type="Script" uid="uid://cdn2kmll4nqlk" path="res://addons/gnd_quality_profiles/quality_profile.gd" id="1_script"]
+[ext_resource type="CompressedTexture3D" uid="uid://dbxljafuxoch6" path="res://lut/lut2.png" id="2_lut"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"filmic"
+name = "Filmic"
+scaling_3d_mode = 2
+scaling_3d_scale = 0.85
+use_taa = true
+background_energy_multiplier = 0.91
+tonemap_white = 8.6
+tonemap_agx_contrast = 1.29
+ssao_enabled = true
+ssao_light_affect = 1.0
+ssil_enabled = true
+sdfgi_enabled = true
+glow_enabled = true
+glow_intensity = 0.9
+glow_bloom = 0.2
+volumetric_fog_enabled = true
+adjustment_color_correction = ExtResource("2_lut")
+auto_exposure_enabled = true
+auto_exposure_scale = 0.2
+auto_exposure_speed = 1.24
+auto_exposure_min_sensitivity = 92.65
+auto_exposure_max_sensitivity = 735.5
