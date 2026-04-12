@@ -132,9 +132,19 @@ const GND_WIND_STRENGTH_SETTING := "shader_globals/gnd_wind_strength/value"
         rain_specular = clampf(value, 0.0, 1.0)
         _sync_rain_materials()
         _refresh_editor_preview()
-@export_range(0.0, 1.0, 0.01) var rain_roughness = 0.02:
+@export_range(0.0, 1.0, 0.01) var rain_roughness = 0.18:
     set(value):
         rain_roughness = clampf(value, 0.0, 1.0)
+        _sync_rain_materials()
+        _refresh_editor_preview()
+@export_range(0.1, 50.0, 0.1) var rain_specular_fade_start = 2.0:
+    set(value):
+        rain_specular_fade_start = value
+        _sync_rain_materials()
+        _refresh_editor_preview()
+@export_range(0.1, 100.0, 0.1) var rain_specular_fade_end = 8.0:
+    set(value):
+        rain_specular_fade_end = value
         _sync_rain_materials()
         _refresh_editor_preview()
 
@@ -603,6 +613,8 @@ func _ensure_rain_field_node(node_name: String, tint: Color) -> MultiMeshInstanc
     material.set_shader_parameter("intensity", visual_intensity)
     material.set_shader_parameter("roughness", rain_roughness)
     material.set_shader_parameter("specular", rain_specular)
+    material.set_shader_parameter("specular_fade_start", rain_specular_fade_start)
+    material.set_shader_parameter("specular_fade_end", rain_specular_fade_end)
     quad.material = material
 
     multimesh.mesh = quad
@@ -620,13 +632,16 @@ func _sync_rain_materials() -> void:
         near_mat.set_shader_parameter("intensity", visual_intensity)
         near_mat.set_shader_parameter("roughness", rain_roughness)
         near_mat.set_shader_parameter("specular", rain_specular)
+        near_mat.set_shader_parameter("specular_fade_start", rain_specular_fade_start)
+        near_mat.set_shader_parameter("specular_fade_end", rain_specular_fade_end)
 
     var mid_mat := _get_rain_field_material(_mid_rain_field)
     if mid_mat != null:
         mid_mat.set_shader_parameter("intensity", visual_intensity)
         mid_mat.set_shader_parameter("roughness", rain_roughness)
         mid_mat.set_shader_parameter("specular", rain_specular)
-
+        mid_mat.set_shader_parameter("specular_fade_start", rain_specular_fade_start)
+        mid_mat.set_shader_parameter("specular_fade_end", rain_specular_fade_end)
 
 func set_rain_mesh_debug_preview(enabled: bool, near_tint: Color, mid_tint: Color) -> void:
     _ensure_rain_field_nodes()
@@ -1078,6 +1093,8 @@ func _update_rain_field_visuals(
     material.set_shader_parameter("intensity", visual_intensity)
     material.set_shader_parameter("roughness", rain_roughness)
     material.set_shader_parameter("specular", rain_specular)
+    material.set_shader_parameter("specular_fade_start", rain_specular_fade_start)
+    material.set_shader_parameter("specular_fade_end", rain_specular_fade_end)
     material.set_shader_parameter("tint", effective_color)
     material.set_shader_parameter("intensity_alpha", clampf(rain_intensity, 0.0, 1.0))
     material.set_shader_parameter("blur_amount", mid_rain_blur if is_mid_layer else near_rain_blur)

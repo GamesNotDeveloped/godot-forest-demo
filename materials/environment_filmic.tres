@@ -91,9 +91,9 @@ shader_parameter/observer_latitude_deg = 22.400999999999996
 shader_parameter/cloud_time = 22167.0
 shader_parameter/cloud_wind_direction = Vector2(0.9363292, 0.35112345)
 shader_parameter/cloud_wind_speed = 1.0
-shader_parameter/cloud_motion_time = 3286.2239999999874
+shader_parameter/cloud_motion_time = 0.0
 shader_parameter/cloud_motion_scale = 0.12
-shader_parameter/cloud_evolution_time = 1095.4079999999958
+shader_parameter/cloud_evolution_time = 0.0
 shader_parameter/cloud_evolution_strength = 0.775
 shader_parameter/cloud_evolution_scale = 0.198
 

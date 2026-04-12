@@ -139,7 +139,6 @@ effect_callback_type = 4
 needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("46_kwcl0")
-sun_screen_uv = Vector2(0.32493648, 0.66883075)
 shaft_color = Color(0.718, 0.637, 0.379, 1)
 density = 0.485
 bright_threshold = 0.182
@@ -311,6 +310,8 @@ near_rain_color = Color(1, 1, 1, 0.1254902)
 mid_rain_color = Color(0.49803922, 0.49803922, 0.49803922, 0.24313726)
 visual_intensity = 1.0
 rain_roughness = 0.2
+rain_specular_fade_start = 0.1
+rain_specular_fade_end = 3.0
 rain_probe_max_count = 128
 rain_probe_distance = 4.0
 
@@ -328,7 +329,7 @@ player_scale = 0.6
 [node name="Flashlight" type="SpotLight3D" parent="UP_FPSController_Prefab/RotationHelper" index="1" unique_id=1165595639]
 transform = Transform3D(1.0000001, 0, 0, 0, 0.98480785, 0.1736482, 0, -0.1736482, 0.98480785, 0.235, 0.198, 0.465)
 visible = false
-light_energy = 1.302
+light_energy = 2.0
 light_volumetric_fog_energy = 5.372
 shadow_enabled = true
 spot_range = 24.0

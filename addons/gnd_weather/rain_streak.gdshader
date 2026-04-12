@@ -15,6 +15,8 @@ uniform float glow_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float intensity : hint_range(0.0, 1.0) = 0.47;
 uniform float specular : hint_range(0.0, 1.0) = 0.5;
 uniform float roughness : hint_range(0.0, 1.0) = 0.1;
+uniform float specular_fade_start : hint_range(0.0, 50.0) = 2.0;
+uniform float specular_fade_end : hint_range(0.1, 100.0) = 8.0;
 
 varying vec4 instance_custom_data;
 varying float streak_flow;
@@ -93,10 +95,9 @@ void fragment() {
 	ROUGHNESS = roughness;
 	
 	// Z-buffer / Distance fade:
-	// Fade specular intensity based on distance from the camera.
-	// Aggressive falloff: starts at 2m, completely gone by 8m, squared for sharper transition.
+	// Fade specular intensity based on distance from the camera using inspector parameters.
 	float dist = length(VERTEX);
-	float specular_fade = pow(1.0 - smoothstep(2.0, 8.0, dist), 2.0);
+	float specular_fade = 1.0 - smoothstep(specular_fade_start, specular_fade_end, dist);
 	SPECULAR = specular * specular_fade;
 	EMISSION = vec3(1.0, 1.0, 1.0) * intensity * 0.005 * specular_fade;
 
