@@ -139,6 +139,16 @@ effect_callback_type = 4
 needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("46_kwcl0")
+sun_screen_uv = Vector2(0.32493648, 0.66883075)
+shaft_color = Color(0.718, 0.637, 0.379, 1)
+density = 0.485
+bright_threshold = 0.182
+weight = 0.0355
+decay = 0.93
+exposure = 1.59
+max_radius = 1.377
+sample_count = 8
+dither_strength = 1.4
 
 [sub_resource type="Compositor" id="Compositor_2o85u"]
 compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_a77ay"), ExtResource("47_c6or4")])
@@ -159,7 +169,7 @@ script = ExtResource("35_quality")
 [node name="WeatherControlsCanvas" parent="." unique_id=1325048792 instance=ExtResource("36_weather_ui")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(0.17220937, 0.31765106, -0.9324387, 0, 0.94658023, 0.3224686, 0.9850604, -0.055532116, 0.16300999, 0, 0.5193932, -0.2882359)
+transform = Transform3D(0.17378972, 0.32079977, -0.9310664, 0, 0.9454536, 0.32575685, 0.98478276, -0.056613196, 0.16431011, 0, 0.5193932, -0.2882359)
 light_color = Color(0.6, 0.8, 1, 1)
 light_energy = 0.2
 light_indirect_energy = 1.18
@@ -263,7 +273,7 @@ script = ExtResource("19_shafts")
 directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
 day_of_year = 154
-time_of_day = 22.515
+time_of_day = 22.5
 latitude = 22.400999999999996
 day_light_energy = 2.0
 shader_zenith_color = Color(0.11514282, 0.20309141, 0.3828125, 1)
@@ -280,14 +290,15 @@ clouds_evolution_strength = 0.775
 clouds_evolution_scale = 0.198
 sun_halo_strength = 0.14
 sun_atmosphere_strength = 0.07
-moon_phase_debug = 0.24680409752793686
+moon_phase_debug = 0.24678293261090367
 shader_atmosphere_sunset_boost = 0.47
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.048832, 1.5131768, 1.5767192)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.044748, 4.182123, -1.533575)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
+precipitation_intensity = 1.0
 precipitation_wind_strength = 10.0
 wind_influence = 0.52
 follow_height = 0.855
@@ -298,6 +309,8 @@ near_rain_glow = 1.0
 mid_rain_blur = 0.38
 near_rain_color = Color(1, 1, 1, 0.1254902)
 mid_rain_color = Color(0.49803922, 0.49803922, 0.49803922, 0.24313726)
+visual_intensity = 1.0
+rain_roughness = 0.2
 rain_probe_max_count = 128
 rain_probe_distance = 4.0
 
@@ -316,6 +329,7 @@ player_scale = 0.6
 transform = Transform3D(1.0000001, 0, 0, 0, 0.98480785, 0.1736482, 0, -0.1736482, 0.98480785, 0.235, 0.198, 0.465)
 visible = false
 light_energy = 1.302
+light_volumetric_fog_energy = 5.372
 shadow_enabled = true
 spot_range = 24.0
 spot_attenuation = 0.43
@@ -329,6 +343,7 @@ metadata/_custom_type_script = "uid://b21dp6stblt2g"
 
 [node name="Music" type="AudioStreamPlayer" parent="." unique_id=860038656]
 stream = ExtResource("34_flr7s")
+autoplay = true
 bus = &"Music"
 
 [node name="OldWell" parent="." unique_id=2097428027 instance=ExtResource("34_pbujr")]

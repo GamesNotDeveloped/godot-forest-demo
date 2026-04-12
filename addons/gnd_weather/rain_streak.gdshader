@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled;
+render_mode blend_premul_alpha, depth_draw_never, cull_disabled;
 
 uniform vec4 tint : source_color = vec4(0.84, 0.9, 1.0, 0.12);
 uniform float width_softness : hint_range(0.01, 0.8) = 0.22;
@@ -12,6 +12,9 @@ uniform float streak_length_scale : hint_range(0.05, 2.0) = 1.0;
 uniform float intensity_alpha : hint_range(0.0, 1.0) = 1.0;
 uniform float blur_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float glow_amount : hint_range(0.0, 1.0) = 0.0;
+uniform float intensity : hint_range(0.0, 1.0) = 0.47;
+uniform float specular : hint_range(0.0, 1.0) = 0.5;
+uniform float roughness : hint_range(0.0, 1.0) = 0.1;
 
 varying vec4 instance_custom_data;
 varying float streak_flow;
@@ -81,10 +84,19 @@ void fragment() {
 	if (alpha < 0.00001) {
 		discard;
 	}
-	float color_alpha = clamp(intensity_alpha * 0.5, 0.1, 0.3);
-	float opacity_alpha = clamp(intensity_alpha * 0.5, 0.1, 0.4);
+	float color_alpha = clamp(intensity * 0.5, 0.1, 0.3);
+	float opacity_alpha = clamp(intensity * 0.5, 0.1, 0.4);
 	float blur_visibility = mix(1.0, 0.42, blur_amount);
 	float blur_color_visibility = mix(1.0, 0.58, blur_amount);
-	ALBEDO = tint.rgb * ((core_alpha * 0.47 + blur_alpha * 0.18) * color_alpha * blur_color_visibility);
-	ALPHA = (core_alpha * 0.57 + blur_alpha * 0.1) * opacity_alpha * blur_visibility;
+	ALBEDO = tint.rgb * ((core_alpha * intensity + blur_alpha * 0.18) * color_alpha * blur_color_visibility);
+	ALPHA = (core_alpha * intensity + blur_alpha * 0.1) * opacity_alpha * blur_visibility;
+	ROUGHNESS = roughness;
+	SPECULAR = specular;
+    EMISSION = vec3(1.0, 1.0, 1.0) * intensity * 0.005;
+
+	// Curve the normal to make the streak act like a cylinder rather than a flat mirror.
+	// This diffuses sharp environment reflections (like the sun/moon disk) into a vertical highlight.
+	vec3 local_normal = normalize(vec3((UV.x - 0.5) * 2.5, 0.0, 1.0));
+	NORMAL = normalize((VIEW_MATRIX * vec4(local_normal, 0.0)).xyz);
 }
+
