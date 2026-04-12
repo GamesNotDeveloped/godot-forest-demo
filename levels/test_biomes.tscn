@@ -56,6 +56,7 @@
 [ext_resource type="AudioStream" uid="uid://nbx0q5r0js2o" path="res://sounds/91512__timkahn__switch_01-off.wav" id="54_a3p2h"]
 [ext_resource type="AudioStream" uid="uid://dlnxdvo7huuod" path="res://sounds/206030__yuval__footsteps-grass-1.wav" id="55_aty88"]
 [ext_resource type="AudioStream" uid="uid://dp30db2cbv1ee" path="res://sounds/206030__yuval__footsteps-grass-2.wav" id="56_a77ay"]
+[ext_resource type="PackedScene" uid="uid://cwjjvq34352ew" path="res://objects/campfire/campfire.glb" id="57_a77ay"]
 
 [sub_resource type="Resource" id="Resource_ei7n8"]
 script = ExtResource("2_471tc")
@@ -130,7 +131,7 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
 noise_type = 3
 
-[sub_resource type="CompositorEffect" id="CompositorEffect_c6or4"]
+[sub_resource type="CompositorEffect" id="CompositorEffect_a77ay"]
 resource_local_to_scene = false
 resource_name = ""
 enabled = true
@@ -139,8 +140,8 @@ needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("46_kwcl0")
 
-[sub_resource type="Compositor" id="Compositor_xnulj"]
-compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_c6or4"), ExtResource("47_c6or4")])
+[sub_resource type="Compositor" id="Compositor_2o85u"]
+compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_a77ay"), ExtResource("47_c6or4")])
 
 [node name="TestBiomes" type="Node3D" unique_id=1245326294]
 script = ExtResource("1_flr7s")
@@ -158,7 +159,7 @@ script = ExtResource("35_quality")
 [node name="WeatherControlsCanvas" parent="." unique_id=1325048792 instance=ExtResource("36_weather_ui")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(0.7088935, 0.601777, -0.36787838, 0, 0.5215798, 0.8532025, 0.7053156, -0.6048297, 0.3697445, 0, 0.5193932, -0.2882359)
+transform = Transform3D(0.17220937, 0.31765106, -0.9324387, 0, 0.94658023, 0.3224686, 0.9850604, -0.055532116, 0.16300999, 0, 0.5193932, -0.2882359)
 light_color = Color(0.6, 0.8, 1, 1)
 light_energy = 0.2
 light_indirect_energy = 1.18
@@ -262,7 +263,7 @@ script = ExtResource("19_shafts")
 directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
 day_of_year = 154
-time_of_day = 19.252
+time_of_day = 22.515
 latitude = 22.400999999999996
 day_light_energy = 2.0
 shader_zenith_color = Color(0.11514282, 0.20309141, 0.3828125, 1)
@@ -279,11 +280,11 @@ clouds_evolution_strength = 0.775
 clouds_evolution_scale = 0.198
 sun_halo_strength = 0.14
 sun_atmosphere_strength = 0.07
-moon_phase_debug = 0.24220002257591133
+moon_phase_debug = 0.24680409752793686
 shader_atmosphere_sunset_boost = 0.47
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.9047594, 2.6152544, -2.5089865)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.048832, 1.5131768, 1.5767192)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
@@ -331,7 +332,7 @@ stream = ExtResource("34_flr7s")
 bus = &"Music"
 
 [node name="OldWell" parent="." unique_id=2097428027 instance=ExtResource("34_pbujr")]
-transform = Transform3D(-0.99200934, 0.014164062, 0.12536675, 1.8626451e-09, 0.9936781, -0.11226674, -0.12616435, -0.11136966, -0.9857379, 0.8522511, 0.4803073, 4.899059)
+transform = Transform3D(-0.99200934, 0.014164062, 0.12536675, 1.8626451e-09, 0.9936781, -0.11226674, -0.12616435, -0.11136966, -0.9857379, 0.8415149, 0.5014461, 4.935738)
 
 [node name="OldHouse" parent="." unique_id=1458074419 instance=ExtResource("34_0f0wj")]
 transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9984727, 0.052694708, 0, -0.05270197, 0.99861026, 1.8520274, -0.15231672, -0.6090337)
@@ -347,7 +348,7 @@ spot_angle = 57.83131
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1473354202]
 environment = ExtResource("39_jt4jh")
 camera_attributes = ExtResource("43_j63ba")
-compositor = SubResource("Compositor_xnulj")
+compositor = SubResource("Compositor_2o85u")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
 wait_time = 0.1
@@ -383,6 +384,9 @@ stream = ExtResource("55_aty88")
 
 [node name="Footstep2" type="AudioStreamPlayer" parent="." unique_id=488900575]
 stream = ExtResource("56_a77ay")
+
+[node name="Campfire" parent="." unique_id=476938335 instance=ExtResource("57_a77ay")]
+transform = Transform3D(0.98507035, 0.17194885, 0.008373604, -0.17215261, 0.98390424, 0.04791439, -4.1777393e-10, -0.04864058, 0.9988163, -2.8861916, 0.3648353, 3.0151293)
 
 [connection signal="profile_changed" from="QualityProfilesManager" to="." method="_on_quality_profiles_manager_profile_changed"]
 [connection signal="world_time_scale_changed" from="WeatherControlsCanvas" to="." method="_on_weather_controls_canvas_world_time_scale_changed"]

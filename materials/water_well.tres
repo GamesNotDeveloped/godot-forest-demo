@@ -1,0 +1,14 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://ycq7bo0uo7q2"]
+
+[ext_resource type="Shader" uid="uid://d4eeieqy7tv3u" path="res://materials/water_well.gdshader" id="1_shader"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/water_color = Color(0.0448761, 0.061023712, 0.06640625, 0.9490196)
+shader_parameter/wave_speed = 1.1830000561925
+shader_parameter/wave_frequency = 3.7190001766525
+shader_parameter/wave_amplitude = 0.11600000551
+shader_parameter/refraction_strength = 0.41200001957
+shader_parameter/roughness = 0.234000011115
+shader_parameter/specular = 0.7750000368125

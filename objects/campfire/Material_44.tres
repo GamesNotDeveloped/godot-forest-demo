@@ -1,0 +1,21 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://v6vwebbgmrb8"]
+
+[ext_resource type="Texture2D" uid="uid://nay8xjjbibm4" path="res://objects/campfire/campfire_0.png" id="1_7u78m"]
+[ext_resource type="Texture2D" uid="uid://dtblnruefhu3r" path="res://objects/campfire/campfire_1.png" id="2_4wtr8"]
+[ext_resource type="Texture2D" uid="uid://bw6ppidfhgo7f" path="res://objects/campfire/campfire_2.png" id="3_vda6r"]
+
+[resource]
+resource_name = "Material_44"
+transparency = 1
+albedo_texture = ExtResource("1_7u78m")
+metallic = 1.0
+metallic_texture = ExtResource("2_4wtr8")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_4wtr8")
+roughness_texture_channel = 1
+normal_enabled = true
+normal_texture = ExtResource("3_vda6r")
+ao_enabled = true
+ao_texture = ExtResource("2_4wtr8")
+proximity_fade_enabled = true
+proximity_fade_distance = 0.02

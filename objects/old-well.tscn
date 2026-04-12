@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://ctwu0ey7hgcm1"]
 
 [ext_resource type="PackedScene" uid="uid://d0xaks5oqnf3w" path="res://objects/old-well/scene.gltf" id="1_a03n7"]
+[ext_resource type="Material" uid="uid://ycq7bo0uo7q2" path="res://materials/water_well.tres" id="2_water"]
 
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_bsnj0"]
 points = PackedVector3Array(-45.417156, 0.22327732, -8.509048, 45.415634, 55.574512, 8.508763, 43.817257, 55.46392, 14.124602, -45.417156, 55.57544, -8.509048, 8.50902, 0.22336178, -45.417023, 8.5087595, 0.22420762, 45.415634, -18.365435, 55.44917, 42.37769, -8.509048, 55.57544, -45.417156, 42.377686, 0.34954235, -18.365438, 31.147413, 55.513195, -33.98626, -35.247166, 0.40226558, 29.61115, 42.37708, 0.34993732, 18.365175, 21.147268, 55.39512, 40.89003, -31.148014, 0.2849903, -33.986916, -42.378223, 55.44952, 18.36567, -35.247845, 55.396984, -29.611721, -18.365435, 0.34954816, 42.37769, 31.14667, 0.28618255, 33.98545, 43.817642, 55.46416, -14.124727, -45.417023, 0.22335973, 8.509024, 31.147413, 0.28552312, -33.98626, 18.358477, 55.452015, -42.38207, -18.36593, 0.34880483, -42.37883, -8.508789, 55.574593, 45.415768, 45.415768, 0.22412303, -8.508789, 35.246307, 55.39579, 29.610435, -31.14727, 55.51307, 33.986107, -21.148159, 55.39627, -40.891743, -42.37883, 0.3488029, -18.365932, 8.5087595, 55.57451, 45.415634, 45.415634, 0.22420558, 8.508763, -8.517519, 0.22464953, 45.41491)
@@ -14,6 +15,11 @@ size = Vector3(0.11428833, 1.1567383, 1.1132813)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_bsnj0"]
 size = Vector3(0.22921753, 0.2692871, 0.81747437)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_bsnj0"]
+top_radius = 0.4
+bottom_radius = 0.4
+height = 0.05
 
 [node name="OldWell" unique_id=2097428027 instance=ExtResource("1_a03n7")]
 
@@ -40,3 +46,8 @@ shape = SubResource("CylinderShape3D_2myp8")
 [node name="CollisionShape3D6" type="CollisionShape3D" parent="." index="6" unique_id=1769544926]
 transform = Transform3D(0.98491967, 0, 0.17301218, 0, 1, 0, -0.17301218, 0, 0.98491967, 0.77048904, 0.14266485, 0.43515)
 shape = SubResource("BoxShape3D_bsnj0")
+
+[node name="WaterMesh" type="MeshInstance3D" parent="." index="7" unique_id=1925698157]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.008748621, 0.34858006, 0.02336578)
+mesh = SubResource("CylinderMesh_bsnj0")
+surface_material_override/0 = ExtResource("2_water")
