@@ -72,10 +72,9 @@ func _on_exposure_timer_timeout() -> void:
 
 func _input(event):
     if event.is_action_pressed("toggle_flashlight"):
-        var flashlight_state = _flashlight.visible
-        _flashlight.visible = not flashlight_state
-        var sound = $PlayerHeadRef/FlashlightOn if flashlight_state else $PlayerHeadRef/FlashlightOff
-        sound.play()
+        var enabled = _flashlight.visible
+        _flashlight.visible = not enabled
+        $PlayerHeadRef/SoundEffects.play("flashlight-" + ("off" if enabled else "on"))
 
 
 
@@ -305,8 +304,8 @@ func _on_mouse_capture_toggled(captured):
 
 
 func _on_up_fps_controller_prefab_footstep(leg):
-    var snd = $PlayerHeadRef/Footstep1 if leg == 0 else $PlayerHeadRef/Footstep2
-    snd.play()
+    $PlayerHeadRef/SoundEffects.play("footsteps")
+
 
 
 func _on_skydome_time_changed(day, time):

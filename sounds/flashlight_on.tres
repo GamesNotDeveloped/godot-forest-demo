@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SfxEvent" format=3 uid="uid://0cbhhf1c3kyv"]
+
+[ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="1_8ieob"]
+[ext_resource type="Script" uid="uid://boicinkvs7i0h" path="res://addons/gnd_sfx/sfx_track.gd" id="2_l42hq"]
+[ext_resource type="Script" uid="uid://du0xhkfksfg41" path="res://addons/gnd_sfx/sfx_automation.gd" id="3_xcifh"]
+[ext_resource type="Script" uid="uid://bux2t8wvvtr2f" path="res://addons/gnd_sfx/sfx_stream.gd" id="4_okuqu"]
+[ext_resource type="AudioStream" uid="uid://nbx0q5r0js2o" path="res://sounds/91512__timkahn__switch_01-on.wav" id="5_l42hq"]
+
+[sub_resource type="Resource" id="Resource_kusgc"]
+script = ExtResource("4_okuqu")
+stream = ExtResource("5_l42hq")
+metadata/_custom_type_script = "uid://bux2t8wvvtr2f"
+
+[sub_resource type="Resource" id="Resource_40nax"]
+script = ExtResource("2_l42hq")
+streams = Array[ExtResource("4_okuqu")]([SubResource("Resource_kusgc")])
+metadata/_custom_type_script = "uid://boicinkvs7i0h"
+
+[resource]
+script = ExtResource("1_8ieob")
+tracks = Array[ExtResource("2_l42hq")]([SubResource("Resource_40nax")])
+name = &"flashlight-on"
+metadata/_custom_type_script = "uid://bgxtc44e5rb0l"

@@ -4,6 +4,9 @@
 resource_name = "LowPassFilter"
 cutoff_hz = 20500.0
 
+[sub_resource type="AudioEffectLowPassFilter" id="AudioEffectLowPassFilter_g28q7"]
+resource_name = "LowPassFilter"
+
 [resource]
 bus/1/name = &"Music"
 bus/1/solo = false
@@ -19,3 +22,11 @@ bus/2/volume_db = 0.0
 bus/2/send = &"Master"
 bus/2/effect/0/effect = SubResource("AudioEffectLowPassFilter_j3pel")
 bus/2/effect/0/enabled = true
+bus/3/name = &"Footsteps"
+bus/3/solo = false
+bus/3/mute = false
+bus/3/bypass_fx = false
+bus/3/volume_db = -5.9307528
+bus/3/send = &"Master"
+bus/3/effect/0/effect = SubResource("AudioEffectLowPassFilter_g28q7")
+bus/3/effect/0/enabled = true

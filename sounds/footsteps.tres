@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="SfxEvent" format=3 uid="uid://bhhjddgrltg00"]
+
+[ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="1_qxivp"]
+[ext_resource type="Script" uid="uid://boicinkvs7i0h" path="res://addons/gnd_sfx/sfx_track.gd" id="2_6ihku"]
+[ext_resource type="Script" uid="uid://du0xhkfksfg41" path="res://addons/gnd_sfx/sfx_automation.gd" id="3_mn77h"]
+[ext_resource type="AudioStream" uid="uid://dlnxdvo7huuod" path="res://sounds/206030__yuval__footsteps-grass-1.wav" id="4_1if6t"]
+[ext_resource type="Script" uid="uid://bux2t8wvvtr2f" path="res://addons/gnd_sfx/sfx_stream.gd" id="4_ag1qg"]
+[ext_resource type="AudioStream" uid="uid://dp30db2cbv1ee" path="res://sounds/206030__yuval__footsteps-grass-2.wav" id="5_ag1qg"]
+
+[sub_resource type="Resource" id="Resource_f7v4b"]
+script = ExtResource("3_mn77h")
+metadata/_custom_type_script = "uid://du0xhkfksfg41"
+
+[sub_resource type="Curve" id="Curve_mn77h"]
+_data = [Vector2(0, 0), 0.0, 2.6872034, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_h1s8t"]
+_data = [Vector2(0, 1), 0.0, 0.049493138, 0, 0, Vector2(1, 0), -2.4199753, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Resource" id="Resource_h1s8t"]
+script = ExtResource("4_ag1qg")
+stream = ExtResource("4_1if6t")
+metadata/_custom_type_script = "uid://bux2t8wvvtr2f"
+
+[sub_resource type="Resource" id="Resource_jwosw"]
+script = ExtResource("4_ag1qg")
+stream = ExtResource("5_ag1qg")
+metadata/_custom_type_script = "uid://bux2t8wvvtr2f"
+
+[sub_resource type="Resource" id="Resource_1if6t"]
+script = ExtResource("2_6ihku")
+streams = Array[ExtResource("4_ag1qg")]([SubResource("Resource_h1s8t"), SubResource("Resource_jwosw")])
+fade_in_curve = SubResource("Curve_mn77h")
+fade_out_curve = SubResource("Curve_h1s8t")
+audio_bus = &"Footsteps"
+automation = Array[ExtResource("3_mn77h")]([SubResource("Resource_f7v4b")])
+metadata/_custom_type_script = "uid://boicinkvs7i0h"
+
+[resource]
+script = ExtResource("1_qxivp")
+tracks = Array[ExtResource("2_6ihku")]([SubResource("Resource_1if6t")])
+name = &"footsteps"
+metadata/_custom_type_script = "uid://bgxtc44e5rb0l"

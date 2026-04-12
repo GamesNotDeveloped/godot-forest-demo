@@ -47,19 +47,23 @@
 [ext_resource type="CameraAttributesPractical" uid="uid://c1eswprngr57f" path="res://materials/camera_attributes_filmic.tres" id="43_j63ba"]
 [ext_resource type="PackedScene" uid="uid://6ovpjh4yitp1" path="res://objects/wooden_crates.tscn" id="44_a77ay"]
 [ext_resource type="PackedScene" uid="uid://bp8c025u30g4x" path="res://objects/old_table.tscn" id="45_kf4y5"]
+[ext_resource type="Script" uid="uid://pw1ljvn4g7cy" path="res://addons/gnd_skydome/SunShaftsCompositorEffect.gd" id="49_g0a7c"]
 [ext_resource type="AudioStream" uid="uid://dodwn40mt8px7" path="res://thunder/334151__svampen__thunder-rolling-2.wav" id="51_kwcl0"]
 [ext_resource type="AudioStream" uid="uid://fqnuofshaed1" path="res://thunder/399656__bajko__sfx_thunder-blast.wav" id="52_c6or4"]
 [ext_resource type="PackedScene" uid="uid://bjv8m7r6c35e7" path="res://objects/lantern.tscn" id="52_xnulj"]
-[ext_resource type="AudioStream" uid="uid://bmg28qvj2t25u" path="res://sounds/91512__timkahn__switch_01-on.wav" id="53_8l7hv"]
+[ext_resource type="AudioStream" uid="uid://bmg28qvj2t25u" path="res://sounds/91512__timkahn__switch_01-off.wav" id="53_8l7hv"]
 [ext_resource type="AudioStream" uid="uid://dd3xpi0qd5ftg" path="res://thunder/136971__dwoboyle__ambiance-heavy-rain-loop.wav" id="53_xnulj"]
 [ext_resource type="AudioStream" uid="uid://blr157w0srbul" path="res://thunder/116323__dymewiz__rain-05.wav" id="54_8l7hv"]
-[ext_resource type="AudioStream" uid="uid://nbx0q5r0js2o" path="res://sounds/91512__timkahn__switch_01-off.wav" id="54_a3p2h"]
-[ext_resource type="AudioStream" uid="uid://dlnxdvo7huuod" path="res://sounds/206030__yuval__footsteps-grass-1.wav" id="55_aty88"]
-[ext_resource type="AudioStream" uid="uid://dp30db2cbv1ee" path="res://sounds/206030__yuval__footsteps-grass-2.wav" id="56_a77ay"]
+[ext_resource type="AudioStream" uid="uid://nbx0q5r0js2o" path="res://sounds/91512__timkahn__switch_01-on.wav" id="54_a3p2h"]
 [ext_resource type="PackedScene" uid="uid://cwjjvq34352ew" path="res://objects/campfire/campfire.glb" id="57_a77ay"]
 [ext_resource type="PackedScene" uid="uid://ckysduj2lni1n" path="res://objects/old_barrel.tscn" id="58_2o85u"]
 [ext_resource type="PackedScene" uid="uid://dlmg7edvvawlx" path="res://objects/medieval_cart.tscn" id="59_88um7"]
+[ext_resource type="Resource" uid="uid://0cbhhf1c3kyv" path="res://sounds/flashlight_on.tres" id="60_o18jh"]
+[ext_resource type="Resource" uid="uid://x0hxb11jtjvy" path="res://sounds/flashlight_off.tres" id="61_7npft"]
 [ext_resource type="PackedScene" uid="uid://coi6allaasxrg" path="res://objects/old_lamp.tscn" id="62_g0a7c"]
+[ext_resource type="Script" uid="uid://dtao57kx5l2dw" path="res://addons/gnd_sfx/sfx_player_3d.gd" id="63_c8shn"]
+[ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="64_e686x"]
+[ext_resource type="Resource" uid="uid://bhhjddgrltg00" path="res://sounds/footsteps.tres" id="65_e686x"]
 
 [sub_resource type="Resource" id="Resource_ei7n8"]
 script = ExtResource("2_471tc")
@@ -134,7 +138,28 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
 noise_type = 3
 
-[sub_resource type="Compositor" id="Compositor_kf4y5"]
+[sub_resource type="CompositorEffect" id="CompositorEffect_o18jh"]
+resource_local_to_scene = false
+resource_name = ""
+enabled = true
+effect_callback_type = 4
+needs_motion_vectors = false
+needs_normal_roughness = false
+script = ExtResource("49_g0a7c")
+sun_screen_uv = Vector2(1.1552382, 1.277296)
+sun_visible = true
+shaft_color = Color(0.7181275, 0.64356625, 0.40456375, 1)
+density = 0.4231625
+bright_threshold = 0.182
+weight = 0.030973749999999998
+decay = 0.93
+exposure = 1.3872750000000003
+max_radius = 1.377
+sample_count = 8
+dither_strength = 1.4
+
+[sub_resource type="Compositor" id="Compositor_7npft"]
+compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_o18jh")])
 
 [sub_resource type="Animation" id="Animation_aty88"]
 length = 7.4666667
@@ -479,7 +504,7 @@ transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1473354202]
 environment = ExtResource("39_jt4jh")
 camera_attributes = ExtResource("43_j63ba")
-compositor = SubResource("Compositor_kf4y5")
+compositor = SubResource("Compositor_7npft")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
 wait_time = 0.1
@@ -521,18 +546,6 @@ spot_attenuation = 0.43
 spot_angle = 19.73
 spot_angle_attenuation = 1.4640857
 
-[node name="Footstep1" type="AudioStreamPlayer3D" parent="PlayerHeadRef" unique_id=299702599]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
-stream = ExtResource("55_aty88")
-unit_size = 0.5
-max_db = 0.655
-
-[node name="Footstep2" type="AudioStreamPlayer3D" parent="PlayerHeadRef" unique_id=42769830]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
-stream = ExtResource("56_a77ay")
-unit_size = 0.5
-max_db = 0.655
-
 [node name="FlashlightOn" type="AudioStreamPlayer3D" parent="PlayerHeadRef" unique_id=353177472]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.27, 0.2, 0)
 stream = ExtResource("54_a3p2h")
@@ -548,6 +561,13 @@ volume_db = -3.0
 unit_size = 0.5
 max_db = 0.655
 max_distance = 5.0
+
+[node name="SoundEffects" type="Node3D" parent="PlayerHeadRef" unique_id=172855522]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.585, 0)
+script = ExtResource("63_c8shn")
+events = Array[ExtResource("64_e686x")]([ExtResource("65_e686x"), ExtResource("60_o18jh"), ExtResource("61_7npft")])
+max_tracks = 10
+metadata/_custom_type_script = "uid://dtao57kx5l2dw"
 
 [node name="Campfire" parent="." unique_id=476938335 instance=ExtResource("57_a77ay")]
 transform = Transform3D(0.98507035, 0.17194885, 0.008373604, -0.17215261, 0.98390424, 0.04791439, -4.1777393e-10, -0.04864058, 0.9988163, -2.8861916, 0.3648353, 3.0151293)
