@@ -18,4 +18,4 @@ normal_texture = ExtResource("3_vda6r")
 ao_enabled = true
 ao_texture = ExtResource("2_4wtr8")
 proximity_fade_enabled = true
-proximity_fade_distance = 0.02
+proximity_fade_distance = 0.06

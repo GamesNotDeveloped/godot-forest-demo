@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://ckysduj2lni1n"]
+
+[ext_resource type="PackedScene" uid="uid://doq4hq4t73dd4" path="res://objects/old-barrel/scene.gltf" id="1_6ujci"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_6ujci"]
+height = 24.241943
+radius = 8.083429
+
+[node name="OldBarrel" unique_id=1040635338 instance=ExtResource("1_6ujci")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." index="1" unique_id=226632129]
+transform = Transform3D(0.025400003, 0, 0, 0, -0.025400003, -5.248455e-09, 0, 5.248455e-09, -0.025400003, -2.4223331e-08, 0.3013554, -2.428837e-07)
+shape = SubResource("CylinderShape3D_6ujci")

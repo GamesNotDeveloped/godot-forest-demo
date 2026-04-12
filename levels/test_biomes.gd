@@ -11,9 +11,9 @@ const RAIN_LP_TWEEN_DURATION := 0.12
 const STORM_RAIN_START_RATIO := 0.4
 const SKYDOME_FOG_RAIN_START_RATIO := 0.6
 const SKYDOME_FOG_DENSITY_MAX := 0.4
-const DEFAULT_WORLD_TIME_SCALE := 50.0
-const DEFAULT_RAIN_INTENSITY := 0.75
-const DEFAULT_CLOUD_DENSITY := 0.15
+const DEFAULT_WORLD_TIME_SCALE := 200.0
+const DEFAULT_RAIN_INTENSITY := 0.0
+const DEFAULT_CLOUD_DENSITY := 0.0
 const THUNDER_HEAVY_THRESHOLD_CALM := 0.9
 const THUNDER_HEAVY_THRESHOLD_STORM := 0.72
 const THUNDER_VOLUME_DB_MIN := -5.0
@@ -38,6 +38,8 @@ var _world_time_scale: float = DEFAULT_WORLD_TIME_SCALE
 
 
 func _ready() -> void:
+    $WeatherAnimation.current_animation = "example_weather"
+
     _on_mouse_capture_toggled(true)
     var rain_bus_index := AudioServer.get_bus_index(RAIN_BUS_NAME)
     if rain_bus_index >= 0 and AudioServer.get_bus_effect_count(rain_bus_index) > 0:
@@ -304,3 +306,12 @@ func _on_mouse_capture_toggled(captured):
 func _on_up_fps_controller_prefab_footstep(leg):
     var snd = $Footstep1 if leg == 0 else $Footstep2
     snd.play()
+
+
+func _on_skydome_time_changed(day, time):
+    if $ApplyWeatherChangeTimer.is_stopped():
+        $ApplyWeatherChangeTimer.start()
+
+
+func _on_apply_weather_change_timer_timeout():
+    $WeatherAnimation.seek($Skydome.time_of_day, true)

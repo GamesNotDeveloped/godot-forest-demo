@@ -7,12 +7,12 @@
 [ext_resource type="ArrayMesh" uid="uid://bcmvfaww61got" path="res://objects/lantern/Sketchfab_Scene_Handel_Base_0.res" id="6_j08r7"]
 [ext_resource type="Script" uid="uid://csgvykj8mmpc5" path="res://objects/lantern_swing.gd" id="6_swing"]
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_cownm"]
+size = Vector3(0.07583618, 1.9707642, 0.0730896)
+
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_lantern"]
 height = 20.0
 radius = 8.0
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_cownm"]
-size = Vector3(0.07583618, 1.9707642, 0.0730896)
 
 [node name="Lantern" type="Node3D" unique_id=854572666]
 
@@ -24,16 +24,15 @@ transform = Transform3D(0.01, 0, 0, 0, 0, -0.01, 0, 0.01, 0, 0, 0, 0)
 
 [node name="RootNode" type="Node3D" parent="Sketchfab_model/92d8d6eaf041458cb7c19319c2237d74_fbx" unique_id=807625669]
 
-[node name="CINEMA_4D_Editor" type="Node3D" parent="Sketchfab_model/92d8d6eaf041458cb7c19319c2237d74_fbx/RootNode" unique_id=622856019]
-transform = Transform3D(-0.35061905, -0.036101565, 0.93582207, -0.102423705, 0.99474084, -7.2858386e-16, -0.93090045, -0.09585036, -0.35247275, 130.60587, 164.67067, 299.74847)
-
-[node name="Object_4" type="Node3D" parent="Sketchfab_model/92d8d6eaf041458cb7c19319c2237d74_fbx/RootNode/CINEMA_4D_Editor" unique_id=1132836605]
-
 [node name="Wood" type="StaticBody3D" parent="Sketchfab_model/92d8d6eaf041458cb7c19319c2237d74_fbx/RootNode" unique_id=1762879116]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.895216, 53.54032, 0)
 
 [node name="Wood_Wood_0" type="MeshInstance3D" parent="Sketchfab_model/92d8d6eaf041458cb7c19319c2237d74_fbx/RootNode/Wood" unique_id=1177794256]
 mesh = ExtResource("1_cownm")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Sketchfab_model/92d8d6eaf041458cb7c19319c2237d74_fbx/RootNode/Wood" unique_id=1444686678]
+transform = Transform3D(100, 0, 0, 0, 100, 2.220446e-14, 0, -2.220446e-14, 100, -10.748304, 43.83212, 1.1367798)
+shape = SubResource("BoxShape3D_cownm")
 
 [node name="LampBody" type="RigidBody3D" parent="Sketchfab_model/92d8d6eaf041458cb7c19319c2237d74_fbx/RootNode" unique_id=380005303]
 transform = Transform3D(2.220446e-16, 0, -1, 0, 1, 0, 1, 0, 2.220446e-16, 48.702812, 156.42184, 0.0048204004)
@@ -51,9 +50,13 @@ mesh = ExtResource("4_j4f8t")
 [node name="OmniLight3D" type="OmniLight3D" parent="Sketchfab_model/92d8d6eaf041458cb7c19319c2237d74_fbx/RootNode/LampBody/Lantern_LIGHT_0" unique_id=1623023661]
 transform = Transform3D(100, 0, 0, 0, 100, 0, 0, 0, 100, 0, 5.3106995, 0)
 light_color = Color(0.60546875, 0.4722464, 0.118255615, 1)
+light_energy = 0.6
+light_volumetric_fog_energy = 5.086
 shadow_enabled = true
 shadow_opacity = 0.89
 shadow_blur = 5.514
+omni_range = 3.0
+omni_attenuation = 1.87
 
 [node name="Lantern_GLASS_0" type="MeshInstance3D" parent="Sketchfab_model/92d8d6eaf041458cb7c19319c2237d74_fbx/RootNode/LampBody" unique_id=1956151662]
 mesh = ExtResource("5_yo6ik")
@@ -72,7 +75,3 @@ shape = SubResource("CylinderShape3D_lantern")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.487, 1.8034495, 0)
 node_a = NodePath("../Sketchfab_model/92d8d6eaf041458cb7c19319c2237d74_fbx/RootNode/Wood")
 node_b = NodePath("../Sketchfab_model/92d8d6eaf041458cb7c19319c2237d74_fbx/RootNode/LampBody")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1444686678]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.021469116, 0.97372437, 0.011367798)
-shape = SubResource("BoxShape3D_cownm")

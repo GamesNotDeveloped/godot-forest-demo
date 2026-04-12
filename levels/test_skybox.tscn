@@ -3,12 +3,14 @@
 [ext_resource type="Script" uid="uid://blkilnimp0sck" path="res://addons/gnd_skydome/Skydome.gd" id="1_kg2oo"]
 [ext_resource type="Environment" uid="uid://nisddm6dgh86" path="res://materials/environment_filmic.tres" id="2_45wgl"]
 
+[sub_resource type="Compositor" id="Compositor_kg2oo"]
+
 [node name="Node3D" type="Node3D" unique_id=1797691980]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1770866177]
 transform = Transform3D(0.9697463, 0.21686889, -0.112071455, 0, 0.45909292, 0.8883883, 0.24411498, -0.86151123, 0.44520366, 0, 0, 0)
 light_color = Color(0.83986914, 0.81180817, 0.78518516, 1)
-light_energy = 0.9782021
+light_energy = 1.28
 light_angular_distance = 5.3360915
 shadow_enabled = true
 shadow_opacity = 0.9332953
@@ -24,3 +26,4 @@ metadata/_custom_type_script = "uid://blkilnimp0sck"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1616786755]
 environment = ExtResource("2_45wgl")
+compositor = SubResource("Compositor_kg2oo")

@@ -45,6 +45,7 @@
 [ext_resource type="Resource" path="res://addons/gnd_quality_profiles/profiles/mid.tres" id="40_mid"]
 [ext_resource type="Resource" path="res://addons/gnd_quality_profiles/profiles/low.tres" id="41_low"]
 [ext_resource type="CameraAttributesPractical" uid="uid://c1eswprngr57f" path="res://materials/camera_attributes_filmic.tres" id="43_j63ba"]
+[ext_resource type="PackedScene" uid="uid://6ovpjh4yitp1" path="res://objects/wooden_crates.tscn" id="44_a77ay"]
 [ext_resource type="CompositorEffect" uid="uid://c8f5kmj6wip87" path="res://materials/film_grain_compositor_fx.tres" id="47_c6or4"]
 [ext_resource type="AudioStream" uid="uid://dodwn40mt8px7" path="res://thunder/334151__svampen__thunder-rolling-2.wav" id="51_kwcl0"]
 [ext_resource type="AudioStream" uid="uid://fqnuofshaed1" path="res://thunder/399656__bajko__sfx_thunder-blast.wav" id="52_c6or4"]
@@ -56,6 +57,8 @@
 [ext_resource type="AudioStream" uid="uid://dlnxdvo7huuod" path="res://sounds/206030__yuval__footsteps-grass-1.wav" id="55_aty88"]
 [ext_resource type="AudioStream" uid="uid://dp30db2cbv1ee" path="res://sounds/206030__yuval__footsteps-grass-2.wav" id="56_a77ay"]
 [ext_resource type="PackedScene" uid="uid://cwjjvq34352ew" path="res://objects/campfire/campfire.glb" id="57_a77ay"]
+[ext_resource type="PackedScene" uid="uid://ckysduj2lni1n" path="res://objects/old_barrel.tscn" id="58_2o85u"]
+[ext_resource type="PackedScene" uid="uid://dlmg7edvvawlx" path="res://objects/medieval_cart.tscn" id="59_88um7"]
 
 [sub_resource type="Resource" id="Resource_ei7n8"]
 script = ExtResource("2_471tc")
@@ -130,8 +133,141 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
 noise_type = 3
 
-[sub_resource type="Compositor" id="Compositor_aty88"]
+[sub_resource type="Compositor" id="Compositor_g0a7c"]
 compositor_effects = Array[CompositorEffect]([ExtResource("47_c6or4")])
+
+[sub_resource type="Animation" id="Animation_aty88"]
+length = 7.4666667
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skydome:fog_density")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.15000000000000002]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Weather:storm_intensity")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.5833333333333334]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Weather:precipitation_intensity")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Skydome:rainbow_intensity")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Weather:cloud_density")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.15]
+}
+
+[sub_resource type="Animation" id="Animation_a77ay"]
+resource_name = "example_weather"
+length = 24.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Weather:cloud_density")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.8666668, 1.3, 2.1, 2.5666666, 3.6, 3.8666666, 6.1, 7.9, 8.5, 9.7, 11.066667, 12.3, 12.933333, 16.066668, 16.866667, 18.833334, 19.633333, 21.233334, 22.433332, 23.866667),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 1.0, 0.5, 0.3, 0.1, 0.1, 0.7, 0.4, 0.4, 0.2, 0.0, 0.0, 0.2, 0.6, 0.6, 0.25, 0.4, 0.4, 0.4, 0.8, 1.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Weather:storm_intensity")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 1.6, 2.4333334, 4.633333, 6.8, 19.566668, 20.4, 21.6, 23.4),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 1.0, 0.6, 0.2, 0.0, 0.0, 0.2, 0.5, 1.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Weather:precipitation_intensity")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 1.1666666, 1.5333333, 3.0666666, 3.5666666, 6.4, 7.866667, 11.966666, 13, 13.7, 17.733334, 18.666666, 21.033333, 22.333334, 23.966667),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 1.0, 0.566, 0.0, 0.566, 0.566, 0.0, 0.0, 0.2, 0.352, 0.3, 0.1, 0.352, 0.352, 1.0]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Skydome:fog_density")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0.1, 8.266666, 18.366667, 23.966667),
+"transitions": PackedFloat32Array(1.0717736, 1, 1, 1),
+"update": 0,
+"values": [0.5, 0.0, 0.15000000000000002, 0.5]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Skydome:rainbow_intensity")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 15.733334, 16.7, 17.7, 18.533333),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 0.3, 0.3, 0.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_2o85u"]
+_data = {
+&"RESET": SubResource("Animation_aty88"),
+&"example_weather": SubResource("Animation_a77ay")
+}
 
 [node name="TestBiomes" type="Node3D" unique_id=1245326294]
 script = ExtResource("1_flr7s")
@@ -145,13 +281,15 @@ world_environment_path = NodePath("../WorldEnvironment")
 metadata/_custom_type_script = "uid://sdanr78joiow"
 
 [node name="QualityProfilesCanvas" type="CanvasLayer" parent="." unique_id=1602580575]
+visible = false
 script = ExtResource("35_quality")
 
 [node name="WeatherControlsCanvas" parent="." unique_id=1325048792 instance=ExtResource("36_weather_ui")]
+visible = false
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(0.9898497, 0.1263647, -0.065035395, 0, 0.4576142, 0.88915086, 0.1421184, -0.8801257, 0.45296928, 0, 0.5193932, -0.2882359)
-light_color = Color(1, 0.93, 0.85, 1)
+transform = Transform3D(0.9072898, -0.3683932, 0.20276016, 0, 0.48218146, 0.8760714, -0.42050594, -0.79485065, 0.4374783, 0, 0.5193932, -0.2882359)
+light_color = Color(0.9538084, 0.8959062, 0.8313034, 1)
 light_energy = 2.0
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
@@ -254,7 +392,7 @@ script = ExtResource("19_shafts")
 directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
 day_of_year = 160
-time_of_day = 12.27
+time_of_day = 11.152
 day_light_energy = 2.0
 shader_zenith_color = Color(0.11514282, 0.20309141, 0.3828125, 1)
 shader_horizon_height = 0.178
@@ -263,7 +401,7 @@ day_ambient_sky_contribution = 0.69
 day_vol_fog_density = 0.005
 shader_night_sky_energy = 0.165
 night_vol_fog_density = 0.121
-clouds_coverage = 0.0
+clouds_coverage = 0.15
 clouds_color_shadow = Color(0.8515625, 0.8515625, 0.8515625, 1)
 clouds_shadow_angular_distance_clear = 1.0
 clouds_evolution_strength = 0.775
@@ -272,15 +410,19 @@ sun_halo_strength = 0.14
 sun_atmosphere_strength = 0.07
 moon_glow_strength = 0.01
 moon_glow_size = 0.2
-moon_phase_debug = 0.4355316627158814
+fog_density = 0.15000000000000002
+moon_phase_debug = 0.43395417089964994
 shader_atmosphere_sunset_boost = 0.47
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.6990557, 3.6051235, 1.5807886)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.369852, 0.24929011, -9.037476)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
-precipitation_intensity = 0.33
+cloud_density = 0.15
+cloud_overcast_intensity = 0.75
+storm_intensity = 0.5833333333333334
+storm_fog_intensity = 0.15000000000000002
 precipitation_wind_strength = 10.0
 wind_influence = 0.52
 follow_height = 0.855
@@ -327,7 +469,6 @@ metadata/_custom_type_script = "uid://b21dp6stblt2g"
 
 [node name="Music" type="AudioStreamPlayer" parent="." unique_id=860038656]
 stream = ExtResource("34_flr7s")
-autoplay = true
 bus = &"Music"
 
 [node name="OldWell" parent="." unique_id=2097428027 instance=ExtResource("34_pbujr")]
@@ -336,18 +477,13 @@ transform = Transform3D(-0.99200934, 0.014164062, 0.12536675, 1.8626451e-09, 0.9
 [node name="OldHouse" parent="." unique_id=1458074419 instance=ExtResource("34_0f0wj")]
 transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9984727, 0.052694708, 0, -0.05270197, 0.99861026, 1.8520274, -0.15231672, -0.6090337)
 
-[node name="SpotLight3D" type="SpotLight3D" parent="OldHouse" unique_id=265595149]
-transform = Transform3D(0.97878295, -0.17760842, 0.1021733, -0.05016828, 0.27574402, 0.9599211, -0.19866371, -0.9446803, 0.2609832, -2.654221, 1.6775688, 0.10019219)
-visible = false
-light_color = Color(0.95703125, 0.81465065, 0.676651, 1)
-light_energy = 3.428
-spot_range = 2.574964
-spot_angle = 57.83131
+[node name="WoodenCrates" parent="OldHouse" unique_id=941335997 instance=ExtResource("44_a77ay")]
+transform = Transform3D(0.4994687, -0.02715934, -0.8659062, -0.016243692, 0.9990393, -0.040704712, 0.86617976, 0.034396242, 0.49854764, 1.562316, 0.15764159, 0.3956026)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1473354202]
 environment = ExtResource("39_jt4jh")
 camera_attributes = ExtResource("43_j63ba")
-compositor = SubResource("Compositor_aty88")
+compositor = SubResource("Compositor_g0a7c")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
 wait_time = 0.1
@@ -355,6 +491,7 @@ autostart = true
 
 [node name="Thunder1" type="AudioStreamPlayer" parent="." unique_id=400482196]
 stream = ExtResource("51_kwcl0")
+volume_db = -3.4081807
 bus = &"Rain"
 
 [node name="Thunder2" type="AudioStreamPlayer" parent="." unique_id=1600119013]
@@ -363,10 +500,12 @@ bus = &"Rain"
 
 [node name="Rain1" type="AudioStreamPlayer" parent="." unique_id=193261155]
 stream = ExtResource("53_xnulj")
+volume_db = 0.13
 bus = &"Rain"
 
 [node name="Rain2" type="AudioStreamPlayer" parent="." unique_id=355123381]
 stream = ExtResource("54_8l7hv")
+volume_db = -2.472
 bus = &"Rain"
 
 [node name="Lantern" parent="." unique_id=288061248 instance=ExtResource("52_xnulj")]
@@ -387,13 +526,30 @@ stream = ExtResource("56_a77ay")
 [node name="Campfire" parent="." unique_id=476938335 instance=ExtResource("57_a77ay")]
 transform = Transform3D(0.98507035, 0.17194885, 0.008373604, -0.17215261, 0.98390424, 0.04791439, -4.1777393e-10, -0.04864058, 0.9988163, -2.8861916, 0.3648353, 3.0151293)
 
+[node name="WeatherAnimation" type="AnimationPlayer" parent="." unique_id=1324865223]
+libraries/ = SubResource("AnimationLibrary_2o85u")
+
+[node name="ApplyWeatherChangeTimer" type="Timer" parent="." unique_id=1244794780]
+wait_time = 0.05
+
+[node name="MedievalCart" parent="." unique_id=2121408938 instance=ExtResource("59_88um7")]
+transform = Transform3D(-0.2790172, -0.05260048, -0.95884454, 0.16248998, 0.9815142, -0.101127625, 0.9464387, -0.18401898, -0.2653124, -3.4266024, -1.2810378, -4.73135)
+
+[node name="OldBarrel" parent="." unique_id=1040635338 instance=ExtResource("58_2o85u")]
+transform = Transform3D(-0.07915535, 0.7460971, -0.66111547, -0.9944193, -0.1055005, 3.7252903e-09, -0.06974801, 0.65742594, 0.7502842, 2.7074451, -1.050271, -9.2624655)
+
+[node name="OldBarrel2" parent="." unique_id=2016583578 instance=ExtResource("58_2o85u")]
+transform = Transform3D(0.7627022, -0.03918874, 0.6455615, -0.05958914, 0.98965836, 0.13047926, -0.64399874, -0.1379854, 0.7524794, -5.5515823, -1.9287547, -9.367592)
+
 [connection signal="profile_changed" from="QualityProfilesManager" to="." method="_on_quality_profiles_manager_profile_changed"]
 [connection signal="world_time_scale_changed" from="WeatherControlsCanvas" to="." method="_on_weather_controls_canvas_world_time_scale_changed"]
+[connection signal="time_changed" from="Skydome" to="." method="_on_skydome_time_changed"]
 [connection signal="rain_local_strength_changed" from="Weather" to="." method="_on_weather_rain_local_strength_changed"]
 [connection signal="rain_strength_changed" from="Weather" to="." method="_on_weather_rain_strength_changed"]
 [connection signal="thunder" from="Weather" to="." method="_on_weather_thunder"]
 [connection signal="footstep" from="UP_FPSController_Prefab" to="." method="_on_up_fps_controller_prefab_footstep"]
 [connection signal="toggled" from="MouseCapture" to="." method="_on_mouse_capture_toggled"]
 [connection signal="timeout" from="WorldTimer" to="." method="_on_world_timer_timeout"]
+[connection signal="timeout" from="ApplyWeatherChangeTimer" to="." method="_on_apply_weather_change_timer_timeout"]
 
 [editable path="UP_FPSController_Prefab"]

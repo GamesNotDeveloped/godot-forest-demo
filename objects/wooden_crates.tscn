@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://6ovpjh4yitp1"]
+
+[ext_resource type="PackedScene" uid="uid://6rimejy5uke" path="res://objects/wooden-crates/wooden_dirty_crates_-_broken_whole_2_piece_set.glb" id="1_cf1xk"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bhv0u"]
+size = Vector3(1.336964, 0.4229303, 0.9385614)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_f8ipu"]
+size = Vector3(1.1725776, 0.41416797, 0.73742867)
+
+[node name="WoodenCrates" unique_id=941335997 instance=ExtResource("1_cf1xk")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." index="1" unique_id=1427832676]
+transform = Transform3D(0.8333333, 0, 0, 0, 0.8333333, -1.8503717e-16, 0, 1.8503717e-16, 0.8333333, -0.16565824, 0.17445113, -0.12809284)
+shape = SubResource("BoxShape3D_bhv0u")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="." index="2" unique_id=189885539]
+transform = Transform3D(0.8333333, 0, 0, 0, 0.8333333, -1.8503717e-16, 0, 1.8503717e-16, 0.8333333, -1.7405709, 0.17256993, -0.0014371673)
+shape = SubResource("BoxShape3D_f8ipu")
