@@ -91,12 +91,18 @@ void fragment() {
 	ALBEDO = tint.rgb * ((core_alpha * intensity + blur_alpha * 0.18) * color_alpha * blur_color_visibility);
 	ALPHA = (core_alpha * intensity + blur_alpha * 0.1) * opacity_alpha * blur_visibility;
 	ROUGHNESS = roughness;
-	SPECULAR = specular;
-    EMISSION = vec3(1.0, 1.0, 1.0) * intensity * 0.005;
+	
+	// Z-buffer / Distance fade:
+	// Fade specular intensity based on distance from the camera.
+	// Aggressive falloff: starts at 2m, completely gone by 8m, squared for sharper transition.
+	float dist = length(VERTEX);
+	float specular_fade = pow(1.0 - smoothstep(2.0, 8.0, dist), 2.0);
+	SPECULAR = specular * specular_fade;
+	EMISSION = vec3(1.0, 1.0, 1.0) * intensity * 0.005 * specular_fade;
 
 	// Curve the normal to make the streak act like a cylinder rather than a flat mirror.
-	// This diffuses sharp environment reflections (like the sun/moon disk) into a vertical highlight.
-	vec3 local_normal = normalize(vec3((UV.x - 0.5) * 2.5, 0.0, 1.0));
+	// Softened the multiplier from 2.5 to 1.8 to prevent side-lights from catching too aggressively.
+	vec3 local_normal = normalize(vec3((UV.x - 0.5) * 1.8, 0.0, 1.0));
 	NORMAL = normalize((VIEW_MATRIX * vec4(local_normal, 0.0)).xyz);
 }
 
