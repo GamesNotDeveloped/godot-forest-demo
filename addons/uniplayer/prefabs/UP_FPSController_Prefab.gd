@@ -85,6 +85,11 @@ var _dirty = false
         footstep_time_factor = x
         _dirty = true
 
+@export_range(0.0, 100.0) var push_factor:float = 1.0:
+    set(x):
+        push_factor = x
+        _dirty = true
+
 @export_category("Health & Damage")
 @export var max_health:float = 10.0:
     set(x):
@@ -256,6 +261,9 @@ func _apply_settings():
     # Interaction
     $Collect.collision_mask = collecting_collision_mask
     $Interaction.collision_mask = interaction_collision_mask
+
+    # Pushing
+    push_force = _get_default("base_push_force", push_force) * push_factor
 
 
 func _ready():

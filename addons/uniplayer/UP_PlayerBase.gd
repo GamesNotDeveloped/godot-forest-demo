@@ -44,6 +44,9 @@ var controllable := true:
             controllable = x
             controllable_changed.emit()
 
+## Force applied to [RigidBody3D] objects when colliding with them.
+@export var push_force: float = 1.0
+
 
 func _ready():
     reset.connect(_reset)
@@ -113,6 +116,14 @@ func _process_movement(delta:float):
         ability._process_movement(delta)
 
     move_and_slide()
+
+    for i in get_slide_collision_count():
+        var collision = get_slide_collision(i)
+        var collider = collision.get_collider()
+        if collider is RigidBody3D:
+            # Apply impulse based on the collision normal and push_force.
+            # We use delta to keep it consistent across frame rates.
+            collider.apply_central_impulse(-collision.get_normal() * push_force * delta * 10.0)
 
 func _physics_process(delta:float):
     _process_movement(delta)
