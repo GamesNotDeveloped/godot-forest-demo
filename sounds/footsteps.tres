@@ -12,11 +12,12 @@ script = ExtResource("3_mn77h")
 metadata/_custom_type_script = "uid://du0xhkfksfg41"
 
 [sub_resource type="Curve" id="Curve_mn77h"]
-_data = [Vector2(0, 0), 0.0, 2.6872034, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+_data = [Vector2(0, 0), 0.0, 2.6872034, 0, 0, Vector2(0.09045226, 0.99370754), 0.0, 0.0, 0, 0]
 point_count = 2
 
 [sub_resource type="Curve" id="Curve_h1s8t"]
-_data = [Vector2(0, 1), 0.0, 0.049493138, 0, 0, Vector2(1, 0), -2.4199753, 0.0, 0, 0]
+_limits = [0.0, 1.0, 0.0, 0.2562814]
+_data = [Vector2(0, 1), 0.0, 0.049493138, 0, 0, Vector2(0.2562814, 0), -2.4199753, 0.0, 0, 0]
 point_count = 2
 
 [sub_resource type="Resource" id="Resource_h1s8t"]

@@ -47,7 +47,6 @@ general/3d_panning_strength=0.3
 [autoload]
 
 DebugMenu="*uid://cggqb75a8w8r"
-BMOD="*uid://covgjw36o2prd"
 
 [editor_plugins]
 
