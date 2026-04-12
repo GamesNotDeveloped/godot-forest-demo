@@ -11,7 +11,7 @@ const RAIN_LP_TWEEN_DURATION := 0.12
 const STORM_RAIN_START_RATIO := 0.4
 const SKYDOME_FOG_RAIN_START_RATIO := 0.6
 const SKYDOME_FOG_DENSITY_MAX := 0.4
-const DEFAULT_WORLD_TIME_SCALE := 200.0
+const DEFAULT_WORLD_TIME_SCALE := 100.0
 const DEFAULT_RAIN_INTENSITY := 0.0
 const DEFAULT_CLOUD_DENSITY := 0.0
 const THUNDER_HEAVY_THRESHOLD_CALM := 0.9
@@ -36,6 +36,7 @@ var _rain_low_pass_tween: Tween
 var _exposure_tween: Tween
 var _world_time_scale: float = DEFAULT_WORLD_TIME_SCALE
 
+@onready var _flashlight = $PlayerHeadRef/Flashlight
 
 func _ready() -> void:
     $WeatherAnimation.current_animation = "example_weather"
@@ -71,9 +72,9 @@ func _on_exposure_timer_timeout() -> void:
 
 func _input(event):
     if event.is_action_pressed("toggle_flashlight"):
-        var flashlight_state = $UP_FPSController_Prefab/RotationHelper/Flashlight.visible
-        $UP_FPSController_Prefab/RotationHelper/Flashlight.visible = not flashlight_state
-        var sound = $FlashlightOn if flashlight_state else $FlashlightOff
+        var flashlight_state = _flashlight.visible
+        _flashlight.visible = not flashlight_state
+        var sound = $PlayerHeadRef/FlashlightOn if flashlight_state else $PlayerHeadRef/FlashlightOff
         sound.play()
 
 
@@ -304,7 +305,7 @@ func _on_mouse_capture_toggled(captured):
 
 
 func _on_up_fps_controller_prefab_footstep(leg):
-    var snd = $Footstep1 if leg == 0 else $Footstep2
+    var snd = $PlayerHeadRef/Footstep1 if leg == 0 else $PlayerHeadRef/Footstep2
     snd.play()
 
 

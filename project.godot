@@ -42,6 +42,7 @@ config/icon="res://icon.svg"
 [audio]
 
 buses/default_bus_layout="uid://dv4nk0yideb2f"
+general/3d_panning_strength=0.3
 
 [autoload]
 
@@ -66,6 +67,8 @@ toggle_flashlight={
 [physics]
 
 3d/physics_engine="Jolt Physics"
+common/physics_interpolation=true
+common/enable_object_picking=false
 
 [rendering]
 

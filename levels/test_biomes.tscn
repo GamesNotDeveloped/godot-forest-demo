@@ -46,7 +46,7 @@
 [ext_resource type="Resource" path="res://addons/gnd_quality_profiles/profiles/low.tres" id="41_low"]
 [ext_resource type="CameraAttributesPractical" uid="uid://c1eswprngr57f" path="res://materials/camera_attributes_filmic.tres" id="43_j63ba"]
 [ext_resource type="PackedScene" uid="uid://6ovpjh4yitp1" path="res://objects/wooden_crates.tscn" id="44_a77ay"]
-[ext_resource type="CompositorEffect" uid="uid://c8f5kmj6wip87" path="res://materials/film_grain_compositor_fx.tres" id="47_c6or4"]
+[ext_resource type="PackedScene" uid="uid://bp8c025u30g4x" path="res://objects/old_table.tscn" id="45_kf4y5"]
 [ext_resource type="AudioStream" uid="uid://dodwn40mt8px7" path="res://thunder/334151__svampen__thunder-rolling-2.wav" id="51_kwcl0"]
 [ext_resource type="AudioStream" uid="uid://fqnuofshaed1" path="res://thunder/399656__bajko__sfx_thunder-blast.wav" id="52_c6or4"]
 [ext_resource type="PackedScene" uid="uid://bjv8m7r6c35e7" path="res://objects/lantern.tscn" id="52_xnulj"]
@@ -59,6 +59,7 @@
 [ext_resource type="PackedScene" uid="uid://cwjjvq34352ew" path="res://objects/campfire/campfire.glb" id="57_a77ay"]
 [ext_resource type="PackedScene" uid="uid://ckysduj2lni1n" path="res://objects/old_barrel.tscn" id="58_2o85u"]
 [ext_resource type="PackedScene" uid="uid://dlmg7edvvawlx" path="res://objects/medieval_cart.tscn" id="59_88um7"]
+[ext_resource type="PackedScene" uid="uid://coi6allaasxrg" path="res://objects/old_lamp.tscn" id="62_g0a7c"]
 
 [sub_resource type="Resource" id="Resource_ei7n8"]
 script = ExtResource("2_471tc")
@@ -133,8 +134,7 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
 noise_type = 3
 
-[sub_resource type="Compositor" id="Compositor_g0a7c"]
-compositor_effects = Array[CompositorEffect]([ExtResource("47_c6or4")])
+[sub_resource type="Compositor" id="Compositor_kf4y5"]
 
 [sub_resource type="Animation" id="Animation_aty88"]
 length = 7.4666667
@@ -288,7 +288,7 @@ script = ExtResource("35_quality")
 visible = false
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(0.9072898, -0.3683932, 0.20276016, 0, 0.48218146, 0.8760714, -0.42050594, -0.79485065, 0.4374783, 0, 0.5193932, -0.2882359)
+transform = Transform3D(0.6163049, -0.6388756, 0.46044138, 0, 0.58468175, 0.8112628, -0.7875076, -0.49998522, 0.36034226, 2.9802322e-08, 0.5193937, -0.2882359)
 light_color = Color(0.9538084, 0.8959062, 0.8313034, 1)
 light_energy = 2.0
 light_indirect_energy = 1.18
@@ -392,7 +392,7 @@ script = ExtResource("19_shafts")
 directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
 day_of_year = 160
-time_of_day = 11.152
+time_of_day = 10.0
 day_light_energy = 2.0
 shader_zenith_color = Color(0.11514282, 0.20309141, 0.3828125, 1)
 shader_horizon_height = 0.178
@@ -411,11 +411,11 @@ sun_atmosphere_strength = 0.07
 moon_glow_strength = 0.01
 moon_glow_size = 0.2
 fog_density = 0.15000000000000002
-moon_phase_debug = 0.43395417089964994
+moon_phase_debug = 0.43232870527147504
 shader_atmosphere_sunset_boost = 0.47
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.369852, 0.24929011, -9.037476)
+transform = Transform3D(1.0000024, 0, 0, 0, 1.0000024, 0, 0, 0, 1, 3.1189036, 3.9343023, -1.4032104)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
@@ -443,24 +443,14 @@ rain_probe_distance = 4.0
 [node name="CanvasLayer" parent="." unique_id=1602580574 instance=ExtResource("17_1ndc1")]
 
 [node name="UP_FPSController_Prefab" parent="." unique_id=654069376 instance=ExtResource("17_hx8ph")]
-transform = Transform3D(-0.01167597, 0, 0.99993175, 0, 0.99999994, 0, -0.99993175, 0, -0.01167597, 2.1503146, -0.05347073, 1.7885692)
+transform = Transform3D(-0.01167597, 0, 0.99993175, 0, 0.99999994, 0, -0.99993175, 0, -0.01167597, 2.8956401, 0.3504969, 0.78718436)
+remote_transform_target = NodePath("../PlayerHeadRef")
 speed_factor = 0.7
 hurry_factor = 0.1
 footstep_time_factor = 1.1
 bob_strength_factor = 0.3
 nervous = 0.3
-player_scale = 0.6
-
-[node name="Flashlight" type="SpotLight3D" parent="UP_FPSController_Prefab/RotationHelper" index="1" unique_id=1165595639]
-transform = Transform3D(1.0000001, 0, 0, 0, 0.98480785, 0.1736482, 0, -0.1736482, 0.98480785, 0.235, 0.198, 0.465)
-visible = false
-light_energy = 2.0
-light_volumetric_fog_energy = 5.372
-shadow_enabled = true
-spot_range = 24.0
-spot_attenuation = 0.43
-spot_angle = 19.73
-spot_angle_attenuation = 1.4640857
+player_scale = 0.65
 
 [node name="MouseCapture" type="Node" parent="." unique_id=440965075]
 script = ExtResource("18_hx8ph")
@@ -474,16 +464,22 @@ bus = &"Music"
 [node name="OldWell" parent="." unique_id=2097428027 instance=ExtResource("34_pbujr")]
 transform = Transform3D(-0.99200934, 0.014164062, 0.12536675, 1.8626451e-09, 0.9936781, -0.11226674, -0.12616435, -0.11136966, -0.9857379, 0.8415149, 0.5014461, 4.935738)
 
+[node name="OldTable" parent="." unique_id=1154198111 instance=ExtResource("45_kf4y5")]
+transform = Transform3D(0.8685722, 0.020467112, 0.49514103, -0.03646389, 0.999079, 0.022666821, -0.49422064, -0.03774255, 0.8685174, 0.94707465, 0.59482443, 0.85743743)
+
+[node name="OldLamp" parent="." unique_id=1075188636 instance=ExtResource("62_g0a7c")]
+transform = Transform3D(0.9729185, 0.042299464, -0.22724749, -0.038661286, 0.9990442, 0.02043905, 0.22789474, -0.0110998405, 0.97362304, 1.0969028, 0.6611871, 1.1199832)
+
+[node name="WoodenCrates" parent="." unique_id=941335997 instance=ExtResource("44_a77ay")]
+transform = Transform3D(0.45670795, 0.010459423, -0.8895555, 0.07496602, 0.9959215, 0.050198447, 0.8864526, -0.08961241, 0.45406124, 3.3966324, 0.030064732, 0.15358256)
+
 [node name="OldHouse" parent="." unique_id=1458074419 instance=ExtResource("34_0f0wj")]
 transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9984727, 0.052694708, 0, -0.05270197, 0.99861026, 1.8520274, -0.15231672, -0.6090337)
-
-[node name="WoodenCrates" parent="OldHouse" unique_id=941335997 instance=ExtResource("44_a77ay")]
-transform = Transform3D(0.4994687, -0.02715934, -0.8659062, -0.016243692, 0.9990393, -0.040704712, 0.86617976, 0.034396242, 0.49854764, 1.562316, 0.15764159, 0.3956026)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1473354202]
 environment = ExtResource("39_jt4jh")
 camera_attributes = ExtResource("43_j63ba")
-compositor = SubResource("Compositor_g0a7c")
+compositor = SubResource("Compositor_kf4y5")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
 wait_time = 0.1
@@ -511,17 +507,47 @@ bus = &"Rain"
 [node name="Lantern" parent="." unique_id=288061248 instance=ExtResource("52_xnulj")]
 transform = Transform3D(-0.34275815, 0, -0.9394237, 0, 1, 0, 0.9394237, 0, -0.34275815, -2.9431663, -0.797111, -1.1477724)
 
-[node name="FlashlightOn" type="AudioStreamPlayer" parent="." unique_id=1805282353]
-stream = ExtResource("53_8l7hv")
+[node name="PlayerHeadRef" type="Node3D" parent="." unique_id=2030389426]
+transform = Transform3D(-0.01167597, 0, 0.99993175, 0, 0.99999994, 0, -0.99993175, 0, -0.01167597, 0, 0, 0)
 
-[node name="FlashlightOff" type="AudioStreamPlayer" parent="." unique_id=1938682137]
-stream = ExtResource("54_a3p2h")
+[node name="Flashlight" type="SpotLight3D" parent="PlayerHeadRef" unique_id=1165595639]
+transform = Transform3D(1.0000001, 0, 9.313226e-10, 0, 0.9848078, 0.1736482, -9.313226e-10, -0.17364822, 0.9848078, 0.23500001, 0.19799995, 0.4649999)
+visible = false
+light_energy = 2.0
+light_volumetric_fog_energy = 5.372
+shadow_enabled = true
+spot_range = 24.0
+spot_attenuation = 0.43
+spot_angle = 19.73
+spot_angle_attenuation = 1.4640857
 
-[node name="Footstep1" type="AudioStreamPlayer" parent="." unique_id=47833292]
+[node name="Footstep1" type="AudioStreamPlayer3D" parent="PlayerHeadRef" unique_id=299702599]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 stream = ExtResource("55_aty88")
+unit_size = 0.5
+max_db = 0.655
 
-[node name="Footstep2" type="AudioStreamPlayer" parent="." unique_id=488900575]
+[node name="Footstep2" type="AudioStreamPlayer3D" parent="PlayerHeadRef" unique_id=42769830]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 stream = ExtResource("56_a77ay")
+unit_size = 0.5
+max_db = 0.655
+
+[node name="FlashlightOn" type="AudioStreamPlayer3D" parent="PlayerHeadRef" unique_id=353177472]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.27, 0.2, 0)
+stream = ExtResource("54_a3p2h")
+volume_db = -3.0
+unit_size = 0.5
+max_db = 0.655
+max_distance = 5.0
+
+[node name="FlashlightOff" type="AudioStreamPlayer3D" parent="PlayerHeadRef" unique_id=1055158488]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.27, 0.2, 0)
+stream = ExtResource("53_8l7hv")
+volume_db = -3.0
+unit_size = 0.5
+max_db = 0.655
+max_distance = 5.0
 
 [node name="Campfire" parent="." unique_id=476938335 instance=ExtResource("57_a77ay")]
 transform = Transform3D(0.98507035, 0.17194885, 0.008373604, -0.17215261, 0.98390424, 0.04791439, -4.1777393e-10, -0.04864058, 0.9988163, -2.8861916, 0.3648353, 3.0151293)
@@ -551,5 +577,3 @@ transform = Transform3D(0.7627022, -0.03918874, 0.6455615, -0.05958914, 0.989658
 [connection signal="toggled" from="MouseCapture" to="." method="_on_mouse_capture_toggled"]
 [connection signal="timeout" from="WorldTimer" to="." method="_on_world_timer_timeout"]
 [connection signal="timeout" from="ApplyWeatherChangeTimer" to="." method="_on_apply_weather_change_timer_timeout"]
-
-[editable path="UP_FPSController_Prefab"]

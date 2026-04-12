@@ -12,10 +12,17 @@ signal interaction_target(target)
 signal killed
 
 var _dirty = false
+var _remote_transform_target: NodePath = NodePath("")
 # high level interface of Prefab
 
 @export_category("Initialization")
 @export var start_marker:Marker3D
+@export_node_path("Node3D") var remote_transform_target: NodePath = NodePath(""):
+    set(x):
+        _remote_transform_target = x
+        _sync_remote_transform_target()
+    get:
+        return _remote_transform_target
 
 @export_category("Features")
 @export var bobbing_enabled:bool = true:
@@ -266,8 +273,27 @@ func _apply_settings():
     push_force = _get_default("base_push_force", push_force) * push_factor
 
 
+func _sync_remote_transform_target() -> void:
+    var remote_transform := get_node_or_null("RotationHelper/RemoteTransform3D") as RemoteTransform3D
+    if remote_transform == null:
+        return
+
+    if _remote_transform_target.is_empty():
+        remote_transform.remote_path = NodePath("")
+        return
+
+    var target := get_node_or_null(_remote_transform_target) as Node3D
+    if target == null:
+        push_warning("Remote transform target not found: %s" % _remote_transform_target)
+        remote_transform.remote_path = NodePath("")
+        return
+
+    remote_transform.remote_path = remote_transform.get_path_to(target)
+
+
 func _ready():
     _apply_settings()
+    _sync_remote_transform_target()
     $Walking.footstep.connect(func(leg): footstep.emit(leg))
     $Walking.land.connect(func(vel): landed.emit(vel))
     $DetectFloorChange.floor_changed.connect(func(floor): floor_changed.emit(floor))

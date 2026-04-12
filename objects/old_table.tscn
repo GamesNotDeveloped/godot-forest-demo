@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://bp8c025u30g4x"]
+
+[ext_resource type="PackedScene" uid="uid://d4kj6o6xswums" path="res://objects/old-table/old_wooden_table.glb" id="1_auyul"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1eg05"]
+size = Vector3(0.6568476, 0.64140004, 1.1816962)
+
+[node name="OldTable" unique_id=1154198111 instance=ExtResource("1_auyul")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." index="1" unique_id=149741818]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.002616845, -0.3091127, 0.0006905794)
+shape = SubResource("BoxShape3D_1eg05")

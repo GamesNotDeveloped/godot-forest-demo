@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://coi6allaasxrg"]
+
+[ext_resource type="PackedScene" uid="uid://6rp10mc7bws" path="res://objects/gas-lamp/scene.gltf" id="1_is2py"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_is2py"]
+height = 0.2467156
+radius = 0.052246094
+
+[node name="OldLamp" unique_id=2095407035 instance=ExtResource("1_is2py")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." index="0" unique_id=506844939]
+transform = Transform3D(0.9999453, 0.0025909944, 0.010142575, 0.0025511598, -0.9999889, 0.0039384793, 0.010152669, -0.003912388, -0.99994075, 0.0010265055, 0.122066714, -5.1891802e-05)
+shape = SubResource("CylinderShape3D_is2py")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." index="2" unique_id=887792737]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.083557785, 0)
+light_color = Color(0.59765625, 0.43364605, 0.08404541, 1)
+light_energy = 0.365
+light_volumetric_fog_energy = 1.19
+omni_range = 1.732
+omni_attenuation = 2.076

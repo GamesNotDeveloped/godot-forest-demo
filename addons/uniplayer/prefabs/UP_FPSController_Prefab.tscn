@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://7uya15kvp665"]
+[gd_scene format=3 uid="uid://7uya15kvp665"]
 
 [ext_resource type="Script" uid="uid://d2m0tiubu0k2q" path="res://addons/uniplayer/prefabs/UP_FPSController_Prefab.gd" id="1_0mtdh"]
 [ext_resource type="Script" uid="uid://csif53066s00g" path="res://addons/uniplayer/tools/UP_RotationHelper.gd" id="2_6e447"]
@@ -18,69 +18,72 @@
 radius = 0.38
 height = 1.68
 
-[node name="UP_FPSController_Prefab" type="CharacterBody3D"]
+[node name="UP_FPSController_Prefab" type="CharacterBody3D" unique_id=572209239]
 wall_min_slide_angle = 0.0698132
 floor_max_angle = 1.0472
 script = ExtResource("1_0mtdh")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=224926943]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.854512, 0)
 shape = SubResource("CapsuleShape3D_1i86l")
 
-[node name="RotationHelper" type="Node3D" parent="."]
+[node name="RotationHelper" type="Node3D" parent="." unique_id=764410358]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.40188, 0)
 script = ExtResource("2_6e447")
 
-[node name="Camera" type="Camera3D" parent="RotationHelper"]
+[node name="Camera" type="Camera3D" parent="RotationHelper" unique_id=982832630]
 current = true
 fov = 64.5
 size = 1.94
 far = 1000.0
 
-[node name="HeadRotation" type="Node" parent="."]
+[node name="RemoteTransform3D" type="RemoteTransform3D" parent="RotationHelper" unique_id=1659294905]
+update_scale = false
+
+[node name="HeadRotation" type="Node" parent="." unique_id=16155541]
 script = ExtResource("3_af58r")
 rotation_helper_path = NodePath("../RotationHelper")
 
-[node name="Bobbing" type="Node" parent="."]
+[node name="Bobbing" type="Node" parent="." unique_id=2017416538]
 script = ExtResource("4_w5rjj")
 rotation_helper_path = NodePath("../RotationHelper")
 camera_path = NodePath("../RotationHelper/Camera")
 
-[node name="Walking" type="Node" parent="."]
+[node name="Walking" type="Node" parent="." unique_id=883950275]
 script = ExtResource("5_kj5qs")
 rotation_helper_path = NodePath("../RotationHelper")
 bobbing_path = NodePath("../Bobbing")
 
-[node name="Zooming" type="Node" parent="."]
+[node name="Zooming" type="Node" parent="." unique_id=23302666]
 script = ExtResource("6_tqhxf")
 camera_path = NodePath("../RotationHelper/Camera")
 killable_behaviour_path = NodePath("../Killable")
 
-[node name="Kill_Y" type="Node" parent="."]
+[node name="Kill_Y" type="Node" parent="." unique_id=1667433030]
 script = ExtResource("6_jpewa")
 killable_behaviour_path = NodePath("../Killable")
 
-[node name="Killable" type="Node" parent="."]
+[node name="Killable" type="Node" parent="." unique_id=1724894140]
 script = ExtResource("8_wt8it")
 respawn_type = 1
 
-[node name="Health" type="Node" parent="."]
+[node name="Health" type="Node" parent="." unique_id=554438549]
 script = ExtResource("8_acasa")
 killable_path = NodePath("../Killable")
 
-[node name="DetectFloorChange" type="Node" parent="."]
+[node name="DetectFloorChange" type="Node" parent="." unique_id=1712414271]
 script = ExtResource("10_e7gir")
 
-[node name="Interaction" type="Node" parent="."]
+[node name="Interaction" type="Node" parent="." unique_id=1309364099]
 script = ExtResource("11_a4805")
 collision_mask = 4
 camera_path = NodePath("../RotationHelper/Camera")
 
-[node name="ItemHolder" type="Node" parent="."]
+[node name="ItemHolder" type="Node" parent="." unique_id=1175858068]
 script = ExtResource("12_1o0q1")
 camera_path = NodePath("../RotationHelper/Camera")
 
-[node name="Collect" type="Node3D" parent="."]
+[node name="Collect" type="Node3D" parent="." unique_id=163547354]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.654601, 0)
 script = ExtResource("11_88q34")
 
