@@ -1,0 +1,90 @@
+[remap]
+
+importer="scene"
+importer_version=1
+type="PackedScene"
+uid="uid://do0c3lhsbshmm"
+path="res://.godot/imported/scene.gltf-df2388a3c61e566c5c828d6695ba62ff.scn"
+
+[deps]
+
+source_file="res://objects/lantern/scene.gltf"
+dest_files=["res://.godot/imported/scene.gltf-df2388a3c61e566c5c828d6695ba62ff.scn"]
+
+[params]
+
+nodes/root_type="StaticBody3D"
+nodes/root_name="Lantern"
+nodes/root_script=null
+nodes/apply_root_scale=true
+nodes/root_scale=0.6
+nodes/import_as_skeleton_bones=false
+nodes/use_name_suffixes=true
+nodes/use_node_type_suffixes=true
+meshes/ensure_tangents=true
+meshes/generate_lods=true
+meshes/create_shadow_meshes=true
+meshes/light_baking=1
+meshes/lightmap_texel_size=0.2
+meshes/force_disable_compression=false
+skins/use_named_skins=true
+animation/import=true
+animation/fps=30
+animation/trimming=false
+animation/remove_immutable_tracks=true
+animation/import_rest_as_RESET=false
+import_script/path=""
+materials/extract=0
+materials/extract_format=0
+materials/extract_path=""
+_subresources={
+"meshes": {
+"Sketchfab_Scene_Handel_Base_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://objects/lantern/Sketchfab_Scene_Handel_Base_0.res",
+"save_to_file/path": "uid://dig7qqx5f5rgm"
+},
+"Sketchfab_Scene_Lantern_Base_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://objects/lantern/Sketchfab_Scene_Lantern_Base_0.res",
+"save_to_file/path": "uid://b48ftfopapps"
+},
+"Sketchfab_Scene_Lantern_GLASS_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://objects/lantern/Sketchfab_Scene_Lantern_GLASS_0.res",
+"save_to_file/path": "uid://cxabmmv8x8xvl"
+},
+"Sketchfab_Scene_Lantern_LIGHT_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://objects/lantern/Sketchfab_Scene_Lantern_LIGHT_0.res",
+"save_to_file/path": "uid://bek3hmoyinwhj"
+},
+"Sketchfab_Scene_Wood_Wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://objects/lantern/Sketchfab_Scene_Wood_Wood_0.res",
+"save_to_file/path": "uid://delofwc4kaxi4"
+}
+}
+}
+gltf/naming_version=2
+gltf/embedded_image_handling=1

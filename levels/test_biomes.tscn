@@ -49,8 +49,13 @@
 [ext_resource type="CompositorEffect" uid="uid://c8f5kmj6wip87" path="res://materials/film_grain_compositor_fx.tres" id="47_c6or4"]
 [ext_resource type="AudioStream" uid="uid://dodwn40mt8px7" path="res://thunder/334151__svampen__thunder-rolling-2.wav" id="51_kwcl0"]
 [ext_resource type="AudioStream" uid="uid://fqnuofshaed1" path="res://thunder/399656__bajko__sfx_thunder-blast.wav" id="52_c6or4"]
+[ext_resource type="PackedScene" uid="uid://bjv8m7r6c35e7" path="res://objects/lantern.tscn" id="52_xnulj"]
+[ext_resource type="AudioStream" uid="uid://bmg28qvj2t25u" path="res://sounds/91512__timkahn__switch_01-on.wav" id="53_8l7hv"]
 [ext_resource type="AudioStream" uid="uid://dd3xpi0qd5ftg" path="res://thunder/136971__dwoboyle__ambiance-heavy-rain-loop.wav" id="53_xnulj"]
 [ext_resource type="AudioStream" uid="uid://blr157w0srbul" path="res://thunder/116323__dymewiz__rain-05.wav" id="54_8l7hv"]
+[ext_resource type="AudioStream" uid="uid://nbx0q5r0js2o" path="res://sounds/91512__timkahn__switch_01-off.wav" id="54_a3p2h"]
+[ext_resource type="AudioStream" uid="uid://dlnxdvo7huuod" path="res://sounds/206030__yuval__footsteps-grass-1.wav" id="55_aty88"]
+[ext_resource type="AudioStream" uid="uid://dp30db2cbv1ee" path="res://sounds/206030__yuval__footsteps-grass-2.wav" id="56_a77ay"]
 
 [sub_resource type="Resource" id="Resource_ei7n8"]
 script = ExtResource("2_471tc")
@@ -125,7 +130,7 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
 noise_type = 3
 
-[sub_resource type="CompositorEffect" id="CompositorEffect_kwcl0"]
+[sub_resource type="CompositorEffect" id="CompositorEffect_c6or4"]
 resource_local_to_scene = false
 resource_name = ""
 enabled = true
@@ -133,17 +138,9 @@ effect_callback_type = 4
 needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("46_kwcl0")
-sun_screen_uv = Vector2(10.309635, -37.92405)
-shaft_color = Color(0.718, 0.637, 0.379, 1)
-density = 0.485
-bright_threshold = 0.182
-weight = 0.0355
-decay = 0.93
-exposure = 1.59
-max_radius = 1.377
 
-[sub_resource type="Compositor" id="Compositor_c6or4"]
-compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_kwcl0"), ExtResource("47_c6or4")])
+[sub_resource type="Compositor" id="Compositor_xnulj"]
+compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_c6or4"), ExtResource("47_c6or4")])
 
 [node name="TestBiomes" type="Node3D" unique_id=1245326294]
 script = ExtResource("1_flr7s")
@@ -161,9 +158,9 @@ script = ExtResource("35_quality")
 [node name="WeatherControlsCanvas" parent="." unique_id=1325048792 instance=ExtResource("36_weather_ui")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(-0.07564657, 0.92735857, -0.36644745, 0, 0.36750042, 0.9300234, 0.9971347, 0.07035308, -0.02780015, 0, 0.5193932, -0.2882359)
-light_color = Color(1, 0.93, 0.85, 1)
-light_energy = 2.0
+transform = Transform3D(0.7088935, 0.601777, -0.36787838, 0, 0.5215798, 0.8532025, 0.7053156, -0.6048297, 0.3697445, 0, 0.5193932, -0.2882359)
+light_color = Color(0.6, 0.8, 1, 1)
+light_energy = 0.2
 light_indirect_energy = 1.18
 light_volumetric_fog_energy = 7.1
 light_angular_distance = 1.0
@@ -265,7 +262,7 @@ script = ExtResource("19_shafts")
 directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
 day_of_year = 154
-time_of_day = 13.556
+time_of_day = 19.252
 latitude = 22.400999999999996
 day_light_energy = 2.0
 shader_zenith_color = Color(0.11514282, 0.20309141, 0.3828125, 1)
@@ -282,11 +279,11 @@ clouds_evolution_strength = 0.775
 clouds_evolution_scale = 0.198
 sun_halo_strength = 0.14
 sun_atmosphere_strength = 0.07
-moon_phase_debug = 0.23416299808104668
+moon_phase_debug = 0.24220002257591133
 shader_atmosphere_sunset_boost = 0.47
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0592036, 2.6342235, 1.0734115)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.9047594, 2.6152544, -2.5089865)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
@@ -341,6 +338,7 @@ transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9
 
 [node name="SpotLight3D" type="SpotLight3D" parent="OldHouse" unique_id=265595149]
 transform = Transform3D(0.97878295, -0.17760842, 0.1021733, -0.05016828, 0.27574402, 0.9599211, -0.19866371, -0.9446803, 0.2609832, -2.654221, 1.6775688, 0.10019219)
+visible = false
 light_color = Color(0.95703125, 0.81465065, 0.676651, 1)
 light_energy = 3.428
 spot_range = 2.574964
@@ -349,7 +347,7 @@ spot_angle = 57.83131
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1473354202]
 environment = ExtResource("39_jt4jh")
 camera_attributes = ExtResource("43_j63ba")
-compositor = SubResource("Compositor_c6or4")
+compositor = SubResource("Compositor_xnulj")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
 wait_time = 0.1
@@ -371,13 +369,27 @@ bus = &"Rain"
 stream = ExtResource("54_8l7hv")
 bus = &"Rain"
 
-[node name="SpotLight3D" type="SpotLight3D" parent="." unique_id=1800630014]
+[node name="Lantern" parent="." unique_id=288061248 instance=ExtResource("52_xnulj")]
+transform = Transform3D(-0.34275815, 0, -0.9394237, 0, 1, 0, 0.9394237, 0, -0.34275815, -2.9431663, -0.797111, -1.1477724)
+
+[node name="FlashlightOn" type="AudioStreamPlayer" parent="." unique_id=1805282353]
+stream = ExtResource("53_8l7hv")
+
+[node name="FlashlightOff" type="AudioStreamPlayer" parent="." unique_id=1938682137]
+stream = ExtResource("54_a3p2h")
+
+[node name="Footstep1" type="AudioStreamPlayer" parent="." unique_id=47833292]
+stream = ExtResource("55_aty88")
+
+[node name="Footstep2" type="AudioStreamPlayer" parent="." unique_id=488900575]
+stream = ExtResource("56_a77ay")
 
 [connection signal="profile_changed" from="QualityProfilesManager" to="." method="_on_quality_profiles_manager_profile_changed"]
 [connection signal="world_time_scale_changed" from="WeatherControlsCanvas" to="." method="_on_weather_controls_canvas_world_time_scale_changed"]
 [connection signal="rain_local_strength_changed" from="Weather" to="." method="_on_weather_rain_local_strength_changed"]
 [connection signal="rain_strength_changed" from="Weather" to="." method="_on_weather_rain_strength_changed"]
 [connection signal="thunder" from="Weather" to="." method="_on_weather_thunder"]
+[connection signal="footstep" from="UP_FPSController_Prefab" to="." method="_on_up_fps_controller_prefab_footstep"]
 [connection signal="toggled" from="MouseCapture" to="." method="_on_mouse_capture_toggled"]
 [connection signal="timeout" from="WorldTimer" to="." method="_on_world_timer_timeout"]
 

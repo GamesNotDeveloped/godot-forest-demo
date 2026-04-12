@@ -43,7 +43,11 @@ func _ready() -> void:
 
 func _input(event):
     if event.is_action_pressed("toggle_flashlight"):
-        $UP_FPSController_Prefab/RotationHelper/Flashlight.visible = not $UP_FPSController_Prefab/RotationHelper/Flashlight.visible
+        var flashlight_state = $UP_FPSController_Prefab/RotationHelper/Flashlight.visible
+        $UP_FPSController_Prefab/RotationHelper/Flashlight.visible = not flashlight_state
+        var sound = $FlashlightOn if flashlight_state else $FlashlightOff
+        sound.play()
+
 
 
 func _on_quality_profiles_manager_profile_changed() -> void:
@@ -271,3 +275,8 @@ func _apply_rain_low_pass_cutoff(cutoff_hz: float) -> void:
 func _on_mouse_capture_toggled(captured):
     $QualityProfilesCanvas.visible = not captured
     $WeatherControlsCanvas.visible = not captured
+
+
+func _on_up_fps_controller_prefab_footstep(leg):
+    var snd = $Footstep1 if leg == 0 else $Footstep2
+    snd.play()
