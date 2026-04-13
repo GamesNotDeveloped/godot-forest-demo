@@ -3,11 +3,11 @@ class_name SfxPlaybackRuntime
 
 enum VoiceType { TRACK, AUTOMATION }
 
+
 class ActiveVoice:
     var voice_type: VoiceType = VoiceType.TRACK
     var player
     var track: SfxTrack
-    var sfx_stream: SfxStream
     var stream: AudioStream
     var stream_length := 0.0
     var manual_fade_out_started := false
@@ -16,8 +16,9 @@ class ActiveVoice:
     var automation_name: StringName = &""
     var automation: SfxAutomation
     var automation_value := 0.0
-    var generator_stream: SfxWindGeneratorStream
-    var generator_runtime
+    var generator_playback: SfxGeneratorPlayback
+    var generator_state
+    var generator_stream_playback: AudioStreamGeneratorPlayback
 
 
 signal finished
@@ -40,6 +41,8 @@ func set_players(players: Array) -> void:
 
 func clear() -> void:
     var had_voices := not _active_voices.is_empty()
+    for voice in _active_voices:
+        _cleanup_voice(voice)
     for player in _players:
         _reset_player(player, true)
     _active_voices.clear()
@@ -210,16 +213,12 @@ func _sample_curve_gain(curve: Curve, elapsed: float) -> float:
     return clampf(curve.sample_baked(sample_position), 0.0, 1.0)
 
 
-func _get_voice_base_gain(voice: ActiveVoice) -> float:
-    return voice.sfx_stream.base_gain if voice.sfx_stream != null else 1.0
-
-
 func _is_generator_voice(voice: ActiveVoice) -> bool:
-    return voice.generator_stream != null and voice.generator_runtime != null
+    return voice.generator_playback != null and voice.generator_stream_playback != null
 
 
-func _set_player_gain(player, gain: float, base_gain: float = 1.0) -> void:
-    player.volume_db = linear_to_db(maxf(gain * maxf(base_gain, 0.0), 0.0001))
+func _set_player_gain(player, gain: float) -> void:
+    player.volume_db = linear_to_db(maxf(gain, 0.0001))
 
 
 func _sample_automation_curve(curve: Curve, automation: SfxAutomation, value: float, default_value: float) -> float:
@@ -246,20 +245,46 @@ func _apply_automation_value(voice: ActiveVoice) -> void:
     var fade_out_gain := _sample_automation_curve(voice.track.fade_out_curve, voice.automation, voice.automation_value, 1.0)
     var pitch := _sample_automation_curve(voice.track.pitch_curve, voice.automation, voice.automation_value, 1.0)
 
-    _set_player_gain(
-        voice.player,
-        clampf(fade_in_gain, 0.0, 1.0) * clampf(fade_out_gain, 0.0, 1.0),
-        _get_voice_base_gain(voice)
-    )
+    _set_player_gain(voice.player, clampf(fade_in_gain, 0.0, 1.0) * clampf(fade_out_gain, 0.0, 1.0))
     voice.player.pitch_scale = maxf(pitch, 0.01)
-    _pump_generator_voice(voice)
+    _pump_generator_voice(voice, 0.0)
 
 
-func _pump_generator_voice(voice: ActiveVoice) -> void:
+func _build_generator_context(voice: ActiveVoice, delta: float) -> Dictionary:
+    var playback_position := 0.0
+    if is_instance_valid(voice.player):
+        playback_position = voice.player.get_playback_position()
+    return {
+        "delta": delta,
+        "playback_position": playback_position,
+        "voice_type": voice.voice_type,
+        "automation_value": voice.automation_value,
+        "event_name": voice.event_name,
+        "automation_name": voice.automation_name,
+        "track": voice.track,
+        "player": voice.player,
+        "stream_playback": voice.generator_stream_playback,
+    }
+
+
+func _pump_generator_voice(voice: ActiveVoice, delta: float) -> void:
     if not _is_generator_voice(voice):
         return
-    var speed := voice.automation_value if voice.voice_type == VoiceType.AUTOMATION else 0.0
-    voice.generator_stream.fill_buffer(voice.generator_runtime, speed)
+    voice.generator_playback.update(voice.generator_state, _build_generator_context(voice, delta))
+
+
+func _build_track_stream(track: SfxTrack) -> AudioStream:
+    if track == null or track.stream == null:
+        return null
+
+    if track.stream is AudioStreamGenerator:
+        if track.generator_playback == null:
+            push_error("AudioStreamGenerator track requires generator_playback")
+            return null
+        var stream_copy = track.stream.duplicate(true)
+        return stream_copy as AudioStream if stream_copy != null else track.stream
+
+    return track.stream
 
 
 func _start_voice(
@@ -271,10 +296,14 @@ func _start_voice(
     automation: SfxAutomation = null,
     automation_value: float = 0.0
 ) -> bool:
-    if not player or not track or not track.stream:
+    if not player or track == null:
         return false
 
-    player.stream = track.stream
+    var stream := _build_track_stream(track)
+    if stream == null:
+        return false
+
+    player.stream = stream
     player.bus = _resolve_audio_bus(track.audio_bus)
     player.pitch_scale = 1.0
     player.play()
@@ -283,23 +312,40 @@ func _start_voice(
     voice.voice_type = voice_type
     voice.player = player
     voice.track = track
-    voice.stream = track.stream
-    voice.stream_length = maxf(track.stream.get_length(), 0.0)
+    voice.stream = stream
+    voice.stream_length = maxf(stream.get_length(), 0.0)
     voice.event_name = event_name
     voice.automation_name = automation_name
     voice.automation = automation
     voice.automation_value = automation_value
+
+    if stream is AudioStreamGenerator:
+        voice.generator_playback = track.generator_playback
+        voice.generator_stream_playback = player.get_stream_playback() as AudioStreamGeneratorPlayback
+        if voice.generator_stream_playback == null:
+            push_error("Failed to get AudioStreamGeneratorPlayback for generator track")
+            _reset_player(player, true)
+            return false
+        voice.generator_state = voice.generator_playback.create_state(voice.generator_stream_playback, track)
 
     _active_voices.append(voice)
 
     if voice_type == VoiceType.AUTOMATION:
         _apply_automation_value(voice)
     else:
-        _set_player_gain(player, _sample_curve_gain(track.fade_in_curve, 0.0), _get_voice_base_gain(voice))
+        _set_player_gain(player, _sample_curve_gain(track.fade_in_curve, 0.0))
+
+    if _is_generator_voice(voice):
+        _pump_generator_voice(voice, 0.0)
 
     _update_players_in_use_debug(1)
     _notify_process_requirement_changed()
     return true
+
+
+func _cleanup_voice(voice: ActiveVoice) -> void:
+    if voice != null and voice.generator_playback != null:
+        voice.generator_playback.cleanup(voice.generator_state)
 
 
 func _release_voice(index: int) -> void:
@@ -307,6 +353,7 @@ func _release_voice(index: int) -> void:
         return
 
     var voice := _active_voices[index]
+    _cleanup_voice(voice)
     if is_instance_valid(voice.player):
         voice.player.volume_db = 0.0
         voice.player.pitch_scale = 1.0
@@ -365,7 +412,37 @@ func _update_track_voice(index: int, delta: float) -> bool:
             _stop_voice(index)
             return false
 
-    _set_player_gain(voice.player, fade_in_gain * fade_out_gain, _get_voice_base_gain(voice))
+    _set_player_gain(voice.player, fade_in_gain * fade_out_gain)
+    return true
+
+
+func _update_generator_voice(index: int, delta: float) -> bool:
+    if index < 0 or index >= _active_voices.size():
+        return false
+
+    var voice := _active_voices[index]
+    if not is_instance_valid(voice.player) or not voice.player.playing:
+        _release_voice(index)
+        return false
+
+    if voice.voice_type == VoiceType.AUTOMATION:
+        _pump_generator_voice(voice, delta)
+        return true
+
+    var playback_position: float = voice.player.get_playback_position()
+    var fade_in_gain := _sample_curve_gain(voice.track.fade_in_curve, playback_position)
+    var fade_out_gain := 1.0
+    var fade_out_duration := _get_curve_duration(voice.track.fade_out_curve)
+
+    if voice.manual_fade_out_started:
+        voice.manual_fade_out_elapsed += delta
+        fade_out_gain = _sample_curve_gain(voice.track.fade_out_curve, voice.manual_fade_out_elapsed)
+        if fade_out_duration <= 0.0 or voice.manual_fade_out_elapsed >= fade_out_duration:
+            _stop_voice(index)
+            return false
+
+    _set_player_gain(voice.player, fade_in_gain * fade_out_gain)
+    _pump_generator_voice(voice, delta)
     return true
 
 
@@ -375,11 +452,7 @@ func _update_voice(index: int, delta: float) -> bool:
 
     var voice := _active_voices[index]
     if _is_generator_voice(voice):
-        if not is_instance_valid(voice.player) or not voice.player.playing:
-            _release_voice(index)
-            return false
-        _pump_generator_voice(voice)
-        return true
+        return _update_generator_voice(index, delta)
 
     if voice.voice_type == VoiceType.AUTOMATION:
         if not is_instance_valid(voice.player) or not voice.player.playing:

@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://bxftlrw1a4wgo" path="res://addons/gnd_sfx/sfx_player.gd" id="1_plhr0"]
 [ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="2_e85f4"]
 [ext_resource type="Resource" uid="uid://cio1urtt4ih66" path="res://sounds/rain.tres" id="3_5ep10"]
-[ext_resource type="Resource" uid="uid://g73ighb36lrf" path="res://sounds/ciuchciuch.tres" id="4_e85f4"]
 [ext_resource type="Script" uid="uid://dtao57kx5l2dw" path="res://addons/gnd_sfx/sfx_player_3d.gd" id="5_5ep10"]
 [ext_resource type="Resource" uid="uid://bhhjddgrltg00" path="res://sounds/footsteps.tres" id="5_dcujs"]
 
@@ -11,18 +10,21 @@
 
 [node name="SfxPlayer" type="Node" parent="." unique_id=1125536817]
 script = ExtResource("1_plhr0")
-events = Array[ExtResource("2_e85f4")]([ExtResource("3_5ep10"), ExtResource("4_e85f4"), ExtResource("5_dcujs")])
-playback_effect = &"footsteps"
-playback_automation_value = 0.625
+events = Array[ExtResource("2_e85f4")]([ExtResource("3_5ep10"), ExtResource("5_dcujs"), null])
+playback_enabled = true
+playback_effect = &"rain"
+playback_automation = &"strength"
+playback_automation_value = 0.385
 metadata/_custom_type_script = "uid://bxftlrw1a4wgo"
 
 [node name="SfxPlayer3D" type="Node3D" parent="." unique_id=2076744211]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.99641, 1.8306677, 12.580161)
 script = ExtResource("5_5ep10")
-events = Array[ExtResource("2_e85f4")]([ExtResource("4_e85f4"), ExtResource("3_5ep10")])
+events = Array[ExtResource("2_e85f4")]([ExtResource("3_5ep10")])
 max_distance_m = 60
 panning_strength = 2.0
 playback_enabled = true
 playback_effect = &"rain"
-playback_automation_value = 0.715
+playback_automation = &"strength"
+playback_automation_value = 0.695
 metadata/_custom_type_script = "uid://dtao57kx5l2dw"

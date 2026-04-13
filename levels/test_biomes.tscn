@@ -140,7 +140,7 @@ noise_type = 3
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_5tj03"]
 noise = SubResource("FastNoiseLite_terrain")
 
-[sub_resource type="Compositor" id="Compositor_c8shn"]
+[sub_resource type="Compositor" id="Compositor_7yylr"]
 
 [sub_resource type="Animation" id="Animation_aty88"]
 length = 7.4666667
@@ -414,7 +414,7 @@ clouds_texture_b = ExtResource("38_e686x")
 clouds_color_shadow = Color(0.8515625, 0.8515625, 0.8515625, 1)
 clouds_shadow_angular_distance_clear = 1.0
 clouds_wind_direction = Vector2(0.9363292, 0.35112345)
-clouds_wind_strength = 0.9865688324587932
+clouds_wind_strength = 1.0308091237573724
 clouds_evolution_strength = 0.775
 clouds_evolution_scale = 0.198
 clouds_scroll_b = Vector2(0.002, 0)
@@ -491,7 +491,7 @@ transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1473354202]
 environment = ExtResource("39_jt4jh")
 camera_attributes = ExtResource("43_j63ba")
-compositor = SubResource("Compositor_c8shn")
+compositor = SubResource("Compositor_7yylr")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
 wait_time = 0.1

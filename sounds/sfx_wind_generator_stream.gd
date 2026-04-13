@@ -1,6 +1,7 @@
 @tool
-extends SfxStream
-class_name SfxWindGeneratorStream
+extends SfxGeneratorPlayback
+class_name SfxWindGeneratorPlayback
+
 
 class RuntimeState:
     var playback: AudioStreamGeneratorPlayback
@@ -26,14 +27,7 @@ const OUTPUT_HEADROOM := 0.22
 @export var seed := 0
 
 
-func build_audio_stream() -> AudioStreamGenerator:
-    var generator := AudioStreamGenerator.new()
-    generator.mix_rate = mix_sample_rate
-    generator.buffer_length = buffer_length_sec
-    return generator
-
-
-func create_runtime(playback: AudioStreamGeneratorPlayback) -> RuntimeState:
+func create_state(playback: AudioStreamGeneratorPlayback, track: SfxTrack):
     if playback == null:
         return null
 
@@ -46,10 +40,16 @@ func create_runtime(playback: AudioStreamGeneratorPlayback) -> RuntimeState:
     return runtime
 
 
-func fill_buffer(runtime: RuntimeState, speed: float) -> void:
+func update(state, context: Dictionary) -> void:
+    var runtime := state as RuntimeState
     if runtime == null or runtime.playback == null:
         return
 
+    var speed := maxf(float(context.get("automation_value", 0.0)), 0.0)
+    _fill_buffer(runtime, speed)
+
+
+func _fill_buffer(runtime: RuntimeState, speed: float) -> void:
     var frames_available := runtime.playback.get_frames_available()
     if frames_available <= 0:
         return
