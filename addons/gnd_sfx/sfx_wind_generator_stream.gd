@@ -1,3 +1,4 @@
+@tool
 extends SfxStream
 class_name SfxWindGeneratorStream
 
