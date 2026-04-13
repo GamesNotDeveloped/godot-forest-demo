@@ -2,7 +2,7 @@
 extends Node
 class_name SfxPlayer
 
-const SfxPlaybackRuntimeScript = preload("res://addons/gnd_sfx/sfx_playback_runtime.gd")
+const SfxPlaybackRuntimeScript = preload("./sfx_playback_runtime.gd")
 const PLAYBACK_NONE_OPTION := "<none>"
 
 signal finished
@@ -11,12 +11,9 @@ var _runtime = SfxPlaybackRuntimeScript.new()
 
 @export var events: Array[SfxEvent] = []:
     set(value):
-        _disconnect_playback_resource_watchers()
         events = value
         _runtime.set_events(events)
-        _connect_playback_resource_watchers()
-        _sanitize_playback_selection()
-        _notify_playback_property_list_changed()
+        _events_changed()
 
 @export var max_tracks: int = 10:
     set(value):
@@ -59,7 +56,6 @@ var _preview_enabled: bool = false
 var _preview_effect: StringName = &""
 var _preview_automation: StringName = &""
 var _preview_automation_value: float = 0.0
-var _suspend_preview_sync: bool = false
 var _watched_events: Array[SfxEvent] = []
 var _watched_automations: Array[SfxAutomation] = []
 
@@ -69,11 +65,7 @@ var _players: Array = []
 func _enter_tree() -> void:
     _reset_playback_preview_state()
     if Engine.is_editor_hint():
-        _suspend_preview_sync = true
-        #playback_effect = &""
-        #playback_automation = &""
         playback_enabled = false
-        _suspend_preview_sync = false
         _notify_playback_property_list_changed()
 
 
@@ -93,10 +85,13 @@ func _process(delta: float) -> void:
     _runtime.update(delta)
 
 
-func sync_values(rebuild := false) -> void:
-    if _suspend_preview_sync:
-        return
+func _events_changed():
+    _disconnect_playback_resource_watchers()
+    _connect_playback_resource_watchers()
+    _sanitize_playback_selection()
+    _notify_playback_property_list_changed()
 
+func sync_values(rebuild := false) -> void:
     _ensure_runtime_connections()
     if rebuild:
         _runtime.clear()
@@ -299,8 +294,6 @@ func _disconnect_playback_resource_watchers() -> void:
 
 
 func _on_playback_source_changed() -> void:
-    _disconnect_playback_resource_watchers()
-    _connect_playback_resource_watchers()
     _sanitize_playback_selection()
-    _notify_playback_property_list_changed()
+    #_notify_playback_property_list_changed()
     sync_values()
