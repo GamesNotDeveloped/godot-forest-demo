@@ -48,16 +48,15 @@
 [ext_resource type="PackedScene" uid="uid://6ovpjh4yitp1" path="res://objects/wooden_crates.tscn" id="44_a77ay"]
 [ext_resource type="PackedScene" uid="uid://bp8c025u30g4x" path="res://objects/old_table.tscn" id="45_kf4y5"]
 [ext_resource type="Script" uid="uid://pw1ljvn4g7cy" path="res://addons/gnd_skydome/SunShaftsCompositorEffect.gd" id="49_g0a7c"]
-[ext_resource type="AudioStream" uid="uid://dodwn40mt8px7" path="res://thunder/334151__svampen__thunder-rolling-2.wav" id="51_kwcl0"]
-[ext_resource type="AudioStream" uid="uid://fqnuofshaed1" path="res://thunder/399656__bajko__sfx_thunder-blast.wav" id="52_c6or4"]
+[ext_resource type="AudioStream" uid="uid://dodwn40mt8px7" path="res://sounds/334151__svampen__thunder-rolling-2.wav" id="51_kwcl0"]
+[ext_resource type="AudioStream" uid="uid://fqnuofshaed1" path="res://sounds/399656__bajko__sfx_thunder-blast.wav" id="52_c6or4"]
 [ext_resource type="PackedScene" uid="uid://bjv8m7r6c35e7" path="res://objects/lantern.tscn" id="52_xnulj"]
 [ext_resource type="AudioStream" uid="uid://bmg28qvj2t25u" path="res://sounds/91512__timkahn__switch_01-off.wav" id="53_8l7hv"]
-[ext_resource type="AudioStream" uid="uid://dd3xpi0qd5ftg" path="res://thunder/136971__dwoboyle__ambiance-heavy-rain-loop.wav" id="53_xnulj"]
-[ext_resource type="AudioStream" uid="uid://blr157w0srbul" path="res://thunder/116323__dymewiz__rain-05.wav" id="54_8l7hv"]
 [ext_resource type="AudioStream" uid="uid://nbx0q5r0js2o" path="res://sounds/91512__timkahn__switch_01-on.wav" id="54_a3p2h"]
 [ext_resource type="PackedScene" uid="uid://cwjjvq34352ew" path="res://objects/campfire/campfire.glb" id="57_a77ay"]
 [ext_resource type="PackedScene" uid="uid://ckysduj2lni1n" path="res://objects/old_barrel.tscn" id="58_2o85u"]
 [ext_resource type="PackedScene" uid="uid://dlmg7edvvawlx" path="res://objects/medieval_cart.tscn" id="59_88um7"]
+[ext_resource type="Resource" uid="uid://cio1urtt4ih66" path="res://sounds/rain.tres" id="60_7yylr"]
 [ext_resource type="Resource" uid="uid://0cbhhf1c3kyv" path="res://sounds/flashlight_on.tres" id="60_o18jh"]
 [ext_resource type="Resource" uid="uid://x0hxb11jtjvy" path="res://sounds/flashlight_off.tres" id="61_7npft"]
 [ext_resource type="PackedScene" uid="uid://coi6allaasxrg" path="res://objects/old_lamp.tscn" id="62_g0a7c"]
@@ -138,7 +137,7 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
 noise_type = 3
 
-[sub_resource type="CompositorEffect" id="CompositorEffect_o18jh"]
+[sub_resource type="CompositorEffect" id="CompositorEffect_7yylr"]
 resource_local_to_scene = false
 resource_name = ""
 enabled = true
@@ -146,7 +145,7 @@ effect_callback_type = 4
 needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("49_g0a7c")
-sun_screen_uv = Vector2(1.1552382, 1.277296)
+sun_screen_uv = Vector2(1.1176889, 1.6246285)
 sun_visible = true
 shaft_color = Color(0.7181275, 0.64356625, 0.40456375, 1)
 density = 0.4231625
@@ -158,71 +157,11 @@ max_radius = 1.377
 sample_count = 8
 dither_strength = 1.4
 
-[sub_resource type="Compositor" id="Compositor_7npft"]
-compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_o18jh")])
+[sub_resource type="Compositor" id="Compositor_o18jh"]
+compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_7yylr")])
 
 [sub_resource type="Animation" id="Animation_aty88"]
 length = 7.4666667
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Skydome:fog_density")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [0.15000000000000002]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath("Weather:storm_intensity")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [0.5833333333333334]
-}
-tracks/2/type = "value"
-tracks/2/imported = false
-tracks/2/enabled = true
-tracks/2/path = NodePath("Weather:precipitation_intensity")
-tracks/2/interp = 1
-tracks/2/loop_wrap = true
-tracks/2/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [0.0]
-}
-tracks/3/type = "value"
-tracks/3/imported = false
-tracks/3/enabled = true
-tracks/3/path = NodePath("Skydome:rainbow_intensity")
-tracks/3/interp = 1
-tracks/3/loop_wrap = true
-tracks/3/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [0.0]
-}
-tracks/4/type = "value"
-tracks/4/imported = false
-tracks/4/enabled = true
-tracks/4/path = NodePath("Weather:cloud_density")
-tracks/4/interp = 1
-tracks/4/loop_wrap = true
-tracks/4/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [0.15]
-}
 
 [sub_resource type="Animation" id="Animation_a77ay"]
 resource_name = "example_weather"
@@ -311,6 +250,7 @@ script = ExtResource("35_quality")
 
 [node name="WeatherControlsCanvas" parent="." unique_id=1325048792 instance=ExtResource("36_weather_ui")]
 visible = false
+animation_weather_path = NodePath("../WeatherAnimation")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
 transform = Transform3D(0.6163049, -0.6388756, 0.46044138, 0, 0.58468175, 0.8112628, -0.7875076, -0.49998522, 0.36034226, 2.9802322e-08, 0.5193937, -0.2882359)
@@ -504,7 +444,7 @@ transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1473354202]
 environment = ExtResource("39_jt4jh")
 camera_attributes = ExtResource("43_j63ba")
-compositor = SubResource("Compositor_7npft")
+compositor = SubResource("Compositor_o18jh")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
 wait_time = 0.1
@@ -517,16 +457,6 @@ bus = &"Rain"
 
 [node name="Thunder2" type="AudioStreamPlayer" parent="." unique_id=1600119013]
 stream = ExtResource("52_c6or4")
-bus = &"Rain"
-
-[node name="Rain1" type="AudioStreamPlayer" parent="." unique_id=193261155]
-stream = ExtResource("53_xnulj")
-volume_db = 0.13
-bus = &"Rain"
-
-[node name="Rain2" type="AudioStreamPlayer" parent="." unique_id=355123381]
-stream = ExtResource("54_8l7hv")
-volume_db = -2.472
 bus = &"Rain"
 
 [node name="Lantern" parent="." unique_id=288061248 instance=ExtResource("52_xnulj")]
@@ -566,7 +496,14 @@ max_distance = 5.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.585, 0)
 script = ExtResource("63_c8shn")
 events = Array[ExtResource("64_e686x")]([ExtResource("65_e686x"), ExtResource("60_o18jh"), ExtResource("61_7npft")])
-max_tracks = 10
+metadata/_custom_type_script = "uid://dtao57kx5l2dw"
+
+[node name="AtmoEffects" type="Node3D" parent="PlayerHeadRef" unique_id=1614317032]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.975, 0)
+script = ExtResource("63_c8shn")
+events = Array[ExtResource("64_e686x")]([ExtResource("60_7yylr")])
+attenuation_model = 3
+panning_strength = 1.28
 metadata/_custom_type_script = "uid://dtao57kx5l2dw"
 
 [node name="Campfire" parent="." unique_id=476938335 instance=ExtResource("57_a77ay")]

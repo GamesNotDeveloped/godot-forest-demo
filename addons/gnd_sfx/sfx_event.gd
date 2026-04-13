@@ -3,3 +3,4 @@ class_name SfxEvent
 
 @export var tracks: Array[SfxTrack] = []
 @export var name: StringName = ""
+@export var automations: Array[SfxAutomation] = []

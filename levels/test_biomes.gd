@@ -239,27 +239,7 @@ func _on_weather_thunder(strength: float) -> void:
 
 
 func _on_weather_rain_strength_changed(strength):
-    if strength > 0.4:
-        if $Rain2.playing:
-            $Rain2.stop()
-        if not $Rain1.playing:
-            $Rain1.play()
-        $Rain1.volume_db = 2 * (strength-0.4)
-    elif strength > 0.0001:
-        if $Rain1.playing:
-            $Rain1.stop()
-        if not $Rain2.playing:
-            $Rain2.play()
-        $Rain2.volume_db = ((strength * 3)-1)*2 -1
-    else:
-        if $Rain1.playing:
-            $Rain1.stop()
-        if $Rain2.playing:
-            $Rain2.stop()
-        if $Thunder1.playing:
-            $Thunder1.stop()
-        if $Thunder2.playing:
-            $Thunder2.stop()
+    $PlayerHeadRef/AtmoEffects.play_automation("rain", "strength", strength)
 
 
 
@@ -314,4 +294,5 @@ func _on_skydome_time_changed(day, time):
 
 
 func _on_apply_weather_change_timer_timeout():
-    $WeatherAnimation.seek($Skydome.time_of_day, true)
+    if $WeatherAnimation.active:
+        $WeatherAnimation.seek($Skydome.time_of_day, true)

@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="SfxEvent" format=3 uid="uid://cio1urtt4ih66"]
+
+[ext_resource type="Script" uid="uid://du0xhkfksfg41" path="res://addons/gnd_sfx/sfx_automation.gd" id="1_8wa07"]
+[ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="2_5nb3e"]
+[ext_resource type="AudioStream" uid="uid://blr157w0srbul" path="res://sounds/116323__dymewiz__rain-05.wav" id="2_flvm4"]
+[ext_resource type="Script" uid="uid://boicinkvs7i0h" path="res://addons/gnd_sfx/sfx_track.gd" id="3_flvm4"]
+[ext_resource type="AudioStream" uid="uid://dd3xpi0qd5ftg" path="res://sounds/136971__dwoboyle__ambiance-heavy-rain-loop.wav" id="3_uqwmn"]
+[ext_resource type="Script" uid="uid://bux2t8wvvtr2f" path="res://addons/gnd_sfx/sfx_stream.gd" id="4_uqwmn"]
+
+[sub_resource type="Curve" id="Curve_ttecn"]
+_data = [Vector2(0, 0.012100697), 0.0, 0.0, 0, 0, Vector2(0.50753766, 0.5280735), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_3oiar"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.49214658, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Resource" id="Resource_1jliw"]
+script = ExtResource("4_uqwmn")
+stream = ExtResource("2_flvm4")
+metadata/_custom_type_script = "uid://bux2t8wvvtr2f"
+
+[sub_resource type="Resource" id="Resource_f3bo4"]
+script = ExtResource("3_flvm4")
+streams = Array[ExtResource("4_uqwmn")]([SubResource("Resource_1jliw")])
+fade_in_curve = SubResource("Curve_3oiar")
+audio_bus = &"Rain"
+metadata/_custom_type_script = "uid://boicinkvs7i0h"
+
+[sub_resource type="Curve" id="Curve_uqwmn"]
+_data = [Vector2(0.43193713, 0), 0.0, 0.0, 0, 0, Vector2(0.95287955, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Resource" id="Resource_ttecn"]
+script = ExtResource("4_uqwmn")
+stream = ExtResource("3_uqwmn")
+base_gain = 2.0
+metadata/_custom_type_script = "uid://bux2t8wvvtr2f"
+
+[sub_resource type="Resource" id="Resource_8pkln"]
+script = ExtResource("3_flvm4")
+streams = Array[ExtResource("4_uqwmn")]([SubResource("Resource_ttecn")])
+fade_in_curve = SubResource("Curve_uqwmn")
+audio_bus = &"Rain"
+metadata/_custom_type_script = "uid://boicinkvs7i0h"
+
+[sub_resource type="Resource" id="Resource_8wa07"]
+script = ExtResource("1_8wa07")
+parameter_name = &"strength"
+tracks = Array[ExtResource("3_flvm4")]([SubResource("Resource_f3bo4"), SubResource("Resource_8pkln")])
+fade_in_curve = SubResource("Curve_ttecn")
+metadata/_custom_type_script = "uid://du0xhkfksfg41"
+
+[resource]
+script = ExtResource("2_5nb3e")
+name = &"rain"
+automations = Array[ExtResource("1_8wa07")]([SubResource("Resource_8wa07")])
+metadata/_custom_type_script = "uid://bgxtc44e5rb0l"

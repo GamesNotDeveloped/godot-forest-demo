@@ -70,6 +70,16 @@ theme_override_font_sizes/font_size = 13
 text = "0%"
 horizontal_alignment = 2
 
+[node name="AutoWeather" type="HBoxContainer" parent="WeatherControlsRoot/WeatherPanel/Row/WindGroup" unique_id=1221769487]
+layout_mode = 2
+
+[node name="AutomaticWeatherCheckBox" type="CheckBox" parent="WeatherControlsRoot/WeatherPanel/Row/WindGroup/AutoWeather" unique_id=784383803]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="WeatherControlsRoot/WeatherPanel/Row/WindGroup/AutoWeather" unique_id=480381473]
+layout_mode = 2
+text = "Automatic weather"
+
 [node name="WindDirectionGroup" type="VBoxContainer" parent="WeatherControlsRoot/WeatherPanel/Row" unique_id=652929169]
 layout_mode = 2
 mouse_filter = 2
@@ -214,3 +224,5 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
 theme_override_font_sizes/font_size = 13
 horizontal_alignment = 2
+
+[connection signal="toggled" from="WeatherControlsRoot/WeatherPanel/Row/WindGroup/AutoWeather/AutomaticWeatherCheckBox" to="." method="_on_automatic_weather_check_box_toggled"]

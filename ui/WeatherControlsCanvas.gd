@@ -2,6 +2,7 @@ extends CanvasLayer
 
 signal world_time_scale_changed(scale: float)
 
+
 const WIND_DIRECTION_OPTIONS := [
     {"label": "N", "value": Vector2(0.0, -1.0)},
     {"label": "NE", "value": Vector2(0.70710677, -0.70710677)},
@@ -38,6 +39,10 @@ var _skydome: Skydome
 @onready var _cloud_slider: HSlider = $WeatherControlsRoot/WeatherPanel/Row/CloudGroup/Row/CloudSlider
 @onready var _time_slider: HSlider = $WeatherControlsRoot/WeatherPanel/Row/TimeGroup/Row/TimeSlider
 @onready var _time_scale_slider: HSlider = $WeatherControlsRoot/WeatherPanel/Row/TimeScaleGroup/Row/TimeScaleSlider
+@onready var _autoweather_checkbox : CheckBox = $WeatherControlsRoot/WeatherPanel/Row/WindGroup/AutoWeather/AutomaticWeatherCheckBox
+
+@export var animation_weather_path : NodePath = NodePath("")
+
 var _time_slider_dragging := false
 
 
@@ -52,6 +57,8 @@ func _ready() -> void:
     _time_slider.drag_started.connect(_on_time_drag_started)
     _time_slider.drag_ended.connect(_on_time_drag_ended)
     _time_scale_slider.value_changed.connect(_on_time_scale_changed)
+    _autoweather_checkbox.toggled.connect(_on_autoweather_checkbox_toggled)
+
     for option in WIND_DIRECTION_OPTIONS:
         _wind_direction_button.add_item(option["label"])
     _weather = _find_weather()
@@ -89,6 +96,8 @@ func _sync_with_scene() -> void:
 
 
 func _sync_weather_controls() -> void:
+    var animation = get_node_or_null(animation_weather_path)
+    _autoweather_checkbox.button_pressed = animation.active if animation else false
     var wind_strength := _get_wind_strength_ratio()
     _wind_strength_slider.set_value_no_signal(wind_strength)
     _wind_value_label.text = "%d%%" % int(round(wind_strength * 100.0))
@@ -286,3 +295,11 @@ func _make_panel_style() -> StyleBoxFlat:
     panel_style.content_margin_right = 12.0
     panel_style.content_margin_bottom = 8.0
     return panel_style
+
+func _on_autoweather_checkbox_toggled(toggled: bool):
+    var animation = get_node_or_null(animation_weather_path)
+    if animation:
+        animation.active = toggled
+        _autoweather_checkbox.button_pressed = animation.active
+    else:
+        _autoweather_checkbox.button_pressed = false
