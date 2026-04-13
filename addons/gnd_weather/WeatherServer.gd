@@ -31,7 +31,7 @@ const RAIN_FIELD_FOOTPRINT_OFFSETS := [
 ]
 const WIND_GUST_PRIMARY_RATE := 0.055
 const WIND_GUST_SECONDARY_RATE := 0.11
-const WIND_GUST_MACRO_RATE := 0.021
+const WIND_GUST_MACRO_RATE := 0.21
 
 static var _rain_volumes_by_world: Dictionary = {}
 static var _rain_volume_revision_by_world: Dictionary = {}
