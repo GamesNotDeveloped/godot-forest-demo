@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="SfxEvent" format=3 uid="uid://b4ak4ubmhwlhx"]
+
+[ext_resource type="Script" uid="uid://du0xhkfksfg41" path="res://addons/gnd_sfx/sfx_automation.gd" id="1_auto"]
+[ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="2_event"]
+[ext_resource type="Script" uid="uid://bux2t8wvvtr2f" path="res://addons/gnd_sfx/sfx_stream.gd" id="3_tdwxq"]
+[ext_resource type="Script" uid="uid://boicinkvs7i0h" path="res://addons/gnd_sfx/sfx_track.gd" id="3_track"]
+[ext_resource type="Script" uid="uid://blkrgrgimv8ah" path="res://addons/gnd_sfx/sfx_wind_generator_stream.gd" id="4_wind"]
+
+[sub_resource type="Curve" id="Curve_tdwxq"]
+_data = [Vector2(0.12303664, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 3.5356839, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_bright"]
+_limits = [0.0, 1.0, 0.0, 16.0]
+_data = [Vector2(0, 0.05), 0.0, 0.0, 0, 0, Vector2(5.5, 0.52), 0.0, 0.0, 0, 0, Vector2(16, 1), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="Curve" id="Curve_dark"]
+_limits = [0.0, 1.0, 0.0, 16.0]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(6, 0.78), 0.0, 0.0, 0, 0, Vector2(16, 0.18), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="Curve" id="Curve_master"]
+_limits = [0.0, 1.0, 0.0, 16.0]
+_data = [Vector2(0, 0.02), 0.0, 0.0, 0, 0, Vector2(1.2, 0.1), 0.0, 0.0, 0, 0, Vector2(7.5, 0.62), 0.0, 0.0, 0, 0, Vector2(16, 1), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="Resource" id="Resource_wind_stream"]
+script = ExtResource("4_wind")
+bright_gain_curve = SubResource("Curve_bright")
+dark_gain_curve = SubResource("Curve_dark")
+master_gain_curve = SubResource("Curve_master")
+stereo_width = 0.42
+turbulence_amount = 0.24
+base_gain = 1.7
+metadata/_custom_type_script = "uid://blkrgrgimv8ah"
+
+[sub_resource type="Resource" id="Resource_wind_track"]
+script = ExtResource("3_track")
+streams = Array[ExtResource("3_tdwxq")]([SubResource("Resource_wind_stream")])
+fade_in_curve = SubResource("Curve_tdwxq")
+audio_bus = &"Atmo"
+metadata/_custom_type_script = "uid://boicinkvs7i0h"
+
+[sub_resource type="Resource" id="Resource_wind_automation"]
+script = ExtResource("1_auto")
+parameter_name = &"strength"
+tracks = Array[ExtResource("3_track")]([SubResource("Resource_wind_track")])
+max_domain = 16.0
+metadata/_custom_type_script = "uid://du0xhkfksfg41"
+
+[resource]
+script = ExtResource("2_event")
+name = &"wind"
+automations = Array[ExtResource("1_auto")]([SubResource("Resource_wind_automation")])
+metadata/_custom_type_script = "uid://bgxtc44e5rb0l"

@@ -5,6 +5,7 @@ extends Node3D
 signal thunder(strength: float)
 signal rain_strength_changed(strength: float)
 signal rain_local_strength_changed(strength: float)
+signal wind_changed(speed: float, direction: Vector2)
 
 const RAIN_STREAK_SHADER := preload("./rain_streak.gdshader")
 const NEAR_FIELD_NAME := "RainNear"
@@ -242,6 +243,8 @@ var _lightning_rng := RandomNumberGenerator.new()
 
 var _last_emitted_rain_strength: float = -1.0
 var _last_emitted_local_rain_strength: float = -1.0
+var _last_emitted_wind_speed: float = -1.0
+var _last_emitted_wind_direction: Vector2 = Vector2(INF, INF)
 var _editor_preview_camera_id: int = 0
 var _editor_preview_camera_transform: Transform3D = Transform3D.IDENTITY
 var _editor_preview_camera_transform_valid: bool = false
@@ -294,6 +297,7 @@ func _process(delta: float) -> void:
     _update_weather_observer()
     WeatherServer.update_weather_state(get_world_3d(), delta)
     _sync_weather_state()
+    _emit_current_wind_changed()
     _update_lightning(delta)
     _update_rain_rendering()
     _push_weather_state()
@@ -342,6 +346,7 @@ func apply_wind_controls(strength_ratio: float, direction: Vector2) -> void:
 
 func apply_now() -> void:
     _sync_weather_state(true)
+    _emit_current_wind_changed()
     _apply_weather_state(true)
 
 
@@ -1017,6 +1022,25 @@ func _emit_local_rain_strength_changed(strength: float) -> void:
     rain_local_strength_changed.emit(clamped_strength)
 
 
+func _emit_current_wind_changed() -> void:
+    var world_3d := get_world_3d()
+    if world_3d == null:
+        return
+
+    var speed := maxf(WeatherServer.get_final_wind_speed(world_3d), 0.0)
+    var direction := WeatherServer.get_final_wind_direction(world_3d)
+    if direction.length_squared() <= 0.0001:
+        direction = Vector2(0.8, 0.3)
+    direction = direction.normalized()
+
+    if absf(_last_emitted_wind_speed - speed) <= 0.0001 and _last_emitted_wind_direction.is_equal_approx(direction):
+        return
+
+    _last_emitted_wind_speed = speed
+    _last_emitted_wind_direction = direction
+    wind_changed.emit(speed, direction)
+
+
 func _smooth_factor(value: float, start: float, end: float) -> float:
     var t := clampf((value - start) / maxf(end - start, 0.0001), 0.0, 1.0)
     return t * t * (3.0 - 2.0 * t)
@@ -1208,11 +1232,11 @@ func _get_rain_field_spacing(base_spacing: float, camera: Camera3D = null) -> fl
 
 
 func _get_wind_direction() -> Vector2:
-    return WeatherServer.get_global_wind_direction()
+    return WeatherServer.get_final_wind_direction(get_world_3d())
 
 
 func _get_wind_speed() -> float:
-    return WeatherServer.get_weather_controlled_wind_speed(get_world_3d())
+    return WeatherServer.get_final_wind_speed(get_world_3d())
 
 
 func _push_weather_state(force: bool = false) -> void:

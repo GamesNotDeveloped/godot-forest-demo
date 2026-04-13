@@ -54,6 +54,12 @@ func _ready() -> void:
     exposure_timer.timeout.connect(_on_exposure_timer_timeout)
     add_child(exposure_timer)
 
+    if _weather != null:
+        _on_weather_wind_changed(
+            WeatherServer.get_final_wind_speed(_weather.get_world_3d()),
+            WeatherServer.get_final_wind_direction(_weather.get_world_3d())
+        )
+
 
 func _on_exposure_timer_timeout() -> void:
     if _world_environment == null or _world_environment.camera_attributes == null:
@@ -240,6 +246,10 @@ func _on_weather_thunder(strength: float) -> void:
 
 func _on_weather_rain_strength_changed(strength):
     $PlayerHeadRef/AtmoEffects.play_automation("rain", "strength", strength)
+
+
+func _on_weather_wind_changed(speed: float, _direction: Vector2) -> void:
+    $PlayerHeadRef/AtmoEffects.play_automation("wind", "strength", maxf(speed, 0.0))
 
 
 

@@ -7,10 +7,6 @@
 [ext_resource type="Script" uid="uid://bux2t8wvvtr2f" path="res://addons/gnd_sfx/sfx_stream.gd" id="4_ag1qg"]
 [ext_resource type="AudioStream" uid="uid://dp30db2cbv1ee" path="res://sounds/206030__yuval__footsteps-grass-2.wav" id="5_ag1qg"]
 
-[sub_resource type="Resource" id="Resource_f7v4b"]
-script = ExtResource("3_mn77h")
-metadata/_custom_type_script = "uid://du0xhkfksfg41"
-
 [sub_resource type="Curve" id="Curve_mn77h"]
 _data = [Vector2(0, 0), 0.0, 2.6872034, 0, 0, Vector2(0.09045226, 0.99370754), 0.0, 0.0, 0, 0]
 point_count = 2
@@ -36,7 +32,6 @@ streams = Array[ExtResource("4_ag1qg")]([SubResource("Resource_h1s8t"), SubResou
 fade_in_curve = SubResource("Curve_mn77h")
 fade_out_curve = SubResource("Curve_h1s8t")
 audio_bus = &"Footsteps"
-automation = Array[ExtResource("3_mn77h")]([SubResource("Resource_f7v4b")])
 metadata/_custom_type_script = "uid://boicinkvs7i0h"
 
 [resource]

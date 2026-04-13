@@ -50,7 +50,7 @@ DebugMenu="*uid://cggqb75a8w8r"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/bmod/plugin.cfg", "res://addons/debug_menu/plugin.cfg", "res://addons/gnd_biomes/plugin.cfg", "res://addons/gnd_skydome/plugin.cfg", "res://addons/gnd_weather/plugin.cfg", "res://addons/uniplayer/plugin.cfg")
+enabled=PackedStringArray("res://addons/debug_menu/plugin.cfg", "res://addons/gnd_biomes/plugin.cfg", "res://addons/gnd_skydome/plugin.cfg", "res://addons/gnd_weather/plugin.cfg", "res://addons/uniplayer/plugin.cfg")
 
 [input]
 

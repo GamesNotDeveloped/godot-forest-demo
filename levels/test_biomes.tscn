@@ -47,7 +47,6 @@
 [ext_resource type="CameraAttributesPractical" uid="uid://c1eswprngr57f" path="res://materials/camera_attributes_filmic.tres" id="43_j63ba"]
 [ext_resource type="PackedScene" uid="uid://6ovpjh4yitp1" path="res://objects/wooden_crates.tscn" id="44_a77ay"]
 [ext_resource type="PackedScene" uid="uid://bp8c025u30g4x" path="res://objects/old_table.tscn" id="45_kf4y5"]
-[ext_resource type="Script" uid="uid://pw1ljvn4g7cy" path="res://addons/gnd_skydome/SunShaftsCompositorEffect.gd" id="49_g0a7c"]
 [ext_resource type="AudioStream" uid="uid://dodwn40mt8px7" path="res://sounds/334151__svampen__thunder-rolling-2.wav" id="51_kwcl0"]
 [ext_resource type="AudioStream" uid="uid://fqnuofshaed1" path="res://sounds/399656__bajko__sfx_thunder-blast.wav" id="52_c6or4"]
 [ext_resource type="PackedScene" uid="uid://bjv8m7r6c35e7" path="res://objects/lantern.tscn" id="52_xnulj"]
@@ -63,6 +62,7 @@
 [ext_resource type="Script" uid="uid://dtao57kx5l2dw" path="res://addons/gnd_sfx/sfx_player_3d.gd" id="63_c8shn"]
 [ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="64_e686x"]
 [ext_resource type="Resource" uid="uid://bhhjddgrltg00" path="res://sounds/footsteps.tres" id="65_e686x"]
+[ext_resource type="Resource" uid="uid://b4ak4ubmhwlhx" path="res://sounds/wind.tres" id="66_wind"]
 
 [sub_resource type="Resource" id="Resource_ei7n8"]
 script = ExtResource("2_471tc")
@@ -137,28 +137,7 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
 noise_type = 3
 
-[sub_resource type="CompositorEffect" id="CompositorEffect_7yylr"]
-resource_local_to_scene = false
-resource_name = ""
-enabled = true
-effect_callback_type = 4
-needs_motion_vectors = false
-needs_normal_roughness = false
-script = ExtResource("49_g0a7c")
-sun_screen_uv = Vector2(1.1176889, 1.6246285)
-sun_visible = true
-shaft_color = Color(0.7181275, 0.64356625, 0.40456375, 1)
-density = 0.4231625
-bright_threshold = 0.182
-weight = 0.030973749999999998
-decay = 0.93
-exposure = 1.3872750000000003
-max_radius = 1.377
-sample_count = 8
-dither_strength = 1.4
-
-[sub_resource type="Compositor" id="Compositor_o18jh"]
-compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_7yylr")])
+[sub_resource type="Compositor" id="Compositor_7yylr"]
 
 [sub_resource type="Animation" id="Animation_aty88"]
 length = 7.4666667
@@ -444,7 +423,7 @@ transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1473354202]
 environment = ExtResource("39_jt4jh")
 camera_attributes = ExtResource("43_j63ba")
-compositor = SubResource("Compositor_o18jh")
+compositor = SubResource("Compositor_7yylr")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
 wait_time = 0.1
@@ -501,7 +480,7 @@ metadata/_custom_type_script = "uid://dtao57kx5l2dw"
 [node name="AtmoEffects" type="Node3D" parent="PlayerHeadRef" unique_id=1614317032]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.975, 0)
 script = ExtResource("63_c8shn")
-events = Array[ExtResource("64_e686x")]([ExtResource("60_7yylr")])
+events = Array[ExtResource("64_e686x")]([ExtResource("60_7yylr"), ExtResource("66_wind")])
 attenuation_model = 3
 panning_strength = 1.28
 metadata/_custom_type_script = "uid://dtao57kx5l2dw"
@@ -530,6 +509,7 @@ transform = Transform3D(0.7627022, -0.03918874, 0.6455615, -0.05958914, 0.989658
 [connection signal="rain_local_strength_changed" from="Weather" to="." method="_on_weather_rain_local_strength_changed"]
 [connection signal="rain_strength_changed" from="Weather" to="." method="_on_weather_rain_strength_changed"]
 [connection signal="thunder" from="Weather" to="." method="_on_weather_thunder"]
+[connection signal="wind_changed" from="Weather" to="." method="_on_weather_wind_changed"]
 [connection signal="footstep" from="UP_FPSController_Prefab" to="." method="_on_up_fps_controller_prefab_footstep"]
 [connection signal="toggled" from="MouseCapture" to="." method="_on_mouse_capture_toggled"]
 [connection signal="timeout" from="WorldTimer" to="." method="_on_world_timer_timeout"]

@@ -285,6 +285,8 @@ static func get_weather_state(world_3d: World3D) -> Dictionary:
         "lightning_flash": 0.0,
         "shelter_factor": float(state.get("shelter_factor", 0.0)),
         "local_emission_scale": float(state.get("local_emission_scale", 1.0)),
+        "final_wind_speed": get_final_wind_speed(world_3d),
+        "final_wind_direction": get_final_wind_direction(world_3d),
     }
 
 
@@ -368,6 +370,14 @@ static func get_weather_controlled_wind_speed(world_3d: World3D, fallback: float
         _weather_state_by_world.get(world_3d.get_instance_id(), {}),
         fallback
     )
+
+
+static func get_final_wind_speed(world_3d: World3D, fallback: float = 1.0) -> float:
+    return get_weather_controlled_wind_speed(world_3d, fallback)
+
+
+static func get_final_wind_direction(world_3d: World3D, fallback: Vector2 = Vector2(0.8, 0.3)) -> Vector2:
+    return get_global_wind_direction(fallback)
 
 
 static func get_weather_controlled_wind_time(world_3d: World3D) -> float:
@@ -1060,10 +1070,10 @@ static func _ensure_visible_rain_probe_field_cache(world_3d: World3D, cache_key:
 
 static func _apply_weather_controlled_wind(world_3d: World3D) -> void:
     ensure_wind_project_settings()
-    RenderingServer.global_shader_parameter_set(StringName(WIND_DIRECTION_GLOBAL), get_global_wind_direction())
+    RenderingServer.global_shader_parameter_set(StringName(WIND_DIRECTION_GLOBAL), get_final_wind_direction(world_3d))
     RenderingServer.global_shader_parameter_set(
         StringName(WIND_SPEED_GLOBAL),
-        get_weather_controlled_wind_speed(world_3d)
+        get_final_wind_speed(world_3d)
     )
     RenderingServer.global_shader_parameter_set(
         StringName(WIND_TIME_GLOBAL),

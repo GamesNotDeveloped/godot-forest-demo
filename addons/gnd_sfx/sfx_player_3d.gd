@@ -16,6 +16,8 @@ class ActiveVoice:
     var automation_name: StringName = &""
     var automation: SfxAutomation
     var automation_value := 0.0
+    var generator_stream: SfxWindGeneratorStream
+    var generator_runtime
 
 signal finished
 
@@ -84,7 +86,7 @@ func _is_automation_voice(voice: ActiveVoice, event_name: StringName, automation
 
 func _requires_process() -> bool:
     for voice in _active_voices:
-        if voice.voice_type == VoiceType.TRACK:
+        if voice.voice_type == VoiceType.TRACK or _is_generator_voice(voice):
             return true
     return false
 
@@ -169,6 +171,9 @@ func _sample_curve_gain(curve: Curve, elapsed: float) -> float:
 func _get_voice_base_gain(voice: ActiveVoice) -> float:
     return voice.sfx_stream.base_gain if voice.sfx_stream != null else 1.0
 
+func _is_generator_voice(voice: ActiveVoice) -> bool:
+    return voice.generator_stream != null and voice.generator_runtime != null
+
 func _set_player_gain(player: AudioStreamPlayer3D, gain: float, base_gain: float = 1.0) -> void:
     player.volume_db = linear_to_db(maxf(gain * maxf(base_gain, 0.0), 0.0001))
 
@@ -201,6 +206,75 @@ func _apply_automation_value(voice: ActiveVoice) -> void:
         _get_voice_base_gain(voice)
     )
     voice.player.pitch_scale = maxf(pitch, 0.01)
+    _pump_generator_voice(voice)
+
+func _build_audio_stream_for_voice(sfx_stream: SfxStream) -> AudioStream:
+    if sfx_stream == null:
+        return null
+    if sfx_stream is SfxWindGeneratorStream:
+        return (sfx_stream as SfxWindGeneratorStream).build_audio_stream()
+    return sfx_stream.stream
+
+func _pump_generator_voice(voice: ActiveVoice) -> void:
+    if not _is_generator_voice(voice):
+        return
+    var speed := voice.automation_value if voice.voice_type == VoiceType.AUTOMATION else 0.0
+    voice.generator_stream.fill_buffer(voice.generator_runtime, speed)
+
+func _start_voice(
+    player: AudioStreamPlayer3D,
+    track: SfxTrack,
+    sfx_stream: SfxStream,
+    voice_type: VoiceType,
+    event_name: StringName = &"",
+    automation_name: StringName = &"",
+    automation: SfxAutomation = null,
+    automation_value: float = 0.0
+) -> bool:
+    if player == null or track == null or sfx_stream == null:
+        return false
+
+    var stream := _build_audio_stream_for_voice(sfx_stream)
+    if stream == null:
+        return false
+
+    player.stream = stream
+    player.bus = _resolve_audio_bus(track.audio_bus)
+    player.pitch_scale = 1.0
+    player.play()
+
+    var voice := ActiveVoice.new()
+    voice.voice_type = voice_type
+    voice.player = player
+    voice.track = track
+    voice.sfx_stream = sfx_stream
+    voice.stream_length = maxf(stream.get_length(), 0.0)
+    voice.event_name = event_name
+    voice.automation_name = automation_name
+    voice.automation = automation
+    voice.automation_value = automation_value
+
+    if sfx_stream is SfxWindGeneratorStream:
+        voice.generator_stream = sfx_stream as SfxWindGeneratorStream
+        voice.generator_runtime = voice.generator_stream.create_runtime(
+            player.get_stream_playback() as AudioStreamGeneratorPlayback
+        )
+        if voice.generator_runtime == null:
+            player.stop()
+            push_error("Failed to initialize generator playback for sound track")
+            return false
+        _pump_generator_voice(voice)
+
+    _active_voices.append(voice)
+
+    if voice_type == VoiceType.AUTOMATION:
+        _apply_automation_value(voice)
+    else:
+        _set_player_gain(player, _sample_curve_gain(track.fade_in_curve, 0.0), _get_voice_base_gain(voice))
+
+    _update_players_in_use_debug(1)
+    set_process(_requires_process())
+    return true
 
 func _release_voice(index: int) -> void:
     if index == -1:
@@ -222,6 +296,7 @@ func _stop_voice(index: int) -> void:
     _release_voice(index)
     if is_instance_valid(voice.player):
         voice.player.stop()
+        voice.player.stream = null
 
 func _update_track_voice(index: int, delta: float) -> bool:
     if index < 0 or index >= _active_voices.size():
@@ -260,6 +335,13 @@ func _update_voice(index: int, delta: float) -> bool:
         return false
 
     var voice = _active_voices[index]
+    if _is_generator_voice(voice):
+        if not is_instance_valid(voice.player) or not voice.player.playing:
+            _release_voice(index)
+            return false
+        _pump_generator_voice(voice)
+        return true
+
     if voice.voice_type == VoiceType.AUTOMATION:
         if not is_instance_valid(voice.player) or not voice.player.playing:
             _release_voice(index)
@@ -313,22 +395,7 @@ func play(event_name: StringName, parameters: Dictionary = {}) -> void:
                 break
 
             var sfx_stream = track.get_next_sfx_stream()
-            var stream = sfx_stream.stream if sfx_stream else null
-            if stream:
-                player.stream = stream
-                player.bus = _resolve_audio_bus(track.audio_bus)
-                player.pitch_scale = 1.0
-                var voice = ActiveVoice.new()
-                voice.voice_type = VoiceType.TRACK
-                voice.player = player
-                voice.track = track
-                voice.sfx_stream = sfx_stream
-                voice.stream_length = maxf(stream.get_length(), 0.0)
-                _active_voices.append(voice)
-                _set_player_gain(player, _sample_curve_gain(track.fade_in_curve, 0.0), _get_voice_base_gain(voice))
-                player.play()
-                set_process(true)
-                _update_players_in_use_debug(1)
+            _start_voice(player, track, sfx_stream, VoiceType.TRACK)
         return
     push_error("Unknown sound event ", event_name)
 
@@ -370,28 +437,19 @@ func play_automation(event_name: StringName, automation_name: StringName, value:
             break
 
         var sfx_stream = track.get_next_sfx_stream()
-        var stream = sfx_stream.stream if sfx_stream else null
-        if stream == null:
+        if sfx_stream == null:
             continue
 
-        player.stream = stream
-        player.bus = _resolve_audio_bus(track.audio_bus)
-        player.pitch_scale = 1.0
-
-        var voice = ActiveVoice.new()
-        voice.voice_type = VoiceType.AUTOMATION
-        voice.player = player
-        voice.track = track
-        voice.sfx_stream = sfx_stream
-        voice.stream_length = maxf(stream.get_length(), 0.0)
-        voice.event_name = event_name
-        voice.automation_name = automation_name
-        voice.automation = automation
-        voice.automation_value = value
-        _active_voices.append(voice)
-        _apply_automation_value(voice)
-        player.play()
-        _update_players_in_use_debug(1)
+        _start_voice(
+            player,
+            track,
+            sfx_stream,
+            VoiceType.AUTOMATION,
+            event_name,
+            automation_name,
+            automation,
+            value
+        )
 
     set_process(_requires_process())
 
