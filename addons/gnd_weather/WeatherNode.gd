@@ -1253,8 +1253,16 @@ func _push_weather_state(force: bool = false) -> void:
     var current_fog_intensity := clampf(float(state.get("storm_fog_intensity_input", _current_storm_fog_intensity_input)), 0.0, 1.0)
     var current_cloud_shadow_intensity := clampf(float(state.get("storm_factor", _current_storm_factor)), 0.0, 1.0)
     var local_emission_scale := clampf(float(state.get("local_emission_scale", _current_local_emission_scale)), 0.0, 1.0)
+    var final_wind_speed := maxf(float(state.get("final_wind_speed", _get_wind_speed())), 0.0)
+    var final_wind_direction := state.get("final_wind_direction", _get_wind_direction()) as Vector2
+    if final_wind_direction.length_squared() <= 0.0001:
+        final_wind_direction = Vector2(0.8, 0.3)
+    final_wind_direction = final_wind_direction.normalized()
 
     skydome.clouds_coverage = current_cloud_density
+    skydome.clouds_wind_direction = final_wind_direction
+    skydome.clouds_wind_strength = final_wind_speed
+    skydome.apply_wind_now()
     #skydome.cloud_overcast_intensity = current_cloud_overcast_intensity
     #skydome.cloud_shadow_intensity = current_cloud_shadow_intensity
     skydome.fog_density = current_fog_intensity

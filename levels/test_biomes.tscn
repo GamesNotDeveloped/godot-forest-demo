@@ -138,7 +138,7 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
 noise_type = 3
 
-[sub_resource type="Compositor" id="Compositor_7npft"]
+[sub_resource type="Compositor" id="Compositor_o18jh"]
 
 [sub_resource type="Animation" id="Animation_aty88"]
 length = 7.4666667
@@ -233,7 +233,7 @@ visible = false
 animation_weather_path = NodePath("../WeatherAnimation")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1300013842]
-transform = Transform3D(0.6163049, -0.6388756, 0.46044138, 0, 0.58468175, 0.8112628, -0.7875076, -0.49998522, 0.36034226, 2.9802322e-08, 0.5193937, -0.2882359)
+transform = Transform3D(-0.09291194, -0.43151084, 0.8973103, 0, 0.9012087, 0.43338546, -0.9956743, 0.040266685, -0.08373304, 2.9802322e-08, 0.5193937, -0.2882359)
 light_color = Color(0.9538084, 0.8959062, 0.8313034, 1)
 light_energy = 2.0
 light_indirect_energy = 1.18
@@ -336,8 +336,8 @@ grass_scale_max = 0.88
 script = ExtResource("19_shafts")
 directional_light_path = NodePath("../DirectionalLight3D")
 world_environment_path = NodePath("../WorldEnvironment")
-day_of_year = 160
-time_of_day = 10.0
+day_of_year = 187
+time_of_day = 6.896
 day_light_energy = 2.0
 shader_zenith_color = Color(0.11514282, 0.20309141, 0.3828125, 1)
 shader_horizon_height = 0.178
@@ -349,18 +349,21 @@ night_vol_fog_density = 0.121
 clouds_coverage = 0.15
 clouds_color_shadow = Color(0.8515625, 0.8515625, 0.8515625, 1)
 clouds_shadow_angular_distance_clear = 1.0
+clouds_wind_direction = Vector2(0.9363292, 0.35112345)
+clouds_wind_strength = 1.0111276870401262
 clouds_evolution_strength = 0.775
 clouds_evolution_scale = 0.198
+clouds_scroll_b = Vector2(0.002, 0)
 sun_halo_strength = 0.14
 sun_atmosphere_strength = 0.07
 moon_glow_strength = 0.01
 moon_glow_size = 0.2
 fog_density = 0.15000000000000002
-moon_phase_debug = 0.43232870527147504
+moon_phase_debug = 0.34227339428829406
 shader_atmosphere_sunset_boost = 0.47
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1.0000024, 0, 0, 0, 1.0000024, 0, 0, 0, 1, 1.2615924, 4.357465, -2.7701416)
+transform = Transform3D(1.0000024, 0, 0, 0, 1.0000024, 0, 0, 0, 1, 3.4037945, 4.5187845, 0.8930726)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
@@ -424,7 +427,7 @@ transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1473354202]
 environment = ExtResource("39_jt4jh")
 camera_attributes = ExtResource("43_j63ba")
-compositor = SubResource("Compositor_7npft")
+compositor = SubResource("Compositor_o18jh")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
 wait_time = 0.1
