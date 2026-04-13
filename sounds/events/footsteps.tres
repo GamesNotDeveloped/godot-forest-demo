@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="1_qxivp"]
 [ext_resource type="Script" uid="uid://boicinkvs7i0h" path="res://addons/gnd_sfx/sfx_track.gd" id="2_6ihku"]
-[ext_resource type="Script" uid="uid://du0xhkfksfg41" path="res://addons/gnd_sfx/sfx_automation.gd" id="3_mn77h"]
-[ext_resource type="AudioStream" uid="uid://dlnxdvo7huuod" path="res://sounds/206030__yuval__footsteps-grass-1.wav" id="4_1if6t"]
-[ext_resource type="AudioStream" uid="uid://dp30db2cbv1ee" path="res://sounds/206030__yuval__footsteps-grass-2.wav" id="5_ag1qg"]
+[ext_resource type="Script" uid="uid://bf434i6ru4ch" path="res://addons/gnd_sfx/sfx_automation.gd" id="3_mn77h"]
+[ext_resource type="AudioStream" uid="uid://dlnxdvo7huuod" path="res://sounds/assets/206030__yuval__footsteps-grass-1.wav" id="4_1if6t"]
+[ext_resource type="AudioStream" uid="uid://dp30db2cbv1ee" path="res://sounds/assets/206030__yuval__footsteps-grass-2.wav" id="5_ag1qg"]
 
 [sub_resource type="Curve" id="Curve_mn77h"]
 _data = [Vector2(0, 0), 0.0, 2.6872034, 0, 0, Vector2(0.09045226, 0.99370754), 0.0, 0.0, 0, 0]

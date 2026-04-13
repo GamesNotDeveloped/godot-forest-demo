@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SfxBank" format=3 uid="uid://nvhenxjim7wx"]
+
+[ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="1_uelkc"]
+[ext_resource type="Resource" uid="uid://cio1urtt4ih66" path="res://sounds/events/rain.tres" id="2_yadni"]
+[ext_resource type="Resource" uid="uid://b4ak4ubmhwlhx" path="res://sounds/events/wind.tres" id="3_kurkn"]
+[ext_resource type="Script" uid="uid://6vyj4u07idwa" path="res://addons/gnd_sfx/sfx_bank.gd" id="4_h4377"]
+
+[resource]
+script = ExtResource("4_h4377")
+events = Array[ExtResource("1_uelkc")]([ExtResource("2_yadni"), ExtResource("3_kurkn")])
+metadata/_custom_type_script = "uid://6vyj4u07idwa"

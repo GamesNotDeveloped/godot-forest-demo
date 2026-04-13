@@ -3,12 +3,12 @@
 importer="wav"
 type="AudioStreamWAV"
 uid="uid://blr157w0srbul"
-path="res://.godot/imported/116323__dymewiz__rain-05.wav-729a57b94e18f978f9113ed769031409.sample"
+path="res://.godot/imported/116323__dymewiz__rain-05.wav-6098e83afae6ab19e930bf3ddc5c1456.sample"
 
 [deps]
 
-source_file="res://sounds/116323__dymewiz__rain-05.wav"
-dest_files=["res://.godot/imported/116323__dymewiz__rain-05.wav-729a57b94e18f978f9113ed769031409.sample"]
+source_file="res://sounds/assets/116323__dymewiz__rain-05.wav"
+dest_files=["res://.godot/imported/116323__dymewiz__rain-05.wav-6098e83afae6ab19e930bf3ddc5c1456.sample"]
 
 [params]
 

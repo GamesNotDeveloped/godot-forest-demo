@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="SfxEvent" format=3 uid="uid://b4ak4ubmhwlhx"]
 
-[ext_resource type="Script" uid="uid://du0xhkfksfg41" path="res://addons/gnd_sfx/sfx_automation.gd" id="1_auto"]
+[ext_resource type="Script" uid="uid://bf434i6ru4ch" path="res://addons/gnd_sfx/sfx_automation.gd" id="1_auto"]
 [ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="2_event"]
 [ext_resource type="Script" uid="uid://boicinkvs7i0h" path="res://addons/gnd_sfx/sfx_track.gd" id="3_track"]
 [ext_resource type="Script" uid="uid://blkrgrgimv8ah" path="res://sounds/sfx_wind_generator_stream.gd" id="3_yujr4"]
