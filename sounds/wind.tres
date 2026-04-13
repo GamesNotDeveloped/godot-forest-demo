@@ -27,7 +27,7 @@ point_count = 4
 
 [sub_resource type="Resource" id="Resource_wind_stream"]
 script = ExtResource("4_wind")
-mix_sample_rate = 8000
+mix_sample_rate = 16000
 bright_gain_curve = SubResource("Curve_bright")
 dark_gain_curve = SubResource("Curve_dark")
 master_gain_curve = SubResource("Curve_master")

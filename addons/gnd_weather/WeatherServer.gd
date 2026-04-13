@@ -29,6 +29,9 @@ const RAIN_FIELD_FOOTPRINT_OFFSETS := [
     Vector3(-1.0, 0.0, 1.0),
     Vector3(-1.0, 0.0, -1.0),
 ]
+const WIND_GUST_PRIMARY_RATE := 0.055
+const WIND_GUST_SECONDARY_RATE := 0.11
+const WIND_GUST_MACRO_RATE := 0.021
 
 static var _rain_volumes_by_world: Dictionary = {}
 static var _rain_volume_revision_by_world: Dictionary = {}
@@ -363,6 +366,13 @@ static func get_precipitation_wind_strength(fallback: float = 4.0) -> float:
     return maxf(fallback, 0.0)
 
 
+static func get_global_wind_turbulence(fallback: float = 1.0) -> float:
+    ensure_wind_project_settings()
+    if ProjectSettings.has_setting(String(WIND_TURBULENCE_VALUE_SETTING)):
+        return maxf(float(ProjectSettings.get_setting(String(WIND_TURBULENCE_VALUE_SETTING), fallback)), 0.0)
+    return maxf(fallback, 0.0)
+
+
 static func get_weather_controlled_wind_speed(world_3d: World3D, fallback: float = 1.0) -> float:
     if world_3d == null:
         return get_global_wind_speed(fallback)
@@ -373,7 +383,24 @@ static func get_weather_controlled_wind_speed(world_3d: World3D, fallback: float
 
 
 static func get_final_wind_speed(world_3d: World3D, fallback: float = 1.0) -> float:
-    return get_weather_controlled_wind_speed(world_3d, fallback)
+    var base_speed := get_weather_controlled_wind_speed(world_3d, fallback)
+    if base_speed <= 0.0001:
+        return 0.0
+
+    var wind_time := get_weather_controlled_wind_time(world_3d)
+    var turbulence := get_global_wind_turbulence(1.0)
+    var strength_ratio := clampf(base_speed / 6.0, 0.0, 1.0)
+    var modulation_depth := turbulence * lerpf(0.05, 0.26, strength_ratio)
+
+    var primary_noise := _sample_wind_noise_1d(wind_time * WIND_GUST_PRIMARY_RATE)
+    var secondary_noise := _sample_wind_noise_1d(wind_time * WIND_GUST_SECONDARY_RATE + 13.7)
+    var macro_noise := _sample_wind_noise_1d(wind_time * WIND_GUST_MACRO_RATE + 47.3)
+
+    var gust := pow(maxf(primary_noise, 0.0), 1.7) * 0.7 + pow(maxf(secondary_noise, 0.0), 2.1) * 0.3
+    var lull := pow(maxf(-macro_noise, 0.0), 1.35)
+    var wind_factor := 1.0 + gust * modulation_depth - lull * modulation_depth * 0.55
+
+    return maxf(base_speed * maxf(wind_factor, 0.1), 0.0)
 
 
 static func get_final_wind_direction(world_3d: World3D, fallback: Vector2 = Vector2(0.8, 0.3)) -> Vector2:
@@ -387,6 +414,18 @@ static func get_weather_controlled_wind_time(world_3d: World3D) -> float:
     if state.is_empty():
         return 0.0
     return float(state.get("wind_time", 0.0))
+
+
+static func _sample_wind_noise_1d(position: float) -> float:
+    var cell := floori(position)
+    var local := position - float(cell)
+    var smooth := local * local * (3.0 - 2.0 * local)
+    return lerpf(_hash_wind_noise(cell), _hash_wind_noise(cell + 1), smooth)
+
+
+static func _hash_wind_noise(index: int) -> float:
+    var value := sin(float(index) * 12.9898 + 78.233) * 43758.5453
+    return (value - floor(value)) * 2.0 - 1.0
 
 
 static func get_configured_visible_rain_probe_field_layout(
