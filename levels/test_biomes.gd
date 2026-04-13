@@ -225,7 +225,17 @@ func _refresh_debug_menu() -> void:
 
 
 func _on_world_timer_timeout():
-    $Skydome.time_of_day = wrapf($Skydome.time_of_day + ((_world_time_scale * $WorldTimer.wait_time) / 3600.0), 0, 23.999)
+    var delta_hours = (_world_time_scale * $WorldTimer.wait_time) / 3600.0
+    if delta_hours <= 0.0:
+        return
+
+    var next_time_of_day = $Skydome.time_of_day + delta_hours
+    var day_delta := int(floor(next_time_of_day / 24.0))
+    var wrapped_time_of_day := wrapf(next_time_of_day, 0.0, 24.0)
+
+    $Skydome.time_of_day = wrapped_time_of_day
+    if day_delta != 0:
+        $Skydome.day_of_year = wrapi($Skydome.day_of_year - 1 + day_delta, 0, 365) + 1
 
 
 func _on_weather_controls_canvas_world_time_scale_changed(scale: float) -> void:
