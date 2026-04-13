@@ -18,6 +18,7 @@ point_count = 2
 [sub_resource type="Resource" id="Resource_1jliw"]
 script = ExtResource("4_uqwmn")
 stream = ExtResource("2_flvm4")
+base_gain = 2.0
 metadata/_custom_type_script = "uid://bux2t8wvvtr2f"
 
 [sub_resource type="Resource" id="Resource_f3bo4"]
