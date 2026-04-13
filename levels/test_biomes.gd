@@ -80,7 +80,7 @@ func _input(event):
     if event.is_action_pressed("toggle_flashlight"):
         var enabled = _flashlight.visible
         _flashlight.visible = not enabled
-        $PlayerHeadRef/SoundEffects.play("flashlight-" + ("off" if enabled else "on"))
+        $PlayerHeadRef/SoundEffects.play_automation("flashlight", "toggle", not enabled)
 
 
 

@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="SfxEvent" format=3 uid="uid://cno3ckr0ix65b"]
+
+[ext_resource type="Script" uid="uid://du0xhkfksfg41" path="res://addons/gnd_sfx/sfx_automation.gd" id="1_w1p0l"]
+[ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="2_wslr0"]
+[ext_resource type="AudioStream" uid="uid://nbx0q5r0js2o" path="res://sounds/91512__timkahn__switch_01-on.wav" id="3_1ldht"]
+[ext_resource type="Script" uid="uid://boicinkvs7i0h" path="res://addons/gnd_sfx/sfx_track.gd" id="3_djryl"]
+[ext_resource type="AudioStream" uid="uid://bmg28qvj2t25u" path="res://sounds/91512__timkahn__switch_01-off.wav" id="4_p2f2x"]
+
+[sub_resource type="Curve" id="Curve_0l3pw"]
+_data = [Vector2(0.4764151, 1), 0.0, 0.0, 0, 0, Vector2(0.5023585, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Resource" id="Resource_nmucs"]
+script = ExtResource("3_djryl")
+stream = ExtResource("3_1ldht")
+fade_out_curve = SubResource("Curve_0l3pw")
+metadata/_custom_type_script = "uid://boicinkvs7i0h"
+
+[sub_resource type="Curve" id="Curve_4kx7m"]
+_data = [Vector2(0.5023585, 0), 0.0, 0.0, 0, 0, Vector2(0.5070755, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Resource" id="Resource_idovg"]
+script = ExtResource("3_djryl")
+stream = ExtResource("4_p2f2x")
+fade_in_curve = SubResource("Curve_4kx7m")
+metadata/_custom_type_script = "uid://boicinkvs7i0h"
+
+[sub_resource type="Resource" id="Resource_3l1x1"]
+script = ExtResource("1_w1p0l")
+parameter_name = &"toggle"
+tracks = Array[ExtResource("3_djryl")]([SubResource("Resource_nmucs"), SubResource("Resource_idovg")])
+metadata/_custom_type_script = "uid://du0xhkfksfg41"
+
+[resource]
+script = ExtResource("2_wslr0")
+name = &"flashlight"
+automations = Array[ExtResource("1_w1p0l")]([SubResource("Resource_3l1x1")])
+metadata/_custom_type_script = "uid://bgxtc44e5rb0l"

@@ -4,7 +4,6 @@
 [ext_resource type="Script" uid="uid://boicinkvs7i0h" path="res://addons/gnd_sfx/sfx_track.gd" id="2_6ihku"]
 [ext_resource type="Script" uid="uid://du0xhkfksfg41" path="res://addons/gnd_sfx/sfx_automation.gd" id="3_mn77h"]
 [ext_resource type="AudioStream" uid="uid://dlnxdvo7huuod" path="res://sounds/206030__yuval__footsteps-grass-1.wav" id="4_1if6t"]
-[ext_resource type="Script" uid="uid://bux2t8wvvtr2f" path="res://addons/gnd_sfx/sfx_stream.gd" id="4_ag1qg"]
 [ext_resource type="AudioStream" uid="uid://dp30db2cbv1ee" path="res://sounds/206030__yuval__footsteps-grass-2.wav" id="5_ag1qg"]
 
 [sub_resource type="Curve" id="Curve_mn77h"]
@@ -16,19 +15,15 @@ _limits = [0.0, 1.0, 0.0, 0.2562814]
 _data = [Vector2(0, 1), 0.0, 0.049493138, 0, 0, Vector2(0.2562814, 0), -2.4199753, 0.0, 0, 0]
 point_count = 2
 
-[sub_resource type="Resource" id="Resource_h1s8t"]
-script = ExtResource("4_ag1qg")
-stream = ExtResource("4_1if6t")
-metadata/_custom_type_script = "uid://bux2t8wvvtr2f"
-
-[sub_resource type="Resource" id="Resource_jwosw"]
-script = ExtResource("4_ag1qg")
-stream = ExtResource("5_ag1qg")
-metadata/_custom_type_script = "uid://bux2t8wvvtr2f"
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_1if6t"]
+playback_mode = 2
+streams_count = 2
+stream_0/stream = ExtResource("4_1if6t")
+stream_1/stream = ExtResource("5_ag1qg")
 
 [sub_resource type="Resource" id="Resource_1if6t"]
 script = ExtResource("2_6ihku")
-streams = Array[ExtResource("4_ag1qg")]([SubResource("Resource_h1s8t"), SubResource("Resource_jwosw")])
+stream = SubResource("AudioStreamRandomizer_1if6t")
 fade_in_curve = SubResource("Curve_mn77h")
 fade_out_curve = SubResource("Curve_h1s8t")
 audio_bus = &"Footsteps"

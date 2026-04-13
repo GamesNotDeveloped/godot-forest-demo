@@ -2,44 +2,14 @@
 
 [ext_resource type="Script" uid="uid://du0xhkfksfg41" path="res://addons/gnd_sfx/sfx_automation.gd" id="1_auto"]
 [ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="2_event"]
-[ext_resource type="Script" uid="uid://bux2t8wvvtr2f" path="res://addons/gnd_sfx/sfx_stream.gd" id="3_tdwxq"]
 [ext_resource type="Script" uid="uid://boicinkvs7i0h" path="res://addons/gnd_sfx/sfx_track.gd" id="3_track"]
-[ext_resource type="Script" uid="uid://blkrgrgimv8ah" path="res://addons/gnd_sfx/sfx_wind_generator_stream.gd" id="4_wind"]
 
 [sub_resource type="Curve" id="Curve_tdwxq"]
 _data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.36387432, 0.35989857), 2.1606958, 2.1606958, 0, 0, Vector2(0.97905755, 0.8548224), -0.09002917, 0.0, 0, 0]
 point_count = 3
 
-[sub_resource type="Curve" id="Curve_bright"]
-_limits = [0.0, 1.0, 0.0, 16.0]
-_data = [Vector2(0, 0.05), 0.0, 0.0, 0, 0, Vector2(3.628415, 0.18836719), 0.0, 0.0, 0, 0, Vector2(7.825136, 0.11899686), 0.0, 0.0, 0, 0, Vector2(13.857923, 0.59071505), 0.0, 0.0, 0, 0]
-point_count = 4
-
-[sub_resource type="Curve" id="Curve_dark"]
-_limits = [0.0, 1.0, 0.0, 16.0]
-_data = [Vector2(0, 0.32017082), 0.0, 0.0, 0, 0, Vector2(3.3224044, 1), 0.0, 0.0, 0, 0, Vector2(9.617486, 0.9306297), 0.0, 0.0, 0, 0]
-point_count = 3
-
-[sub_resource type="Curve" id="Curve_master"]
-_limits = [0.0, 1.0, 0.0, 16.0]
-_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1.8360656, 0.98612595), 0.04068835, 0.04068835, 0, 0, Vector2(5.639344, 1), 0.036619525, 0.036619525, 0, 0, Vector2(16, 1), 0.0, 0.0, 0, 0]
-point_count = 4
-
-[sub_resource type="Resource" id="Resource_wind_stream"]
-script = ExtResource("4_wind")
-mix_sample_rate = 16000
-bright_gain_curve = SubResource("Curve_bright")
-dark_gain_curve = SubResource("Curve_dark")
-master_gain_curve = SubResource("Curve_master")
-stereo_width = 0.36
-turbulence_amount = 0.68
-seed = 5
-base_gain = 2.75
-metadata/_custom_type_script = "uid://blkrgrgimv8ah"
-
 [sub_resource type="Resource" id="Resource_wind_track"]
 script = ExtResource("3_track")
-streams = Array[ExtResource("3_tdwxq")]([SubResource("Resource_wind_stream")])
 fade_in_curve = SubResource("Curve_tdwxq")
 audio_bus = &"Rain"
 metadata/_custom_type_script = "uid://boicinkvs7i0h"

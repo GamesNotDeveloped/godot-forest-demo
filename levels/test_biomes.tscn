@@ -49,18 +49,14 @@
 [ext_resource type="CameraAttributesPractical" uid="uid://c1eswprngr57f" path="res://materials/camera_attributes_filmic.tres" id="43_j63ba"]
 [ext_resource type="PackedScene" uid="uid://6ovpjh4yitp1" path="res://objects/wooden_crates.tscn" id="44_a77ay"]
 [ext_resource type="PackedScene" uid="uid://bp8c025u30g4x" path="res://objects/old_table.tscn" id="45_kf4y5"]
-[ext_resource type="Script" uid="uid://pw1ljvn4g7cy" path="res://addons/gnd_skydome/SunShaftsCompositorEffect.gd" id="51_7s3mn"]
 [ext_resource type="AudioStream" uid="uid://dodwn40mt8px7" path="res://sounds/334151__svampen__thunder-rolling-2.wav" id="51_kwcl0"]
 [ext_resource type="AudioStream" uid="uid://fqnuofshaed1" path="res://sounds/399656__bajko__sfx_thunder-blast.wav" id="52_c6or4"]
 [ext_resource type="PackedScene" uid="uid://bjv8m7r6c35e7" path="res://objects/lantern.tscn" id="52_xnulj"]
-[ext_resource type="AudioStream" uid="uid://bmg28qvj2t25u" path="res://sounds/91512__timkahn__switch_01-off.wav" id="53_8l7hv"]
-[ext_resource type="AudioStream" uid="uid://nbx0q5r0js2o" path="res://sounds/91512__timkahn__switch_01-on.wav" id="54_a3p2h"]
 [ext_resource type="PackedScene" uid="uid://cwjjvq34352ew" path="res://objects/campfire/campfire.glb" id="57_a77ay"]
 [ext_resource type="PackedScene" uid="uid://ckysduj2lni1n" path="res://objects/old_barrel.tscn" id="58_2o85u"]
 [ext_resource type="PackedScene" uid="uid://dlmg7edvvawlx" path="res://objects/medieval_cart.tscn" id="59_88um7"]
 [ext_resource type="Resource" uid="uid://cio1urtt4ih66" path="res://sounds/rain.tres" id="60_7yylr"]
-[ext_resource type="Resource" uid="uid://0cbhhf1c3kyv" path="res://sounds/flashlight_on.tres" id="60_o18jh"]
-[ext_resource type="Resource" uid="uid://x0hxb11jtjvy" path="res://sounds/flashlight_off.tres" id="61_7npft"]
+[ext_resource type="Resource" uid="uid://cno3ckr0ix65b" path="res://sounds/flashlight.tres" id="61_c8shn"]
 [ext_resource type="PackedScene" uid="uid://coi6allaasxrg" path="res://objects/old_lamp.tscn" id="62_g0a7c"]
 [ext_resource type="Script" uid="uid://dtao57kx5l2dw" path="res://addons/gnd_sfx/sfx_player_3d.gd" id="63_c8shn"]
 [ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="64_e686x"]
@@ -141,28 +137,10 @@ metadata/_custom_type_script = "uid://c7po5kdfyl86e"
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_terrain"]
 noise_type = 3
 
-[sub_resource type="CompositorEffect" id="CompositorEffect_c8shn"]
-resource_local_to_scene = false
-resource_name = ""
-enabled = true
-effect_callback_type = 4
-needs_motion_vectors = false
-needs_normal_roughness = false
-script = ExtResource("51_7s3mn")
-sun_screen_uv = Vector2(0.3732702, -0.062196914)
-sun_visible = true
-shaft_color = Color(0.71885, 0.68077505, 0.549425, 1)
-density = 0.07275000000000001
-bright_threshold = 0.182
-weight = 0.005325000000000001
-decay = 0.93
-exposure = 0.23850000000000005
-max_radius = 1.377
-sample_count = 8
-dither_strength = 1.4
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_5tj03"]
+noise = SubResource("FastNoiseLite_terrain")
 
-[sub_resource type="Compositor" id="Compositor_e686x"]
-compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_c8shn")])
+[sub_resource type="Compositor" id="Compositor_c8shn"]
 
 [sub_resource type="Animation" id="Animation_aty88"]
 length = 7.4666667
@@ -398,7 +376,7 @@ terrain_puddles_wet_darkening = 0.0
 terrain_puddles_specular = 0.32
 terrain_puddles_ripple_speed = 1.88
 terrain_puddles_normal_strength = 1.43
-noise = SubResource("FastNoiseLite_terrain")
+height_texture = SubResource("NoiseTexture2D_5tj03")
 grass_enabled = true
 grass_mesh = ExtResource("18_mh1bx")
 grass_material = ExtResource("18_5irjx")
@@ -436,7 +414,7 @@ clouds_texture_b = ExtResource("38_e686x")
 clouds_color_shadow = Color(0.8515625, 0.8515625, 0.8515625, 1)
 clouds_shadow_angular_distance_clear = 1.0
 clouds_wind_direction = Vector2(0.9363292, 0.35112345)
-clouds_wind_strength = 1.0277338453170477
+clouds_wind_strength = 0.9865688324587932
 clouds_evolution_strength = 0.775
 clouds_evolution_scale = 0.198
 clouds_scroll_b = Vector2(0.002, 0)
@@ -449,7 +427,7 @@ moon_phase_debug = 0.34453662941641205
 shader_atmosphere_sunset_boost = 0.47
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1.0000024, 0, 0, 0, 1.0000024, 0, 0, 0, 1, -5.7381387, 0.48387086, -2.6881857)
+transform = Transform3D(1.0000024, 0, 0, 0, 1.0000024, 0, 0, 0, 1, -5.7381625, 0.48385304, -2.6882107)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")
@@ -513,7 +491,7 @@ transform = Transform3D(0.99986225, 0.016574254, 0.00087471143, -0.01659732, 0.9
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1473354202]
 environment = ExtResource("39_jt4jh")
 camera_attributes = ExtResource("43_j63ba")
-compositor = SubResource("Compositor_e686x")
+compositor = SubResource("Compositor_c8shn")
 
 [node name="WorldTimer" type="Timer" parent="." unique_id=653712046]
 wait_time = 0.1
@@ -545,26 +523,13 @@ spot_attenuation = 0.43
 spot_angle = 19.73
 spot_angle_attenuation = 1.4640857
 
-[node name="FlashlightOn" type="AudioStreamPlayer3D" parent="PlayerHeadRef" unique_id=353177472]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.27, 0.2, 0)
-stream = ExtResource("54_a3p2h")
-volume_db = -3.0
-unit_size = 0.5
-max_db = 0.655
-max_distance = 5.0
-
-[node name="FlashlightOff" type="AudioStreamPlayer3D" parent="PlayerHeadRef" unique_id=1055158488]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.27, 0.2, 0)
-stream = ExtResource("53_8l7hv")
-volume_db = -3.0
-unit_size = 0.5
-max_db = 0.655
-max_distance = 5.0
-
 [node name="SoundEffects" type="Node3D" parent="PlayerHeadRef" unique_id=172855522]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.585, 0)
 script = ExtResource("63_c8shn")
-events = Array[ExtResource("64_e686x")]([ExtResource("65_e686x"), ExtResource("60_o18jh"), ExtResource("61_7npft")])
+events = Array[ExtResource("64_e686x")]([ExtResource("65_e686x"), ExtResource("61_c8shn")])
+playback_effect = &"flashlight"
+playback_automation = &"toggle"
+playback_automation_value = 0.58
 metadata/_custom_type_script = "uid://dtao57kx5l2dw"
 
 [node name="AtmoEffects" type="Node3D" parent="PlayerHeadRef" unique_id=1614317032]

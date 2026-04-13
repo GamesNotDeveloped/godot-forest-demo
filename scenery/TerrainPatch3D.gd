@@ -28,8 +28,12 @@ const WEATHER_PROBE_OFFSETS: Array[Vector2] = [
 
 var _regenerate_queued := false
 var _editor_debounce_deadline_msec := 0
-var _connected_noise: FastNoiseLite
-var _noise_changed_callable := Callable(self, "_on_noise_changed")
+var _connected_height_texture: Texture2D
+var _height_texture_changed_callable := Callable(self, "_on_height_texture_changed")
+var _connected_height_noise: FastNoiseLite
+var _height_noise_changed_callable := Callable(self, "_on_height_noise_changed")
+var _height_image_cache: Image
+var _height_texture_cache_key := ""
 var _grass_dirty := true
 var _grass_last_camera_local := Vector3.INF
 var _grass_build_thread := Thread.new()
@@ -121,15 +125,22 @@ var _editor_access = null
 @export_range(0.0, 5.0, 0.01) var terrain_puddles_ripple_max_radius: float = 1.0
 @export_range(0.0, 8.0, 0.01) var terrain_puddles_normal_strength: float = 1.0
 
-@export_group("Noise")
-@export var noise: FastNoiseLite:
+@export_group("Height Map")
+@export var height_texture: Texture2D:
     set(value):
-        if noise == value:
+        if height_texture == value:
             return
-        _disconnect_noise()
-        noise = value
-        _connect_noise()
+        _disconnect_height_texture()
+        height_texture = value
+        _invalidate_height_image_cache()
+        _connect_height_texture()
         _queue_regenerate()
+
+var noise: FastNoiseLite:
+    get:
+        return _get_height_noise()
+    set(value):
+        _set_legacy_noise(value)
 
 @export_group("Collision")
 @export var generate_collision := true:
@@ -264,22 +275,20 @@ var regenerate_button := regenerate
 
 
 func _init() -> void:
-    if noise == null:
-        noise = FastNoiseLite.new()
-        noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-        noise.frequency = 0.03
-        _connect_noise()
+    if height_texture == null:
+        height_texture = _create_default_height_texture()
+    _connect_height_texture()
 
 
 func _enter_tree() -> void:
-    _connect_noise()
+    _connect_height_texture()
     _refresh_process_state()
     if Engine.is_editor_hint():
         call_deferred("_deferred_regenerate")
 
 
 func _ready() -> void:
-    _connect_noise()
+    _connect_height_texture()
     _refresh_process_state()
     if not Engine.is_editor_hint():
         _queue_regenerate()
@@ -289,7 +298,7 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
     set_process(false)
-    _disconnect_noise()
+    _disconnect_height_texture()
     if _grass_build_thread.is_started():
         _grass_build_thread.wait_to_finish()
 
@@ -437,9 +446,60 @@ func _append_triangle(indices: PackedInt32Array, normals_accum: Array[Vector3], 
 
 
 func _sample_height(local_x: float, local_z: float) -> float:
-    if noise == null or height_scale == 0.0:
+    return _sample_height_from_data(local_x, local_z, size, height_scale, _get_height_noise(), _get_height_image())
+
+
+func _sample_height_from_data(
+    local_x: float,
+    local_z: float,
+    terrain_size: Vector2,
+    sample_height_scale: float,
+    height_noise: FastNoiseLite,
+    height_image: Image
+) -> float:
+    if sample_height_scale == 0.0:
         return 0.0
-    return noise.get_noise_2d(local_x, local_z) * height_scale
+    if height_noise != null:
+        return height_noise.get_noise_2d(local_x, local_z) * sample_height_scale
+    if height_image == null or height_image.is_empty():
+        return 0.0
+    return _sample_heightmap_image(height_image, terrain_size, local_x, local_z) * sample_height_scale
+
+
+func _sample_heightmap_image(image: Image, terrain_size: Vector2, local_x: float, local_z: float) -> float:
+    if image == null or image.is_empty():
+        return 0.0
+    var width := image.get_width()
+    var height := image.get_height()
+    if width <= 0 or height <= 0:
+        return 0.0
+
+    var uv := _terrain_local_to_height_uv(local_x, local_z, terrain_size)
+    var pixel_x := uv.x * float(width - 1)
+    var pixel_y := uv.y * float(height - 1)
+    var x0 := clampi(int(floor(pixel_x)), 0, width - 1)
+    var y0 := clampi(int(floor(pixel_y)), 0, height - 1)
+    var x1 := mini(x0 + 1, width - 1)
+    var y1 := mini(y0 + 1, height - 1)
+    var tx := pixel_x - float(x0)
+    var ty := pixel_y - float(y0)
+
+    var h00 := _sample_mask_channel(image.get_pixel(x0, y0), MaskChannel.LUMINANCE)
+    var h10 := _sample_mask_channel(image.get_pixel(x1, y0), MaskChannel.LUMINANCE)
+    var h01 := _sample_mask_channel(image.get_pixel(x0, y1), MaskChannel.LUMINANCE)
+    var h11 := _sample_mask_channel(image.get_pixel(x1, y1), MaskChannel.LUMINANCE)
+    var top := lerpf(h00, h10, tx)
+    var bottom := lerpf(h01, h11, tx)
+    return lerpf(top, bottom, ty)
+
+
+func _terrain_local_to_height_uv(local_x: float, local_z: float, terrain_size: Vector2) -> Vector2:
+    if terrain_size.x <= 0.0 or terrain_size.y <= 0.0:
+        return Vector2.ZERO
+    return Vector2(
+        clampf((local_x / terrain_size.x) + 0.5, 0.0, 1.0),
+        clampf((local_z / terrain_size.y) + 0.5, 0.0, 1.0)
+    )
 
 
 func _ensure_mesh_instance() -> MeshInstance3D:
@@ -633,7 +693,10 @@ func _start_grass_build(camera_local: Vector3) -> void:
     _grass_build_in_flight = true
     _grass_build_request_id += 1
     var request_id := _grass_build_request_id
-    var noise_copy := noise.duplicate() if noise != null else null
+    var height_noise := _get_height_noise()
+    var height_noise_copy := height_noise.duplicate() if height_noise != null else null
+    var height_image := _get_height_image()
+    var height_image_copy := height_image.duplicate() if height_image != null else null
     var grass_mask_image := _get_grass_mask_image()
     var grass_mask_copy := grass_mask_image.duplicate() if grass_mask_image != null else null
     var payload := {
@@ -647,7 +710,8 @@ func _start_grass_build(camera_local: Vector3) -> void:
         "scale_min": minf(grass_scale_min, grass_scale_max),
         "scale_max": maxf(grass_scale_min, grass_scale_max),
         "height_scale": height_scale,
-        "noise": noise_copy,
+        "height_noise": height_noise_copy,
+        "height_image": height_image_copy,
         "grass_mask_enabled": grass_mask_enabled,
         "grass_mask_image": grass_mask_copy,
         "grass_mask_area_size": _get_mask_area_size(),
@@ -711,7 +775,8 @@ func _build_grass_transforms(payload: Dictionary) -> Dictionary:
     var max_z := int(ceil((camera_local.z + radius) / spacing))
     var half_size := terrain_size * 0.5
     var transforms: Array[Transform3D] = []
-    var noise_resource = payload["noise"] as FastNoiseLite
+    var height_noise = payload["height_noise"] as FastNoiseLite
+    var height_image = payload["height_image"] as Image
     var mask_enabled: bool = payload["grass_mask_enabled"]
     var mask_image = payload["grass_mask_image"] as Image
     var mask_area_size: Vector2 = payload["grass_mask_area_size"]
@@ -757,9 +822,14 @@ func _build_grass_transforms(payload: Dictionary) -> Dictionary:
             if _hash_to_unit(_hash_u32(hash ^ 0x4f1bbcdc)) > (keep_probability * mask_density):
                 continue
 
-            var local_y := 0.0
-            if noise_resource != null and float(payload["height_scale"]) != 0.0:
-                local_y = noise_resource.get_noise_2d(local_x, local_z) * float(payload["height_scale"])
+            var local_y := _sample_height_from_data(
+                local_x,
+                local_z,
+                terrain_size,
+                float(payload["height_scale"]),
+                height_noise,
+                height_image
+            )
             local_y += float(payload["height_offset"])
             var yaw := _hash_to_unit(_hash_u32(hash ^ 0xa53c9d71)) * TAU
             var scale_t := _hash_to_unit(_hash_u32(hash ^ 0x9e3779b9))
@@ -996,6 +1066,91 @@ func _save_grass_mask_image_to_disk(image: Image) -> void:
     image.save_png(path)
 
 
+func _create_default_height_texture() -> NoiseTexture2D:
+    var default_noise := FastNoiseLite.new()
+    default_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+    default_noise.frequency = 0.03
+
+    var texture := NoiseTexture2D.new()
+    texture.width = 512
+    texture.height = 512
+    texture.noise = default_noise
+    return texture
+
+
+func _get_height_noise() -> FastNoiseLite:
+    var noise_texture := height_texture as NoiseTexture2D
+    if noise_texture == null:
+        return null
+    return noise_texture.noise as FastNoiseLite
+
+
+func _set_legacy_noise(value: FastNoiseLite) -> void:
+    var current_noise := _get_height_noise()
+    if current_noise == value:
+        return
+
+    var noise_texture := height_texture as NoiseTexture2D
+    if value == null:
+        if noise_texture == null:
+            if height_texture != null:
+                height_texture = null
+            return
+        _disconnect_height_texture()
+        noise_texture.noise = null
+        _invalidate_height_image_cache()
+        _connect_height_texture()
+        _queue_regenerate()
+        return
+
+    if noise_texture == null:
+        noise_texture = _create_default_height_texture()
+        noise_texture.noise = value
+        height_texture = noise_texture
+        return
+
+    _disconnect_height_texture()
+    noise_texture.noise = value
+    _invalidate_height_image_cache()
+    _connect_height_texture()
+    _queue_regenerate()
+
+
+func _get_height_image() -> Image:
+    if height_texture == null:
+        return null
+    if _get_height_noise() != null:
+        return null
+    var cache_key := _build_height_texture_cache_key()
+    if _height_image_cache != null and _height_texture_cache_key == cache_key and not _height_image_cache.is_empty():
+        return _height_image_cache
+    var image := height_texture.get_image()
+    if image == null or image.is_empty():
+        return null
+    if image.is_compressed():
+        image.decompress()
+    if image.get_format() != Image.FORMAT_RGBA8:
+        image.convert(Image.FORMAT_RGBA8)
+    _height_image_cache = image
+    _height_texture_cache_key = cache_key
+    return _height_image_cache
+
+
+func _invalidate_height_image_cache() -> void:
+    _height_image_cache = null
+    _height_texture_cache_key = ""
+
+
+func _build_height_texture_cache_key() -> String:
+    if height_texture == null:
+        return ""
+    var path := height_texture.resource_path
+    var modified := ""
+    if path != "" and FileAccess.file_exists(path):
+        modified = str(FileAccess.get_modified_time(path))
+    return "%s|%s" % [_resource_id(height_texture), modified]
+
+
 func _world_radius_to_mask_pixel_radius(radius_world: float, width: int, height: int) -> int:
     var area_size := _get_mask_area_size()
     var world_per_pixel_x := area_size.x / maxf(float(width), 1.0)
@@ -1109,23 +1264,37 @@ func _remove_collision_body() -> void:
         body.queue_free()
 
 
-func _connect_noise() -> void:
-    if noise == null or noise == _connected_noise:
-        return
-    if not noise.changed.is_connected(_noise_changed_callable):
-        noise.changed.connect(_noise_changed_callable)
-    _connected_noise = noise
+func _connect_height_texture() -> void:
+    if height_texture != null and height_texture != _connected_height_texture:
+        if not height_texture.changed.is_connected(_height_texture_changed_callable):
+            height_texture.changed.connect(_height_texture_changed_callable)
+        _connected_height_texture = height_texture
+
+    var height_noise := _get_height_noise()
+    if height_noise != null and height_noise != _connected_height_noise:
+        if not height_noise.changed.is_connected(_height_noise_changed_callable):
+            height_noise.changed.connect(_height_noise_changed_callable)
+        _connected_height_noise = height_noise
 
 
-func _disconnect_noise() -> void:
-    if _connected_noise == null:
-        return
-    if _connected_noise.changed.is_connected(_noise_changed_callable):
-        _connected_noise.changed.disconnect(_noise_changed_callable)
-    _connected_noise = null
+func _disconnect_height_texture() -> void:
+    if _connected_height_texture != null and _connected_height_texture.changed.is_connected(_height_texture_changed_callable):
+        _connected_height_texture.changed.disconnect(_height_texture_changed_callable)
+    _connected_height_texture = null
+
+    if _connected_height_noise != null and _connected_height_noise.changed.is_connected(_height_noise_changed_callable):
+        _connected_height_noise.changed.disconnect(_height_noise_changed_callable)
+    _connected_height_noise = null
 
 
-func _on_noise_changed() -> void:
+func _on_height_texture_changed() -> void:
+    _disconnect_height_texture()
+    _invalidate_height_image_cache()
+    _connect_height_texture()
+    _queue_regenerate()
+
+
+func _on_height_noise_changed() -> void:
     _queue_regenerate()
 
 
