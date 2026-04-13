@@ -245,11 +245,13 @@ func _on_weather_thunder(strength: float) -> void:
 
 
 func _on_weather_rain_strength_changed(strength):
-    $PlayerHeadRef/AtmoEffects.play_automation("rain", "strength", strength)
+    #$PlayerHeadRef/AtmoEffects.play_automation("rain", "strength", strength)
+    $AtmoSfxPlayer.play_automation("rain", "strength", strength)
 
 
 func _on_weather_wind_changed(speed: float, _direction: Vector2) -> void:
-    $PlayerHeadRef/AtmoEffects.play_automation("wind", "strength", maxf(speed, 0.0))
+    #$PlayerHeadRef/AtmoEffects.play_automation("wind", "strength", maxf(speed, 0.0))
+    $AtmoSfxPlayer.play_automation("wind", "strength", speed)
 
 
 

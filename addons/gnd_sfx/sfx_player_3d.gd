@@ -2,26 +2,16 @@
 extends Node3D
 class_name SfxPlayer3D
 
-enum VoiceType { TRACK, AUTOMATION }
-
-class ActiveVoice:
-    var voice_type: VoiceType = VoiceType.TRACK
-    var player: AudioStreamPlayer3D
-    var track: SfxTrack
-    var sfx_stream: SfxStream
-    var stream_length := 0.0
-    var manual_fade_out_started := false
-    var manual_fade_out_elapsed := 0.0
-    var event_name: StringName = &""
-    var automation_name: StringName = &""
-    var automation: SfxAutomation
-    var automation_value := 0.0
-    var generator_stream: SfxWindGeneratorStream
-    var generator_runtime
+const SfxPlaybackRuntimeScript = preload("res://addons/gnd_sfx/sfx_playback_runtime.gd")
 
 signal finished
 
-@export var events: Array[SfxEvent] = []
+var _runtime = SfxPlaybackRuntimeScript.new()
+
+@export var events: Array[SfxEvent] = []:
+    set(value):
+        events = value
+        _runtime.set_events(events)
 
 @export var max_tracks: int = 10:
     set(value):
@@ -53,90 +43,42 @@ signal finished
         panning_strength = value
         sync_values()
 
-var _players: Array[AudioStreamPlayer3D] = []
-var _active_voices: Array[ActiveVoice] = []
-var _players_in_use = 0
-var _players_needs_rebuild = true
+var _players: Array = []
 
-func _update_players_in_use_debug(delta: int) -> void:
-    _players_in_use = _active_voices.size()
-    print("PLAYER %s %s" % [("+1" if delta > 0 else "-1"), _players_in_use])
 
-func _find_active_voice_index(player: AudioStreamPlayer3D) -> int:
-    for index in range(_active_voices.size()):
-        if _active_voices[index].player == player:
-            return index
-    return -1
+func _ready() -> void:
+    _ensure_runtime_connections()
+    _runtime.set_events(events)
+    sync_values(true)
+    set_process(false)
 
-func _find_automation_voice_index(event_name: StringName, automation_name: StringName) -> int:
-    for index in range(_active_voices.size()):
-        var voice = _active_voices[index]
-        if voice.voice_type != VoiceType.AUTOMATION:
-            continue
-        if voice.event_name == event_name and voice.automation_name == automation_name:
-            return index
-    return -1
 
-func _is_automation_voice(voice: ActiveVoice, event_name: StringName, automation_name: StringName) -> bool:
-    return (
-        voice.voice_type == VoiceType.AUTOMATION
-        and voice.event_name == event_name
-        and voice.automation_name == automation_name
-    )
+func _process(delta: float) -> void:
+    _runtime.update(delta)
 
-func _requires_process() -> bool:
-    for voice in _active_voices:
-        if voice.voice_type == VoiceType.TRACK or _is_generator_voice(voice):
-            return true
-    return false
 
-func _get_available_player() -> AudioStreamPlayer3D:
-    for player in _players:
-        if _find_active_voice_index(player) == -1:
-            return player
-    return null
-
-func _find_event(event_name: StringName) -> SfxEvent:
-    for event in events:
-        if event.name == event_name:
-            return event
-    return null
-
-func _find_automation(event_name: StringName, automation_name: StringName) -> SfxAutomation:
-    var event = _find_event(event_name)
-    if event == null:
-        return null
-
-    for automation in event.automations:
-        if automation.parameter_name == automation_name:
-            return automation
-
-    return null
-
-func _resolve_audio_bus(bus_name: StringName) -> StringName:
-    return &"Master" if String(bus_name).is_empty() else bus_name
-
-func sync_values(rebuild=false) -> void:
+func sync_values(rebuild := false) -> void:
     if Engine.is_editor_hint():
         return
 
+    _ensure_runtime_connections()
     if rebuild:
+        _runtime.clear()
         for player in _players:
-            player.stop()
-            remove_child(player)
-            player.queue_free()
+            if is_instance_valid(player):
+                remove_child(player)
+                player.queue_free()
         _players = []
-        _active_voices = []
-        _players_in_use = 0
-        set_process(false)
-        var i = 0
+        var i := 0
         while i < max_tracks:
-            var player = AudioStreamPlayer3D.new()
+            var player := AudioStreamPlayer3D.new()
             _players.append(player)
             add_child(player)
             player.finished.connect(_on_player_finished.bind(player))
             i += 1
+        _runtime.set_players(_players)
 
+    _runtime.set_events(events)
     for player in _players:
         player.max_polyphony = max_polyphony
         player.max_distance = max_distance_m
@@ -145,320 +87,38 @@ func sync_values(rebuild=false) -> void:
         player.unit_size = unit_size
 
 
-func _ready() -> void:
-    sync_values(true)
-    set_process(false)
-
-func _on_player_finished(player: AudioStreamPlayer3D):
-    _release_voice(_find_active_voice_index(player))
-
-func _get_curve_duration(curve: Curve) -> float:
-    if curve == null:
-        return 0.0
-    return maxf(curve.max_domain - curve.min_domain, 0.0)
-
-func _sample_curve_gain(curve: Curve, elapsed: float) -> float:
-    if curve == null:
-        return 1.0
-
-    var duration = _get_curve_duration(curve)
-    if duration <= 0.0:
-        return clampf(curve.sample_baked(curve.max_domain), 0.0, 1.0)
-
-    var sample_position = curve.min_domain + clampf(elapsed, 0.0, duration)
-    return clampf(curve.sample_baked(sample_position), 0.0, 1.0)
-
-func _get_voice_base_gain(voice: ActiveVoice) -> float:
-    return voice.sfx_stream.base_gain if voice.sfx_stream != null else 1.0
-
-func _is_generator_voice(voice: ActiveVoice) -> bool:
-    return voice.generator_stream != null and voice.generator_runtime != null
-
-func _set_player_gain(player: AudioStreamPlayer3D, gain: float, base_gain: float = 1.0) -> void:
-    player.volume_db = linear_to_db(maxf(gain * maxf(base_gain, 0.0), 0.0001))
-
-func _sample_automation_curve(curve: Curve, automation: SfxAutomation, value: float, default_value: float) -> float:
-    if curve == null:
-        return default_value
-
-    var input_min = minf(automation.min_domain, automation.max_domain)
-    var input_max = maxf(automation.min_domain, automation.max_domain)
-    var clamped_value = clampf(value, input_min, input_max)
-
-    if is_equal_approx(input_min, input_max):
-        return curve.sample_baked(curve.min_domain)
-
-    var weight = inverse_lerp(input_min, input_max, clamped_value)
-    var sample_position = lerpf(curve.min_domain, curve.max_domain, weight)
-    return curve.sample_baked(sample_position)
-
-func _apply_automation_value(voice: ActiveVoice) -> void:
-    if voice.automation == null or voice.track == null or not is_instance_valid(voice.player):
-        return
-
-    var fade_in_gain = _sample_automation_curve(voice.track.fade_in_curve, voice.automation, voice.automation_value, 1.0)
-    var fade_out_gain = _sample_automation_curve(voice.track.fade_out_curve, voice.automation, voice.automation_value, 1.0)
-    var pitch = _sample_automation_curve(voice.track.pitch_curve, voice.automation, voice.automation_value, 1.0)
-
-    _set_player_gain(
-        voice.player,
-        clampf(fade_in_gain, 0.0, 1.0) * clampf(fade_out_gain, 0.0, 1.0),
-        _get_voice_base_gain(voice)
-    )
-    voice.player.pitch_scale = maxf(pitch, 0.01)
-    _pump_generator_voice(voice)
-
-func _build_audio_stream_for_voice(sfx_stream: SfxStream) -> AudioStream:
-    if sfx_stream == null:
-        return null
-    if sfx_stream is SfxWindGeneratorStream:
-        return (sfx_stream as SfxWindGeneratorStream).build_audio_stream()
-    return sfx_stream.stream
-
-func _pump_generator_voice(voice: ActiveVoice) -> void:
-    if not _is_generator_voice(voice):
-        return
-    var speed := voice.automation_value if voice.voice_type == VoiceType.AUTOMATION else 0.0
-    voice.generator_stream.fill_buffer(voice.generator_runtime, speed)
-
-func _start_voice(
-    player: AudioStreamPlayer3D,
-    track: SfxTrack,
-    sfx_stream: SfxStream,
-    voice_type: VoiceType,
-    event_name: StringName = &"",
-    automation_name: StringName = &"",
-    automation: SfxAutomation = null,
-    automation_value: float = 0.0
-) -> bool:
-    if player == null or track == null or sfx_stream == null:
-        return false
-
-    var stream := _build_audio_stream_for_voice(sfx_stream)
-    if stream == null:
-        return false
-
-    player.stream = stream
-    player.bus = _resolve_audio_bus(track.audio_bus)
-    player.pitch_scale = 1.0
-    player.play()
-
-    var voice := ActiveVoice.new()
-    voice.voice_type = voice_type
-    voice.player = player
-    voice.track = track
-    voice.sfx_stream = sfx_stream
-    voice.stream_length = maxf(stream.get_length(), 0.0)
-    voice.event_name = event_name
-    voice.automation_name = automation_name
-    voice.automation = automation
-    voice.automation_value = automation_value
-
-    if sfx_stream is SfxWindGeneratorStream:
-        voice.generator_stream = sfx_stream as SfxWindGeneratorStream
-        voice.generator_runtime = voice.generator_stream.create_runtime(
-            player.get_stream_playback() as AudioStreamGeneratorPlayback
-        )
-        if voice.generator_runtime == null:
-            player.stop()
-            push_error("Failed to initialize generator playback for sound track")
-            return false
-        _pump_generator_voice(voice)
-
-    _active_voices.append(voice)
-
-    if voice_type == VoiceType.AUTOMATION:
-        _apply_automation_value(voice)
-    else:
-        _set_player_gain(player, _sample_curve_gain(track.fade_in_curve, 0.0), _get_voice_base_gain(voice))
-
-    _update_players_in_use_debug(1)
-    set_process(_requires_process())
-    return true
-
-func _release_voice(index: int) -> void:
-    if index == -1:
-        return
-
-    var voice = _active_voices[index]
-    if is_instance_valid(voice.player):
-        voice.player.volume_db = 0.0
-        voice.player.pitch_scale = 1.0
-    _active_voices.remove_at(index)
-    _update_players_in_use_debug(-1)
-    set_process(_requires_process())
-
-func _stop_voice(index: int) -> void:
-    if index == -1:
-        return
-
-    var voice = _active_voices[index]
-    _release_voice(index)
-    if is_instance_valid(voice.player):
-        voice.player.stop()
-        voice.player.stream = null
-
-func _update_track_voice(index: int, delta: float) -> bool:
-    if index < 0 or index >= _active_voices.size():
-        return false
-
-    var voice = _active_voices[index]
-    if not is_instance_valid(voice.player) or not voice.player.playing:
-        _release_voice(index)
-        return false
-
-    var playback_position = voice.player.get_playback_position()
-    var fade_in_gain = _sample_curve_gain(voice.track.fade_in_curve, playback_position)
-    var fade_out_gain = 1.0
-    var fade_out_duration = _get_curve_duration(voice.track.fade_out_curve)
-
-    if voice.manual_fade_out_started:
-        voice.manual_fade_out_elapsed += delta
-        fade_out_gain = _sample_curve_gain(voice.track.fade_out_curve, voice.manual_fade_out_elapsed)
-        if fade_out_duration <= 0.0 or voice.manual_fade_out_elapsed >= fade_out_duration:
-            _stop_voice(index)
-            return false
-    elif voice.stream_length > 0.0 and fade_out_duration > 0.0:
-        var remaining = maxf(voice.stream_length - playback_position, 0.0)
-        if remaining <= fade_out_duration:
-            fade_out_gain = _sample_curve_gain(voice.track.fade_out_curve, fade_out_duration - remaining)
-
-        if playback_position >= voice.stream_length:
-            _stop_voice(index)
-            return false
-
-    _set_player_gain(voice.player, fade_in_gain * fade_out_gain, _get_voice_base_gain(voice))
-    return true
-
-func _update_voice(index: int, delta: float) -> bool:
-    if index < 0 or index >= _active_voices.size():
-        return false
-
-    var voice = _active_voices[index]
-    if _is_generator_voice(voice):
-        if not is_instance_valid(voice.player) or not voice.player.playing:
-            _release_voice(index)
-            return false
-        _pump_generator_voice(voice)
-        return true
-
-    if voice.voice_type == VoiceType.AUTOMATION:
-        if not is_instance_valid(voice.player) or not voice.player.playing:
-            _release_voice(index)
-            return false
-        return true
-
-    return _update_track_voice(index, delta)
-
-func _process(delta: float) -> void:
-    for index in range(_active_voices.size() - 1, -1, -1):
-        _update_voice(index, delta)
-
-func _stop_all_players():
-    for player in _players:
-        player.stop()
-        player.pitch_scale = 1.0
-        player.volume_db = 0.0
-    _active_voices = []
-    _players_in_use = 0
-    set_process(false)
-
-func _stop_track_voices(immediate: bool) -> void:
-    for index in range(_active_voices.size() - 1, -1, -1):
-        var voice = _active_voices[index]
-        if voice.voice_type != VoiceType.TRACK:
-            continue
-
-        if immediate:
-            _stop_voice(index)
-            continue
-
-        if voice.manual_fade_out_started:
-            continue
-
-        if _get_curve_duration(voice.track.fade_out_curve) <= 0.0:
-            _stop_voice(index)
-            continue
-
-        voice.manual_fade_out_started = true
-        voice.manual_fade_out_elapsed = 0.0
-
 func play(event_name: StringName, parameters: Dictionary = {}) -> void:
-    if not event_name:
-        return
-    var event = _find_event(event_name)
-    if event:
-        #_stop_all_players()
-        for track in event.tracks:
-            var player = _get_available_player()
-            if not player:
-                break
+    _runtime.play(event_name, parameters)
 
-            var sfx_stream = track.get_next_sfx_stream()
-            _start_voice(player, track, sfx_stream, VoiceType.TRACK)
-        return
-    push_error("Unknown sound event ", event_name)
 
 func stop(immediate: bool = false) -> void:
-    if immediate:
-        _stop_track_voices(true)
-        return
+    _runtime.stop(immediate)
 
-    _stop_track_voices(false)
 
 func play_automation(event_name: StringName, automation_name: StringName, value: float = 0.0) -> void:
-    if not event_name or not automation_name:
-        return
+    _runtime.play_automation(event_name, automation_name, value)
 
-    var has_active_voices = false
-    for voice in _active_voices:
-        if not _is_automation_voice(voice, event_name, automation_name):
-            continue
-        has_active_voices = true
-        voice.automation_value = value
-        _apply_automation_value(voice)
-
-    if has_active_voices:
-        return
-
-    var automation = _find_automation(event_name, automation_name)
-    if automation == null:
-        push_error("Unknown sound automation ", event_name, ":", automation_name)
-        return
-
-    if automation.tracks.is_empty():
-        push_error("Automation tracks are missing ", event_name, ":", automation_name)
-        return
-
-    for track in automation.tracks:
-        var player = _get_available_player()
-        if player == null:
-            push_warning("No free player for automation %s:%s" % [event_name, automation_name])
-            break
-
-        var sfx_stream = track.get_next_sfx_stream()
-        if sfx_stream == null:
-            continue
-
-        _start_voice(
-            player,
-            track,
-            sfx_stream,
-            VoiceType.AUTOMATION,
-            event_name,
-            automation_name,
-            automation,
-            value
-        )
-
-    set_process(_requires_process())
 
 func stop_automation(event_name: StringName, automation_name: StringName, immediate: bool = false) -> void:
-    if not event_name or not automation_name:
-        return
+    _runtime.stop_automation(event_name, automation_name, immediate)
 
-    for index in range(_active_voices.size() - 1, -1, -1):
-        var voice = _active_voices[index]
-        if not _is_automation_voice(voice, event_name, automation_name):
-            continue
-        _stop_voice(index)
+
+func _ensure_runtime_connections() -> void:
+    if not _runtime.process_requirement_changed.is_connected(_on_runtime_process_requirement_changed):
+        _runtime.process_requirement_changed.connect(_on_runtime_process_requirement_changed)
+    if not _runtime.finished.is_connected(_on_runtime_finished):
+        _runtime.finished.connect(_on_runtime_finished)
+
+
+func _on_runtime_process_requirement_changed(required: bool) -> void:
+    if Engine.is_editor_hint():
+        return
+    set_process(required)
+
+
+func _on_runtime_finished() -> void:
+    finished.emit()
+
+
+func _on_player_finished(player: AudioStreamPlayer3D) -> void:
+    _runtime.handle_player_finished(player)
