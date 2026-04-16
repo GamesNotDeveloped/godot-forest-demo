@@ -62,6 +62,7 @@ global uniform float gnd_wind_strength = 0.15;
 global uniform float gnd_wind_turbulence = 1.0;
 global uniform float gnd_wind_time = 0.0;
 global uniform sampler2D gnd_wind_pattern : source_color, repeat_enable, filter_linear, hint_default_white;
+global uniform bool gnd_high_quality_foliage;
 
 varying vec2 uv_align;
 varying vec2 uv_scale;
@@ -127,7 +128,7 @@ void vertex() {
 	vec3 scale = vec3(scale_w, scale_h, scale_w) * (1.0 + scale_rand);
 	VERTEX = NODE_POSITION_WORLD + (align * dist * scale);
 
-	if(dist > 0.0 && interactive_mode) {
+	if(dist > 0.0 && interactive_mode && gnd_high_quality_foliage) {
 		float node_x = NODE_POSITION_WORLD.x / 50.0;
 		float node_z = NODE_POSITION_WORLD.z / 50.0;
 		vec2 uv_disp = vec2(clamp((node_x - (sgt_player_position.x - 0.5)), 0.0, 1.0), clamp((node_z - (sgt_player_position.z - 0.5)), 0.0, 1.0));
@@ -161,15 +162,17 @@ void fragment() {
 	vec2 uv = (UV * uv_scale) + uv_align;
 	vec4 albedo_tex = texture(texture_albedo, uv);
 	ALBEDO = albedo.rgb * albedo_tex.rgb;
-	NORMAL_MAP = texture(texture_normal, uv).rgb;
-	NORMAL_MAP_DEPTH = normal_scale;
 	METALLIC = metallic;
 	ROUGHNESS = roughness;
 	SPECULAR = specular;
-	float metallic_tex = dot(texture(texture_metallic, uv), metallic_texture_channel);
-	METALLIC = metallic_tex * metallic;
-	float roughness_tex = dot(texture(texture_roughness, uv), roughness_texture_channel);
-	ROUGHNESS = roughness_tex * roughness;
+	if (gnd_high_quality_foliage) {
+		NORMAL_MAP = texture(texture_normal, uv).rgb;
+		NORMAL_MAP_DEPTH = normal_scale;
+		float metallic_tex = dot(texture(texture_metallic, uv), metallic_texture_channel);
+		METALLIC = metallic_tex * metallic;
+		float roughness_tex = dot(texture(texture_roughness, uv), roughness_texture_channel);
+		ROUGHNESS = roughness_tex * roughness;
+	}
 	ALPHA *= albedo.a * albedo_tex.a;
 	ALPHA_SCISSOR_THRESHOLD = alpha_scissor_threshold;
     BACKLIGHT = backlight;

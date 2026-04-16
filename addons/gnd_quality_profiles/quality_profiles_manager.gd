@@ -72,6 +72,12 @@ func _reapply_profile_next_frame(profile: QualityProfile, serial: int) -> void:
 func _apply_profile_settings(profile: QualityProfile) -> void:
     _apply_viewport_profile(profile)
     _apply_world_environment_profile(profile)
+    _apply_global_shader_parameters(profile)
+
+
+func _apply_global_shader_parameters(profile: QualityProfile) -> void:
+    RenderingServer.global_shader_parameter_set(&"gnd_high_quality_sky", profile.high_quality_sky)
+    RenderingServer.global_shader_parameter_set(&"gnd_high_quality_foliage", profile.high_quality_foliage)
 
 
 func _apply_viewport_profile(profile: QualityProfile) -> void:

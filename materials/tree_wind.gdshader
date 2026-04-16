@@ -1,11 +1,12 @@
 shader_type spatial;
-render_mode blend_mix, depth_prepass_alpha, cull_disabled, diffuse_burley, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_lambert, specular_schlick_ggx;
 
 global uniform vec2 gnd_wind_direction;
 global uniform float gnd_wind_speed;
 global uniform float gnd_wind_strength;
 global uniform float gnd_wind_time;
 
+global uniform bool gnd_high_quality_foliage;
 uniform sampler2D albedo_texture : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform bool use_albedo_texture = true;
 uniform vec4 albedo_color : source_color = vec4(1.0);
@@ -53,9 +54,12 @@ void vertex() {
     float strength = gnd_wind_strength * wind_strength;
 
     float primary = sin(dot(world_pos.xz, wind_dir * branch_frequency) + phase_time);
-    float secondary = sin(dot(world_pos.xz, vec2(-wind_dir.y, wind_dir.x) * detail_frequency) + phase_time * 1.73);
-    float gust = sin(dot(world_pos.xz, vec2(0.19, 0.27)) + phase_time * 0.41);
-    float sway = primary + secondary * 0.35 + gust * 0.2;
+    float sway = primary;
+    if (gnd_high_quality_foliage) {
+        float secondary = sin(dot(world_pos.xz, vec2(-wind_dir.y, wind_dir.x) * detail_frequency) + phase_time * 1.73);
+        float gust = sin(dot(world_pos.xz, vec2(0.19, 0.27)) + phase_time * 0.41);
+        sway = primary + secondary * 0.35 + gust * 0.2;
+    }
     float bend = mix(trunk_strength, strength, height_factor) * sway;
 
     VERTEX.xz += wind_dir * bend * height_factor;
@@ -76,12 +80,12 @@ void fragment() {
     BACKLIGHT = backlight_color * base.a;
     SSS_STRENGTH = sss_strength;
 
-    if (use_normal_texture) {
+    if (gnd_high_quality_foliage && use_normal_texture) {
         NORMAL_MAP = texture(normal_texture, UV).rgb;
         NORMAL_MAP_DEPTH = normal_scale;
     }
 
-    if (use_roughness_texture) {
+    if (gnd_high_quality_foliage && use_roughness_texture) {
         vec4 roughness_sample = texture(roughness_texture, UV);
         ROUGHNESS = sample_channel(roughness_sample, roughness_texture_channel);
     }

@@ -1,17 +1,117 @@
 [gd_resource type="Environment" format=3 uid="uid://0gabw6jt7o71"]
 
 [ext_resource type="CompressedTexture3D" uid="uid://dtbgscvfrtl8e" path="res://lut/lut3.png" id="1_lut"]
-[ext_resource type="Sky" uid="uid://c2k13c6hxy46b" path="res://materials/sky.tres" id="2_sky"]
+[ext_resource type="Shader" uid="uid://ck1w2pkpwin11" path="res://addons/gnd_skydome/filmic_procedural_sky.gdshader" id="2_q16iv"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_q16iv"]
+seed = 10
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_kua6p"]
+noise = SubResource("FastNoiseLite_q16iv")
+seamless = true
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_ffrr2"]
+seed = 100
+frequency = 0.008
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_wfg44"]
+noise = SubResource("FastNoiseLite_ffrr2")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vhyk4"]
+shader = ExtResource("2_q16iv")
+shader_parameter/cloud_tex_a = SubResource("NoiseTexture2D_kua6p")
+shader_parameter/cloud_tex_b = SubResource("NoiseTexture2D_wfg44")
+shader_parameter/lower_sky_color = Color(0.655, 0.706, 0.79, 1)
+shader_parameter/horizon_color = Color(0.832, 0.86, 0.886, 1)
+shader_parameter/zenith_color = Color(0.11514282, 0.20309141, 0.3828125, 1)
+shader_parameter/sky_energy = 0.931
+shader_parameter/horizon_height = 0.178
+shader_parameter/horizon_softness = 0.24
+shader_parameter/zenith_curve = 0.405
+shader_parameter/horizon_glow_strength = 1.004
+shader_parameter/atmosphere_horizon_level = -0.035
+shader_parameter/atmosphere_height = 0.24
+shader_parameter/atmosphere_density = 0.46
+shader_parameter/atmosphere_sun_scatter = 0.34
+shader_parameter/atmosphere_sunset_boost = 0.47
+shader_parameter/rainbow_intensity = 0.0
+shader_parameter/rainbow_secondary_intensity = 0.35
+shader_parameter/sunset_bottom_color = Color(1, 0.5, 0.2, 1)
+shader_parameter/sunset_horizon_color = Color(0.8, 0.2, 0.05, 1)
+shader_parameter/sunset_zenith_color = Color(0.4, 0.3, 0.5, 1)
+shader_parameter/sunset_cloud_color = Color(1, 0.4, 0.15, 1)
+shader_parameter/sunset_sun_color = Color(1, 0.4, 0.1, 1)
+shader_parameter/night_lower_sky_color = Color(0.03, 0.05, 0.09, 1)
+shader_parameter/night_horizon_color = Color(0.03, 0.05, 0.09, 1)
+shader_parameter/night_zenith_color = Color(0.069, 0.08, 0.109, 1)
+shader_parameter/night_sky_energy = 0.156585
+shader_parameter/stars_color = Color(1, 1, 1, 1)
+shader_parameter/stars_energy = 2.0
+shader_parameter/stars_size_min = 0.01
+shader_parameter/stars_size_max = 0.03
+shader_parameter/stars_edge_softness = 0.25
+shader_parameter/gi_tint = Color(0.8, 0.75, 0.7, 1)
+shader_parameter/gi_energy_multiplier = 0.6000000000000001
+shader_parameter/sun_color = Color(1, 0.98, 0.9, 1)
+shader_parameter/sun_disk_size = 0.04
+shader_parameter/sun_disk_softness = 0.6
+shader_parameter/sun_disk_strength = 0.6
+shader_parameter/sun_seasonal_size_variation = 30.0
+shader_parameter/sun_halo_size = 0.2
+shader_parameter/sun_halo_strength = 0.14
+shader_parameter/sun_atmosphere_size = 0.4
+shader_parameter/sun_atmosphere_strength = 0.07
+shader_parameter/sun_energy_scale = 0.8
+shader_parameter/moon_color = Color(0.9, 0.95, 1, 1)
+shader_parameter/moon_size = 1.0
+shader_parameter/moon_glow_strength = 0.01
+shader_parameter/moon_eclipse_size = 0.8
+shader_parameter/moon_glow_size = 0.2
+shader_parameter/cloud_scroll_a = Vector2(0.0012, 0.00015)
+shader_parameter/cloud_scroll_b = Vector2(0.002, 0)
+shader_parameter/cloud_scale_a = Vector2(0.045, 0.055)
+shader_parameter/cloud_scale_b = Vector2(0.082, 0.125)
+shader_parameter/cloud_plane_height = 0.187
+shader_parameter/cloud_plane_curve = 0.595
+shader_parameter/cloud_warp_strength = 0.053
+shader_parameter/cloud_coverage = 0.15
+shader_parameter/cloud_softness = 0.2
+shader_parameter/cloud_opacity = 0.86275
+shader_parameter/cloud_horizon_fade = 0.481
+shader_parameter/cloud_top_fade = 0.118
+shader_parameter/cloud_light_color = Color(0.98215, 0.9653, 0.94107497, 1)
+shader_parameter/cloud_shadow_color = Color(0.8515625, 0.8515625, 0.8515625, 1)
+shader_parameter/cloud_forward_scatter = 1.5
+shader_parameter/cloud_backscatter = 0.39
+shader_parameter/sun_cloud_occlusion = 0.46900000000000003
+shader_parameter/custom_sun_dir = Vector3(0.73196524, 0.6564935, 0.18232729)
+shader_parameter/custom_moon_dir = Vector3(0.060391143, -0.67997736, -0.7307419)
+shader_parameter/celestial_matrix = Basis(-0.25881135, -0.62088645, 0.7399437, 0, 0.76604444, 0.6427876, -0.9659279, 0.16636072, -0.198261)
+shader_parameter/rendered_day_of_year = 187.0
+shader_parameter/rendered_time_of_day = 8.5
+shader_parameter/observer_latitude_deg = 50.0
+shader_parameter/cloud_time = 26835.0
+shader_parameter/cloud_wind_direction = Vector2(0.9363292, 0.35112345)
+shader_parameter/cloud_wind_speed = 1.009354162006637
+shader_parameter/cloud_motion_time = 0.0
+shader_parameter/cloud_motion_scale = 0.12
+shader_parameter/cloud_evolution_time = 0.0
+shader_parameter/cloud_evolution_strength = 0.775
+shader_parameter/cloud_evolution_scale = 0.198
+
+[sub_resource type="Sky" id="Sky_w0f51"]
+sky_material = SubResource("ShaderMaterial_vhyk4")
 
 [resource]
 background_mode = 2
 background_color = Color(0.81640625, 0.76538086, 0.76538086, 1)
 background_energy_multiplier = 0.73
-sky = ExtResource("2_sky")
+sky = SubResource("Sky_w0f51")
 ambient_light_source = 3
-ambient_light_color = Color(0.62109375, 0.62109375, 0.62109375, 1)
+ambient_light_color = Color(0.85915184, 0.8077864, 0.6679338, 1)
 ambient_light_sky_contribution = 0.71
-ambient_light_energy = 0.7
+ambient_light_energy = 0.31329998
 tonemap_mode = 4
 tonemap_exposure = 1.08
 tonemap_white = 8.5
@@ -20,21 +120,22 @@ tonemap_agx_contrast = 1.28
 glow_intensity = 0.0
 fog_enabled = true
 fog_mode = 1
-fog_light_color = Color(1, 0.97402954, 0.85546875, 1)
+fog_light_color = Color(1, 0.95, 0.91, 1)
 fog_light_energy = 1.39
 fog_sun_scatter = 0.22
-fog_density = 0.301
-fog_sky_affect = 0.07
+fog_density = 0.155
+fog_sky_affect = 0.2775
 fog_depth_curve = 0.3284183
-fog_depth_begin = 0.8
-fog_depth_end = 360.0
-volumetric_fog_density = 0.0
-volumetric_fog_albedo = Color(0.761, 0.732, 0.698, 1)
+fog_depth_begin = 2.6
+fog_depth_end = 470.0
+volumetric_fog_density = 0.0125
+volumetric_fog_albedo = Color(0.77, 0.74, 0.7, 1)
 volumetric_fog_gi_inject = 0.0
 volumetric_fog_anisotropy = 0.0
-volumetric_fog_length = 4.0
+volumetric_fog_length = 7.04
 volumetric_fog_detail_spread = 1.2
-volumetric_fog_sky_affect = 0.0
+volumetric_fog_ambient_inject = 0.04
+volumetric_fog_sky_affect = 0.575
 volumetric_fog_temporal_reprojection_amount = 0.93
 adjustment_enabled = true
 adjustment_saturation = 0.83

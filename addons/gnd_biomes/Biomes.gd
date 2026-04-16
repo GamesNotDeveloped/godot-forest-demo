@@ -192,7 +192,14 @@ func _exit_tree() -> void:
     _disconnect_entry_connections()
 
 
+var _last_high_quality_foliage := true
+
 func _process(_delta: float) -> void:
+    var high_quality = RenderingServer.global_shader_parameter_get(&"gnd_high_quality_foliage")
+    if high_quality != _last_high_quality_foliage:
+        _last_high_quality_foliage = high_quality
+        _update_all_shadow_casting()
+
     if Engine.is_editor_hint():
         if editor_auto_regenerate:
             var next_signature := _build_editor_state_signature()
@@ -566,10 +573,14 @@ func _create_multimesh_instances(name: String, parts: Array, transforms: Array, 
             transform.origin -= chunk_center
             multimesh.set_instance_transform(transform_index, transform)
 
+        var target_shadows = shadow_casting as GeometryInstance3D.ShadowCastingSetting
+        if not _last_high_quality_foliage:
+            target_shadows = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
         var instance := MultiMeshInstance3D.new()
         instance.name = "%s_%s" % [name, part_index]
         instance.multimesh = multimesh
-        instance.cast_shadow = shadow_casting as GeometryInstance3D.ShadowCastingSetting
+        instance.cast_shadow = target_shadows
         instance.gi_mode = gi_mode as GeometryInstance3D.GIMode
         instance.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
         instances.append(instance)
@@ -766,6 +777,8 @@ func _mesh_with_instance_materials(mesh_instance: MeshInstance3D, billboard: boo
             var duplicated_material := material.duplicate(true) as BaseMaterial3D
             if duplicated_material.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
                 duplicated_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+            duplicated_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+            duplicated_material.alpha_scissor_threshold = 0.5
             duplicated_material.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
             duplicated_material.roughness = 1.0
             duplicated_material.metallic_specular = 0.0
@@ -802,6 +815,8 @@ func _make_billboard_mesh(source_mesh: Mesh) -> Mesh:
             var duplicated_material := surface_material.duplicate(true) as BaseMaterial3D
             if duplicated_material.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
                 duplicated_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+            duplicated_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+            duplicated_material.alpha_scissor_threshold = 0.5
             duplicated_material.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
             duplicated_material.roughness = 1.0
             duplicated_material.metallic_specular = 0.0
@@ -1259,6 +1274,21 @@ func _apply_density_lod() -> void:
             if geometry == null or geometry.multimesh == null:
                 continue
             geometry.multimesh.visible_instance_count = visible_count
+
+
+func _update_all_shadow_casting() -> void:
+    var target_shadows = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    if _last_high_quality_foliage:
+        target_shadows = shadow_casting as GeometryInstance3D.ShadowCastingSetting
+    
+    var generated_root = get_node_or_null(GENERATED_ROOT_NAME)
+    if generated_root == null:
+        return
+        
+    for chunk in generated_root.get_children():
+        for child in chunk.get_children():
+            if child is MultiMeshInstance3D:
+                child.cast_shadow = target_shadows
 
 
 func _compute_density_lod_fraction(distance: float) -> float:

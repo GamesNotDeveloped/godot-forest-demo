@@ -28,3 +28,5 @@ class_name QualityProfile
 @export var auto_exposure_speed: float = 0.5
 @export var auto_exposure_min_sensitivity: float = 0.0
 @export var auto_exposure_max_sensitivity: float = 800.0
+@export var high_quality_sky: bool = true
+@export var high_quality_foliage: bool = true
