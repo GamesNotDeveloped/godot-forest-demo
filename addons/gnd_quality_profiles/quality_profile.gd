@@ -30,3 +30,4 @@ class_name QualityProfile
 @export var auto_exposure_max_sensitivity: float = 800.0
 @export var high_quality_sky: bool = true
 @export var high_quality_foliage: bool = true
+@export var sunshafts: bool = true

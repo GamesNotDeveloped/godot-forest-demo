@@ -148,6 +148,11 @@ var noise: FastNoiseLite:
         generate_collision = value
         _queue_regenerate()
 
+@export_range(4.0, 1024.0, 0.1, "or_greater") var collision_chunk_size: float = 32.0:
+    set(value):
+        collision_chunk_size = maxf(value, 4.0)
+        _queue_regenerate()
+
 @export_flags_3d_physics var collision_layer: int = 1:
     set(value):
         collision_layer = value
@@ -423,10 +428,54 @@ func _generate() -> void:
         var body := _ensure_static_body()
         body.collision_layer = collision_layer
         body.collision_mask = collision_mask
-        var collision_shape := _ensure_collision_shape(body)
-        var shape := ConcavePolygonShape3D.new()
-        shape.data = collision_faces
-        collision_shape.shape = shape
+        
+        # Usuwamy stare kształty przed dodaniem nowych
+        for child in body.get_children():
+            if child is CollisionShape3D:
+                body.remove_child(child)
+                child.queue_free()
+
+        # Chunkowanie kolizji: dzielimy trójkąty na mniejsze kształty ConcavePolygonShape3D
+        var chunk_buckets: Dictionary = {} # Vector2i -> PackedVector3Array
+
+        for z in range(subdivisions_z):
+            for x in range(subdivisions_x):
+                var a := z * vertex_count_x + x
+                var b := a + 1
+                var c := a + vertex_count_x
+                var d := c + 1
+
+                var tri1 = [vertices[a], vertices[b], vertices[c]]
+                var tri2 = [vertices[b], vertices[d], vertices[c]]
+                
+                # Obliczamy środek kwadratu, aby przypisać go do chunka
+                var center := (vertices[a] + vertices[d]) * 0.5
+                var chunk_coords := Vector2i(
+                    int(floor(center.x / collision_chunk_size)),
+                    int(floor(center.z / collision_chunk_size))
+                )
+
+                if not chunk_buckets.has(chunk_coords):
+                    chunk_buckets[chunk_coords] = PackedVector3Array()
+                
+                var bucket: PackedVector3Array = chunk_buckets[chunk_coords]
+                bucket.push_back(tri1[0])
+                bucket.push_back(tri1[1])
+                bucket.push_back(tri1[2])
+                bucket.push_back(tri2[0])
+                bucket.push_back(tri2[1])
+                bucket.push_back(tri2[2])
+                chunk_buckets[chunk_coords] = bucket
+
+        # Tworzymy osobny CollisionShape3D dla każdego wypełnionego chunka
+        for coords in chunk_buckets.keys():
+            var shape := ConcavePolygonShape3D.new()
+            shape.data = chunk_buckets[coords]
+            
+            var col_shape_node := CollisionShape3D.new()
+            col_shape_node.name = "Chunk_%d_%d" % [coords.x, coords.y]
+            col_shape_node.shape = shape
+            body.add_child(col_shape_node, false, INTERNAL_MODE_FRONT)
     else:
         _remove_collision_body()
 

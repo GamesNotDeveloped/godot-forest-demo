@@ -30,9 +30,29 @@ var _entry_changed_callable := Callable(self, "_on_entry_changed")
 var _editor_state_signature := ""
 var _mask_image_cache: Image
 var _mask_cache_key := ""
-var _generated_chunk_render_lods: Array[Dictionary] = []
+var _generated_chunk_render_lods: Array[Dictionary] = [] # DEPRECATED, will be replaced by _chunk_render_lods
+
+var _chunk_data: Dictionary = {}
+var _chunk_collision_data: Dictionary = {}
+var _active_chunks: Dictionary = {}
+var _chunk_render_lods: Dictionary = {}
+var _resolved_entries_cache: Array[Dictionary] = []
+var _active_tasks: Dictionary = {} # coords -> task_id
 
 @export_group("Generator")
+@export var streaming_enabled := true:
+    set(value):
+        streaming_enabled = value
+        _queue_regenerate()
+
+@export_range(10.0, 2000.0, 1.0, "or_greater") var max_generation_distance: float = 120.0:
+    set(value):
+        max_generation_distance = maxf(value, 10.0)
+
+@export_range(1, 64, 1, "or_greater") var chunks_per_frame: int = 4:
+    set(value):
+        chunks_per_frame = maxi(value, 1)
+
 @export var entries: Array[BiomeScatterEntry] = []:
     set(value):
         entries = value
@@ -195,17 +215,22 @@ func _exit_tree() -> void:
 var _last_high_quality_foliage := true
 
 func _process(_delta: float) -> void:
-    var high_quality = RenderingServer.global_shader_parameter_get(&"gnd_high_quality_foliage")
-    if high_quality != _last_high_quality_foliage:
-        _last_high_quality_foliage = high_quality
-        _update_all_shadow_casting()
-
     if Engine.is_editor_hint():
+        var high_quality_val = RenderingServer.global_shader_parameter_get(&"gnd_high_quality_foliage")
+        var high_quality: bool = bool(high_quality_val) if high_quality_val != null else true
+
+        if high_quality != _last_high_quality_foliage:
+            _last_high_quality_foliage = high_quality
+            _update_all_shadow_casting()
+
         if editor_auto_regenerate:
             var next_signature := _build_editor_state_signature()
             if next_signature != _editor_state_signature:
                 _editor_state_signature = next_signature
                 _queue_regenerate()
+
+    if streaming_enabled and not _regenerate_queued:
+        _update_streaming()
 
     _apply_density_lod()
 
@@ -378,82 +403,83 @@ func _runtime_regenerate_after_settle() -> void:
 
 func _generate() -> void:
     _clear_generated()
-    _generated_chunk_render_lods.clear()
-    var world := get_world_3d()
-    if world == null:
+    _resolved_entries_cache = _resolve_entries()
+
+    if not streaming_enabled:
+        _build_all_chunks_immediately()
+
+
+func _async_generate_chunk_data(coords: Vector2i) -> void:
+    if _active_tasks.has(coords):
         return
 
-    var resolved_entries := _resolve_entries()
-    if resolved_entries.is_empty():
+    var task_id := WorkerThreadPool.add_task(func(): _generate_chunk_data(coords))
+    _active_tasks[coords] = task_id
+
+
+func _is_chunk_data_ready(coords: Vector2i) -> bool:
+    if not _active_tasks.has(coords):
+        return false
+
+    var task_id: int = _active_tasks[coords]
+    if WorkerThreadPool.is_task_completed(task_id):
+        _active_tasks.erase(coords)
+        return true
+    return false
+
+
+func _generate_chunk_data(chunk_coords: Vector2i) -> void:
+    # To jest wywoływane W TLE (oddzielny wątek)
+    if _resolved_entries_cache.is_empty():
         return
 
-    var direction := ray_direction
-    if direction.is_zero_approx():
-        direction = Vector3.DOWN
-    direction = direction.normalized()
+    # UWAGA: Na wątku nie możemy używać physics state bez blokowania,
+    # więc najpierw zbieramy wszystkie dane, a raycasty (rzutowania)
+    # zostaną wykonane dopiero w momencie finalizacji na wątku głównym.
+    var chunk_min_x := float(chunk_coords.x) * chunk_size
+    var chunk_min_z := float(chunk_coords.y) * chunk_size
+    var chunk_max_x := chunk_min_x + chunk_size
+    var chunk_max_z := chunk_min_z + chunk_size
 
     var half_area := area_size * 0.5
-    var area_m2 := maxf(area_size.x * area_size.y, 0.0)
-    if area_m2 <= 0.0:
-        return
-
     var generation_min_x := -half_area.x
     var generation_max_x := half_area.x
     var generation_min_z := -half_area.y
     var generation_max_z := half_area.y
-    var effective_area_m2 := area_m2
-    if mask_enabled and mask_texture != null:
-        var mask_image := _get_mask_image()
-        if mask_image != null and not mask_image.is_empty():
-            var mask_region := _analyze_mask_generation_region(mask_image)
-            if not bool(mask_region["has_active"]):
-                return
-            generation_min_x = float(mask_region["min_x"])
-            generation_max_x = float(mask_region["max_x"])
-            generation_min_z = float(mask_region["min_z"])
-            generation_max_z = float(mask_region["max_z"])
-            effective_area_m2 = maxf(float(mask_region["weighted_area_m2"]), 0.0001)
 
+    var effective_area_m2 := maxf(area_size.x * area_size.y, 0.0001)
     var spacing := maxf(average_spacing, 0.1)
     if max_instances > 0:
         spacing = maxf(spacing, sqrt(effective_area_m2 / float(max_instances)))
 
-    var effective_density := 1.0 / (spacing * spacing)
-    if effective_density <= 0.0:
-        return
+    var cell_size := spacing
+    var min_cell_x := int(floor(chunk_min_x / cell_size))
+    var max_cell_x := int(ceil(chunk_max_x / cell_size))
+    var min_cell_z := int(floor(chunk_min_z / cell_size))
+    var max_cell_z := int(ceil(chunk_max_z / cell_size))
 
-    var cell_size := 1.0 / sqrt(effective_density)
-    var state := world.direct_space_state
-    var chunk_transforms: Dictionary = {}
-    var chunk_collision_buckets: Dictionary = {}
-
-    var min_cell_x := int(floor(generation_min_x / cell_size))
-    var max_cell_x := int(ceil(generation_max_x / cell_size))
-    var min_cell_z := int(floor(generation_min_z / cell_size))
-    var max_cell_z := int(ceil(generation_max_z / cell_size))
+    # Wypełniamy listę punktów do sprawdzenia
+    var points: Array[Dictionary] = []
 
     for cell_x in range(min_cell_x, max_cell_x):
         for cell_z in range(min_cell_z, max_cell_z):
             var local_x := (float(cell_x) + _hash01(seed, cell_x, cell_z, 11)) * cell_size
             var local_z := (float(cell_z) + _hash01(seed, cell_x, cell_z, 17)) * cell_size
+
+            if local_x < chunk_min_x or local_x >= chunk_max_x or local_z < chunk_min_z or local_z >= chunk_max_z:
+                continue
             if local_x < generation_min_x or local_x > generation_max_x or local_z < generation_min_z or local_z > generation_max_z:
                 continue
+
             var mask_density := _sample_mask_density_weight_from_local_position(Vector3(local_x, 0.0, local_z))
-            if mask_density <= 0.0:
-                continue
-            if _hash01(seed, cell_x, cell_z, 7) > mask_density:
+            if mask_density <= 0.0 or _hash01(seed, cell_x, cell_z, 7) > mask_density:
                 continue
 
-            var resolved_entry: Dictionary = _pick_entry(resolved_entries, cell_x, cell_z)
+            var resolved_entry: Dictionary = _pick_entry(_resolved_entries_cache, cell_x, cell_z)
             if resolved_entry.is_empty():
                 continue
 
-            var lod_priority := _hash01(seed, cell_x, cell_z, 53)
-            var local_hit: Variant = _raycast_to_surface(state, Vector3(local_x, 0.0, local_z), direction)
-            var hit_position := Vector3(local_x, 0.0, local_z)
-            if local_hit != null:
-                hit_position = local_hit as Vector3
-
+            # Obliczamy tylko matematykę na wątku pobocznym
             var scale_min_value: Vector3 = resolved_entry["scale_min"]
             var scale_max_value: Vector3 = resolved_entry["scale_max"]
             var instance_scale := Vector3(
@@ -462,91 +488,95 @@ func _generate() -> void:
                 lerpf(minf(scale_min_value.z, scale_max_value.z), maxf(scale_min_value.z, scale_max_value.z), _hash01(seed, cell_x, cell_z, 31))
             )
             var yaw := TAU * _hash01(seed, cell_x, cell_z, 37)
-            var basis := Basis.IDENTITY.rotated(Vector3.UP, yaw).scaled(instance_scale)
-            var transform := Transform3D(basis, hit_position)
-            var chunk_coords := Vector2i(
-                int(floor(hit_position.x / chunk_size)),
-                int(floor(hit_position.z / chunk_size))
-            )
-            var chunk_key := _chunk_key(chunk_coords, resolved_entry["index"])
-            if not chunk_transforms.has(chunk_key):
-                chunk_transforms[chunk_key] = {
-                    "chunk_coords": chunk_coords,
-                    "entry": resolved_entry,
-                    "near": [],
-                    "far": [],
-                    "lod_priorities": []
-                }
-            var bucket: Dictionary = chunk_transforms[chunk_key]
-            bucket["near"].append(transform)
-            if not resolved_entry["billboard_parts"].is_empty():
-                bucket["far"].append(transform)
-            bucket["lod_priorities"].append(lod_priority)
-            chunk_transforms[chunk_key] = bucket
-            if generate_chunk_colliders and not resolved_entry["collision_parts"].is_empty():
-                var collision_chunk_key := _chunk_coords_key(chunk_coords)
-                if not chunk_collision_buckets.has(collision_chunk_key):
-                    chunk_collision_buckets[collision_chunk_key] = {
-                        "chunk_coords": chunk_coords,
-                        "shapes": []
-                    }
-                var collision_bucket: Dictionary = chunk_collision_buckets[collision_chunk_key]
-                for collision_part in resolved_entry["collision_parts"]:
-                    collision_bucket["shapes"].append({
-                        "shape": collision_part["shape"],
-                        "transform": _sanitize_collision_transform(transform * collision_part["transform"])
-                    })
-                chunk_collision_buckets[collision_chunk_key] = collision_bucket
 
-    _build_generated_nodes(chunk_transforms, chunk_collision_buckets)
+            points.append({
+                "pos": Vector3(local_x, 0.0, local_z),
+                "scale": instance_scale,
+                "yaw": yaw,
+                "entry": resolved_entry,
+                "priority": _hash01(seed, cell_x, cell_z, 53)
+            })
+
+    # Składamy wynik w paczkę, którą wątek główny przetworzy (zrobi raycasty)
+    _finalize_chunk_generation_from_points(chunk_coords, points)
 
 
-func _build_generated_nodes(chunk_transforms: Dictionary, chunk_collision_buckets: Dictionary) -> void:
-    if chunk_transforms.is_empty() and chunk_collision_buckets.is_empty():
+func _finalize_chunk_generation_from_points(chunk_coords: Vector2i, points: Array[Dictionary]) -> void:
+    # To wywołujemy, aby złożyć dane (nadal na wątku zadania, ale po zebraniu danych)
+    # Rzutowania promieni wykonamy jednak w safe-context zaraz po zakończeniu zadania.
+    # Aby to było bezpieczne, zapisujemy listę punktów do tymczasowego cache.
+    var key := _chunk_coords_key(chunk_coords)
+    _pending_chunk_points[key] = points
+
+
+var _pending_chunk_points: Dictionary = {} # coords_key -> Array[points]
+
+
+func _generate_raycasts_and_finalize_chunk(chunk_coords: Vector2i) -> void:
+    # TO JEST NA WĄTKU GŁÓWNYM zaraz przed budowaniem
+    var key := _chunk_coords_key(chunk_coords)
+    if not _pending_chunk_points.has(key):
         return
 
-    var generated_root := _ensure_generated_root()
-    var chunk_nodes: Dictionary = {}
-    for bucket_value in chunk_transforms.values():
-        var bucket: Dictionary = bucket_value
-        var chunk_coords: Vector2i = bucket["chunk_coords"]
-        var resolved_entry: Dictionary = bucket["entry"]
-        var chunk_node := _ensure_chunk_node(generated_root, chunk_nodes, chunk_coords)
-        var sorted_bucket := _sort_chunk_bucket_for_density_lod(bucket)
+    var points: Array = _pending_chunk_points[key]
+    var world := get_world_3d()
+    if world == null:
+        return
+    var state := world.direct_space_state
+    var direction := ray_direction.normalized() if not ray_direction.is_zero_approx() else Vector3.DOWN
 
-        var near_instances := _create_multimesh_instances(
-            "near_%s" % resolved_entry["index"],
-            resolved_entry["main_parts"],
-            sorted_bucket["near"],
-            chunk_node.position
-        )
-        for instance in near_instances:
-            chunk_node.add_child(instance, false, INTERNAL_MODE_FRONT)
+    for p in points:
+        var entry: Dictionary = p["entry"]
+        var local_hit: Variant = _raycast_to_surface(state, p["pos"], direction)
+        var hit_position: Vector3 = local_hit if local_hit != null else p["pos"]
 
-        if not resolved_entry["billboard_parts"].is_empty():
-            var lod_distance: float = resolved_entry["billboard_lod_distance"]
-            var far_instances := _create_multimesh_instances(
-                "far_%s" % resolved_entry["index"],
-                resolved_entry["billboard_parts"],
-                sorted_bucket["far"],
-                chunk_node.position
-            )
-            for far_instance in far_instances:
-                if lod_distance > 0.0:
-                    for instance in near_instances:
-                        instance.visibility_range_end = lod_distance
-                    far_instance.visibility_range_begin = lod_distance
-                chunk_node.add_child(far_instance, false, INTERNAL_MODE_FRONT)
+        var transform := Transform3D(Basis.IDENTITY.rotated(Vector3.UP, p["yaw"]).scaled(p["scale"]), hit_position)
 
-            _register_chunk_render_lod(chunk_node, near_instances, far_instances, sorted_bucket["near"].size())
-        else:
-            _register_chunk_render_lod(chunk_node, near_instances, [], sorted_bucket["near"].size())
+        # Render Data
+        var chunk_key := _chunk_key(chunk_coords, entry["index"])
+        if not _chunk_data.has(chunk_key):
+            _chunk_data[chunk_key] = {"chunk_coords": chunk_coords, "entry": entry, "near": [], "far": [], "lod_priorities": []}
 
-    for collision_bucket_value in chunk_collision_buckets.values():
-        var collision_bucket: Dictionary = collision_bucket_value
-        var chunk_coords: Vector2i = collision_bucket["chunk_coords"]
-        var chunk_node := _ensure_chunk_node(generated_root, chunk_nodes, chunk_coords)
-        _build_chunk_collider(chunk_node, collision_bucket["shapes"])
+        var bucket: Dictionary = _chunk_data[chunk_key]
+        bucket["near"].append(transform)
+        if not entry["billboard_parts"].is_empty():
+            bucket["far"].append(transform)
+        bucket["lod_priorities"].append(p["priority"])
+
+        # Collision Data
+        if generate_chunk_colliders and not entry["collision_parts"].is_empty():
+            var collision_chunk_key := _chunk_coords_key(chunk_coords)
+            if not _chunk_collision_data.has(collision_chunk_key):
+                _chunk_collision_data[collision_chunk_key] = {"chunk_coords": chunk_coords, "shapes": []}
+
+            var col_bucket: Dictionary = _chunk_collision_data[collision_chunk_key]
+            for collision_part in entry["collision_parts"]:
+                col_bucket["shapes"].append({
+                    "shape": collision_part["shape"],
+                    "transform": _sanitize_collision_transform(transform * collision_part["transform"])
+                })
+
+    _pending_chunk_points.erase(key)
+
+
+
+func _build_all_chunks_immediately() -> void:
+    var half_area := area_size * 0.5
+    var min_chunk_x := int(floor(-half_area.x / chunk_size))
+    var max_chunk_x := int(ceil(half_area.x / chunk_size))
+    var min_chunk_z := int(floor(-half_area.y / chunk_size))
+    var max_chunk_z := int(ceil(half_area.y / chunk_size))
+
+    for x in range(min_chunk_x, max_chunk_x):
+        for z in range(min_chunk_z, max_chunk_z):
+            var coords := Vector2i(x, z)
+            _generate_chunk_data(coords)
+            _build_chunk_nodes(coords)
+
+
+
+func _build_generated_nodes(_a: Dictionary, _b: Dictionary) -> void:
+    pass
 
 
 func _create_multimesh_instances(name: String, parts: Array, transforms: Array, chunk_center: Vector3) -> Array[MultiMeshInstance3D]:
@@ -624,25 +654,143 @@ func _sort_chunk_bucket_for_density_lod(bucket: Dictionary) -> Dictionary:
     }
 
 
-func _register_chunk_render_lod(chunk_node: Node3D, near_instances: Array[MultiMeshInstance3D], far_instances: Array[MultiMeshInstance3D], full_count: int) -> void:
-    if full_count <= 0:
+func _register_chunk_render_lod(_chunk_node: Node3D, _near_instances: Array[MultiMeshInstance3D], _far_instances: Array[MultiMeshInstance3D], _full_count: int) -> void:
+    pass # Obsolete with new chunk management
+
+
+func _update_streaming() -> void:
+    var camera := _get_density_lod_camera()
+    if camera == null:
         return
 
-    var render_nodes: Array[GeometryInstance3D] = []
-    for instance in near_instances:
-        render_nodes.append(instance)
-    for instance in far_instances:
-        render_nodes.append(instance)
+    # Używamy pozycji LOKALNEJ kamery względem węzła Biomes
+    var camera_pos_local := to_local(camera.global_position)
+    var current_chunk_coords := Vector2i(
+        int(floor(camera_pos_local.x / chunk_size)),
+        int(floor(camera_pos_local.z / chunk_size))
+    )
 
-    if render_nodes.is_empty():
-        return
+    var max_dist_sq := max_generation_distance * max_generation_distance
+    var chunk_radius := int(ceil(max_generation_distance / chunk_size))
 
-    _generated_chunk_render_lods.append({
-        "chunk_node": chunk_node,
-        "full_count": full_count,
-        "visible_count": full_count,
-        "render_nodes": render_nodes
-    })
+    # Identify chunks that should be active
+    var needed_chunks: Array[Vector2i] = []
+    for x in range(current_chunk_coords.x - chunk_radius, current_chunk_coords.x + chunk_radius + 1):
+        for z in range(current_chunk_coords.y - chunk_radius, current_chunk_coords.y + chunk_radius + 1):
+            var coords := Vector2i(x, z)
+            var chunk_center := _chunk_center(coords)
+            if camera_pos_local.distance_squared_to(chunk_center) <= max_dist_sq:
+                needed_chunks.append(coords)
+
+    # Remove chunks that are no longer needed
+    var to_remove: Array[Vector2i] = []
+    for coords in _active_chunks.keys():
+        if not coords in needed_chunks:
+            to_remove.append(coords)
+
+    for coords in to_remove:
+        var chunk_node: Node3D = _active_chunks[coords]
+        if is_instance_valid(chunk_node):
+            chunk_node.queue_free()
+        _active_chunks.erase(coords)
+        _chunk_render_lods.erase(coords)
+
+    # Add chunks that are needed but not active (limited per frame)
+    var build_count := 0
+    for coords in needed_chunks:
+        if not _active_chunks.has(coords):
+            # SPRAWDZAMY CZY MAMY DANE DLA TEGO CHUNKA
+            var data_exists = false
+            for entry_index in range(_resolved_entries_cache.size()):
+                if _chunk_data.has(_chunk_key(coords, entry_index)):
+                    data_exists = true
+                    break
+
+            if not data_exists and _chunk_collision_data.has(_chunk_coords_key(coords)):
+                data_exists = true
+
+            # JEŚLI NIE MA DANYCH - ZLECAMY GENEROWANIE W TLE
+            if not data_exists:
+                if not _active_tasks.has(coords):
+                    _async_generate_chunk_data(coords)
+                elif _is_chunk_data_ready(coords):
+                    # Dane matematyczne gotowe, robimy raycasty i budujemy
+                    _generate_raycasts_and_finalize_chunk(coords)
+                    _build_chunk_nodes(coords)
+                    build_count += 1
+                continue # Czekamy aż dane będą gotowe w następnej klatce
+
+            _build_chunk_nodes(coords)
+            build_count += 1
+            if build_count >= chunks_per_frame:
+                break
+
+
+func _build_chunk_nodes(chunk_coords: Vector2i) -> void:
+    var generated_root := _ensure_generated_root()
+    var chunk_node := Node3D.new()
+    chunk_node.name = "chunk_%s_%s" % [chunk_coords.x, chunk_coords.y]
+    chunk_node.position = _chunk_center(chunk_coords)
+    generated_root.add_child(chunk_node, false, INTERNAL_MODE_FRONT)
+    _active_chunks[chunk_coords] = chunk_node
+
+    var chunk_lod_data: Array[Dictionary] = []
+
+    # Build meshes
+    for entry_index in range(entries.size()):
+        var chunk_key := _chunk_key(chunk_coords, entry_index)
+        if not _chunk_data.has(chunk_key):
+            continue
+
+        var bucket: Dictionary = _chunk_data[chunk_key]
+        var resolved_entry: Dictionary = bucket["entry"]
+        var sorted_bucket := _sort_chunk_bucket_for_density_lod(bucket)
+
+        var near_instances := _create_multimesh_instances(
+            "near_%s" % resolved_entry["index"],
+            resolved_entry["main_parts"],
+            sorted_bucket["near"],
+            chunk_node.position
+        )
+        for instance in near_instances:
+            chunk_node.add_child(instance, false, INTERNAL_MODE_FRONT)
+
+        var far_instances: Array[MultiMeshInstance3D] = []
+        if not resolved_entry["billboard_parts"].is_empty():
+            var lod_distance: float = resolved_entry["billboard_lod_distance"]
+            far_instances = _create_multimesh_instances(
+                "far_%s" % resolved_entry["index"],
+                resolved_entry["billboard_parts"],
+                sorted_bucket["far"],
+                chunk_node.position
+            )
+            for far_instance in far_instances:
+                if lod_distance > 0.0:
+                    for instance in near_instances:
+                        instance.visibility_range_end = lod_distance
+                    far_instance.visibility_range_begin = lod_distance
+                chunk_node.add_child(far_instance, false, INTERNAL_MODE_FRONT)
+
+        var full_count: int = sorted_bucket["near"].size()
+        var render_nodes: Array[GeometryInstance3D] = []
+        for instance in near_instances: render_nodes.append(instance)
+        for instance in far_instances: render_nodes.append(instance)
+
+        chunk_lod_data.append({
+            "full_count": full_count,
+            "visible_count": full_count,
+            "render_nodes": render_nodes
+        })
+
+    if not chunk_lod_data.is_empty():
+        _chunk_render_lods[chunk_coords] = chunk_lod_data
+
+    # Build collisions
+    var collision_key := _chunk_coords_key(chunk_coords)
+    if _chunk_collision_data.has(collision_key):
+        var collision_bucket: Dictionary = _chunk_collision_data[collision_key]
+        _build_chunk_collider(chunk_node, collision_bucket["shapes"])
+
 
 
 func _resolve_entries() -> Array[Dictionary]:
@@ -1154,6 +1302,10 @@ func _sanitize_collision_transform(source_transform: Transform3D) -> Transform3D
 
 
 func _clear_generated() -> void:
+    _chunk_data.clear()
+    _chunk_collision_data.clear()
+    _active_chunks.clear()
+    _chunk_render_lods.clear()
     _generated_chunk_render_lods.clear()
     var generated_root := get_node_or_null(GENERATED_ROOT_NAME) as Node3D
     if generated_root != null:
@@ -1183,7 +1335,11 @@ func _on_entry_changed() -> void:
 
 
 func _update_editor_processing() -> void:
-    set_process(Engine.is_editor_hint() and editor_auto_regenerate)
+    if not Engine.is_editor_hint():
+        set_process(true) # W grze streaming jest zawsze aktywny
+        return
+
+    set_process(editor_auto_regenerate)
 
 
 func _build_editor_state_signature() -> String:
@@ -1242,49 +1398,53 @@ func _resource_id(resource: Resource) -> String:
 
 
 func _apply_density_lod() -> void:
-    if _generated_chunk_render_lods.is_empty():
+    if _chunk_render_lods.is_empty():
         return
 
     var camera := _get_density_lod_camera()
     if camera == null:
-        _set_all_chunk_visible_counts_to_full()
         return
 
-    for chunk_data in _generated_chunk_render_lods:
-        var chunk_node: Node3D = chunk_data["chunk_node"]
+    var camera_pos_local := to_local(camera.global_position)
+
+    for chunk_coords in _chunk_render_lods.keys():
+        var chunk_node: Node3D = _active_chunks.get(chunk_coords)
         if not is_instance_valid(chunk_node):
             continue
 
-        var full_count: int = chunk_data["full_count"]
-        var visible_count := full_count
-        if density_lod_enabled:
-            var distance := camera.global_position.distance_to(chunk_node.global_position)
-            var fraction := _compute_density_lod_fraction(distance)
-            visible_count = clampi(int(round(float(full_count) * fraction)), 0, full_count)
+        var chunk_lod_list: Array = _chunk_render_lods[chunk_coords]
+        var distance := camera_pos_local.distance_to(chunk_node.global_position)
+        var fraction := _compute_density_lod_fraction(distance)
 
-        if visible_count == chunk_data["visible_count"]:
-            continue
+        for chunk_data in chunk_lod_list:
+            var full_count: int = chunk_data["full_count"]
+            var visible_count := full_count
+            if density_lod_enabled:
+                visible_count = clampi(int(round(float(full_count) * fraction)), 0, full_count)
 
-        chunk_data["visible_count"] = visible_count
-        var render_nodes: Array = chunk_data["render_nodes"]
-        for render_node in render_nodes:
-            if not is_instance_valid(render_node):
+            if visible_count == chunk_data["visible_count"]:
                 continue
-            var geometry := render_node as MultiMeshInstance3D
-            if geometry == null or geometry.multimesh == null:
-                continue
-            geometry.multimesh.visible_instance_count = visible_count
+
+            chunk_data["visible_count"] = visible_count
+            var render_nodes: Array = chunk_data["render_nodes"]
+            for render_node in render_nodes:
+                if not is_instance_valid(render_node):
+                    continue
+                var geometry := render_node as MultiMeshInstance3D
+                if geometry == null or geometry.multimesh == null:
+                    continue
+                geometry.multimesh.visible_instance_count = visible_count
 
 
 func _update_all_shadow_casting() -> void:
     var target_shadows = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     if _last_high_quality_foliage:
         target_shadows = shadow_casting as GeometryInstance3D.ShadowCastingSetting
-    
+
     var generated_root = get_node_or_null(GENERATED_ROOT_NAME)
     if generated_root == null:
         return
-        
+
     for chunk in generated_root.get_children():
         for child in chunk.get_children():
             if child is MultiMeshInstance3D:
@@ -1307,24 +1467,13 @@ func _compute_density_lod_fraction(distance: float) -> float:
     return lerpf(1.0, min_fraction, smooth_t)
 
 
-func _set_all_chunk_visible_counts_to_full() -> void:
-    for chunk_data in _generated_chunk_render_lods:
-        var full_count: int = chunk_data["full_count"]
-        if chunk_data["visible_count"] == full_count:
-            continue
-
-        chunk_data["visible_count"] = full_count
-        var render_nodes: Array = chunk_data["render_nodes"]
-        for render_node in render_nodes:
-            if not is_instance_valid(render_node):
-                continue
-            var geometry := render_node as MultiMeshInstance3D
-            if geometry == null or geometry.multimesh == null:
-                continue
-            geometry.multimesh.visible_instance_count = full_count
-
-
 func _get_density_lod_camera() -> Camera3D:
+    if Engine.is_editor_hint():
+        # W edytorze próbujemy dobrać się do kamery 3D aktywnego viewportu
+        var editor_viewport := EditorInterface.get_editor_viewport_3d(0)
+        if editor_viewport != null:
+            return editor_viewport.get_camera_3d()
+
     var viewport := get_viewport()
     if viewport == null:
         return null

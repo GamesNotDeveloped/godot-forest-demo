@@ -73,6 +73,15 @@ func _apply_profile_settings(profile: QualityProfile) -> void:
     _apply_viewport_profile(profile)
     _apply_world_environment_profile(profile)
     _apply_global_shader_parameters(profile)
+    _apply_skydome_profile(profile)
+
+
+func _apply_skydome_profile(profile: QualityProfile) -> void:
+    # Try to find Skydome in the scene and apply sunshafts setting
+    var root := get_tree().root
+    var skydome: Node = root.find_child("Skydome", true, false)
+    if skydome != null and "sunshafts_enabled" in skydome:
+        skydome.sunshafts_enabled = profile.sunshafts
 
 
 func _apply_global_shader_parameters(profile: QualityProfile) -> void:

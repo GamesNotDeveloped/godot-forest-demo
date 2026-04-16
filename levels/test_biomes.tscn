@@ -144,7 +144,7 @@ effect_callback_type = 4
 needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("49_88um7")
-sun_screen_uv = Vector2(-19.560455, -30.716833)
+sun_screen_uv = Vector2(0.593187, 0.82498616)
 sun_visible = true
 shaft_color = Color(0.7181275, 0.64356625, 0.40456375, 1)
 density = 0.4231625
@@ -324,6 +324,7 @@ directional_shadow_max_distance = 76.7
 
 [node name="Trees" type="Node3D" parent="." unique_id=1585352953]
 script = ExtResource("1_8b86h")
+max_generation_distance = 60.0
 entries = Array[ExtResource("2_471tc")]([SubResource("Resource_ei7n8"), SubResource("Resource_qsh2c"), SubResource("Resource_2omi8"), SubResource("Resource_imthj")])
 seed = 7
 area_size = Vector2(100, 100)
@@ -429,7 +430,7 @@ clouds_coverage = 0.15
 clouds_color_shadow = Color(0.8515625, 0.8515625, 0.8515625, 1)
 clouds_shadow_angular_distance_clear = 1.0
 clouds_wind_direction = Vector2(0.9363292, 0.35112345)
-clouds_wind_strength = 1.009354162006637
+clouds_wind_strength = 1.000146052819164
 clouds_evolution_strength = 0.775
 clouds_evolution_scale = 0.198
 clouds_scroll_b = Vector2(0.002, 0)
@@ -442,7 +443,7 @@ moon_phase_debug = 0.34453662941641205
 shader_atmosphere_sunset_boost = 0.47
 
 [node name="Weather" type="Node3D" parent="." unique_id=1489148959]
-transform = Transform3D(1.0000024, 0, 0, 0, 1.0000024, 0, 0, 0, 1, -2.334757, 2.2326272, 3.264176)
+transform = Transform3D(1.0000024, 0, 0, 0, 1.0000024, 0, 0, 0, 1, 9.712034, 13.096703, -13.463647)
 script = ExtResource("19_weather")
 skydome_path = NodePath("../Skydome")
 world_environment_path = NodePath("../WorldEnvironment")

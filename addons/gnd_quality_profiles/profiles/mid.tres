@@ -32,3 +32,6 @@ auto_exposure_scale = 0.28
 auto_exposure_speed = 2.0
 auto_exposure_min_sensitivity = 74.0
 auto_exposure_max_sensitivity = 210.0
+high_quality_sky = false
+high_quality_foliage = false
+sunshafts = true
